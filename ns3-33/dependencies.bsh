@@ -1,0 +1,11 @@
+#!/bin/bash
+
+apt-get update && apt-get install -y \
+    wget \
+    tar \
+    bzip2 \
+    gcc-9 \
+    g++-9 \
+    build-essential \
+    python3 \
+&& rm -rf /var/lib/apt/lists/*

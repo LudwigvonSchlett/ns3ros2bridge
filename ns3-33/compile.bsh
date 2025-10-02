@@ -1,0 +1,11 @@
+#!/bin/bash
+
+export CC=gcc-9
+export CXX=g++-9
+
+cd ns-allinone-3.33
+
+./build.py --enable-examples --enable-tests
+
+
+

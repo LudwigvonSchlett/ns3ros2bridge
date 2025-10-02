@@ -1,0 +1,14 @@
+#!/bin/bash
+
+export CC=gcc-9
+export CXX=g++-9
+
+wget https://www.nsnam.org/releases/ns-allinone-3.33.tar.bz2
+
+tar xfj ns-allinone-3.33.tar.bz2
+cd ns-allinone-3.33
+
+./build.py --enable-examples --enable-tests
+
+
+
