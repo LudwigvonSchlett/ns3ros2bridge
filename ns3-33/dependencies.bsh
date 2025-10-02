@@ -6,6 +6,9 @@ apt-get update && apt-get install -y \
     bzip2 \
     gcc-9 \
     g++-9 \
+    qtbase5-dev \
     build-essential \
     python3 \
-&& rm -rf /var/lib/apt/lists/*
+    doxygen \
+    valgrind \
+    pkg-config

@@ -2,10 +2,12 @@
 
 export CC=gcc-9
 export CXX=g++-9
+export LD_LIBRARY_PATH=$PWD/ns-allinone-3.33/ns-3.33/build/lib
 
-cd ns-allinone-3.33
+cd ns-allinone-3.33/ns-3.33
 
-./build.py --enable-examples --enable-tests
-
+./waf configure --enable-examples --enable-tests
+./waf build
+./waf --run scratch-simulator
 
 

@@ -2,13 +2,21 @@
 
 export CC=gcc-9
 export CXX=g++-9
+export LD_LIBRARY_PATH=$PWD/ns-allinone-3.33/ns-3.33/build/lib
 
 wget https://www.nsnam.org/releases/ns-allinone-3.33.tar.bz2
 
 tar xfj ns-allinone-3.33.tar.bz2
+
 cd ns-allinone-3.33
 
 ./build.py --enable-examples --enable-tests
 
+cd ns-3.33
+
+./waf configure --enable-examples --enable-tests
+./waf build
+./waf check
+./waf --run scratch-simulator
 
 
