@@ -4,11 +4,11 @@ export CC=gcc-9
 export CXX=g++-9
 export LD_LIBRARY_PATH=$PWD/ns-allinone-3.33/ns-3.33/build/lib
 
-cp -r src/rosvehcomm/* ns-allinone-3.33/ns-3.33/contrib/rosvehcomm/
-cp src/ros-ns3-main.cc ns-allinone-3.33/ns-3.33/scratch
-
 cd ns-allinone-3.33/ns-3.33
 
 ./waf configure --enable-examples --enable-tests
 ./waf build
+./test.py
+./waf --run scratch-simulator
+
 

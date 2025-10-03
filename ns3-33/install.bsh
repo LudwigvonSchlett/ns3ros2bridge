@@ -14,9 +14,15 @@ cd ns-allinone-3.33
 
 cd ns-3.33
 
+./utils/create-module.py contrib/rosvehcomm
+
+cd ../..
+
+cp -r src/rosvehcomm/* ns-allinone-3.33/ns-3.33/contrib/rosvehcomm/
+cp src/ros-ns3-main.cc ns-allinone-3.33/ns-3.33/scratch/
+
+cd ns-allinone-3.33/ns-3.33
+
 ./waf configure --enable-examples --enable-tests
 ./waf build
-./waf check
-./waf --run scratch-simulator
-
 
