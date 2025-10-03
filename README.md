@@ -4,7 +4,7 @@
 
 ## NS3-33
 
-- [ ] Contient les scripts et sources nécessaires pour le fonctionnement du projet avec ns3
+- [ ] Contient les scripts et sources nécessaires pour la partie ns3 du projet 
 - [ ] Configurer et vérifier le fonctionnement de ns3 
 
 ```
@@ -15,7 +15,7 @@ sudo ./dependencies.bsh
 
 ```
 
-- [ ] Compiler de nouveaux changement
+- [ ] Compiler de nouveaux changements
 
 ```
 cd ns3-33
