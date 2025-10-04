@@ -4,8 +4,7 @@ WORKDIR /usr/src
 
 COPY dependencies.bsh /usr/src/
 COPY install.bsh /usr/src/
-COPY run.bsh /usr/src/
 
 RUN ./dependencies.bsh
 RUN ./install.bsh
-RUN ./run.bsh
+
