@@ -1,0 +1,27 @@
+image: ubuntu:22.04 # Default container image
+
+# Reusable properties
+variables:
+  NS3: "ns3-33"
+
+# Cache to speed up builds
+cache:
+  key: ${CI_COMMIT_BRANCH}
+  paths:
+    - "$NS3/ns-allinone-3.33"
+    - "$NS3/ns-allinone-3.33/tar.bz2"
+
+# Define stages
+stages:
+  - install_NS3
+
+# Stage 1: Build
+install:
+  stage: install_NS3
+  rules:
+    - when: always
+  script:
+    - cd $NS3
+    - sudo ./dependencies.bsh
+    - ./install.bsh
+

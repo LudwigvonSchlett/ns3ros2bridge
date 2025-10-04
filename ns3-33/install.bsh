@@ -4,9 +4,14 @@ export CC=gcc-9
 export CXX=g++-9
 export LD_LIBRARY_PATH=$PWD/ns-allinone-3.33/ns-3.33/build/lib
 
-wget https://www.nsnam.org/releases/ns-allinone-3.33.tar.bz2
 
-tar xfj ns-allinone-3.33.tar.bz2
+if [ ! -f "ns-allinone-3.33.tar.bz2" ]; then
+	wget https://www.nsnam.org/releases/ns-allinone-3.33.tar.bz2
+fi
+
+if [ ! -d "ns-allinone-3.33" ]; then
+	tar xfj ns-allinone-3.33.tar.bz2
+fi	
 
 cd ns-allinone-3.33
 
