@@ -10,13 +10,13 @@ cache:
   key: ${CI_COMMIT_BRANCH}
   paths:
     - "$NS3/ns-allinone-3.33"
-    - "$NS3/ns-allinone-3.33/tar.bz2"
+    - "$NS3/ns-allinone-3.33.tar.bz2"
 
 # Define stages
 stages:
   - install_NS3
 
-# Stage 1: Build
+ Stage 1: Build
 install:
   stage: install_NS3
   rules:
