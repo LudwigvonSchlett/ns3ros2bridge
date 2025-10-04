@@ -22,6 +22,6 @@ install:
     - when: always
   script:
     - cd $NS3
-    - sudo ./dependencies.bsh
+    - ./dependencies.bsh
     - ./install.bsh
 
