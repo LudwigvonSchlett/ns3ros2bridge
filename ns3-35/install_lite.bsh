@@ -1,0 +1,37 @@
+#!/bin/bash
+
+export CC=gcc-10
+export CXX=g++-10
+export LD_LIBRARY_PATH=$PWD/ns-allinone-3.35/ns-3.35/build/lib
+
+
+if [ ! -f "ns-allinone-3.35.tar.bz2" ]; then
+	wget https://www.nsnam.org/releases/ns-allinone-3.35.tar.bz2
+fi
+
+if [ ! -d "ns-allinone-3.35" ]; then
+	tar xfj ns-allinone-3.35.tar.bz2
+fi	
+
+cd ns-allinone-3.35
+
+if [ -n "$STHREAD" ]; then
+	./build.py --build-options "-j 1"
+else
+	./build.py
+fi
+
+cd ns-3.35
+
+./utils/create-module.py contrib/rosvehcomm
+
+cd ../..
+
+cp -r src/rosvehcomm/* ns-allinone-3.35/ns-3.35/contrib/rosvehcomm/
+cp src/ros-ns3-main.cc ns-allinone-3.35/ns-3.35/scratch/
+
+cd ns-allinone-3.35/ns-3.35
+
+./waf configure
+./waf build
+
