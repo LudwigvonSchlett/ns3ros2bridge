@@ -3,7 +3,7 @@ image: ubuntu:22.04 # Default container image
 # Reusable properties
 variables:
   NS3: "ns3-33"
-  NS3-35: "ns3-35"
+  NS3_35: "ns3-35"
   STHREAD: "true"
 
 # Cache to speed up builds
@@ -12,8 +12,8 @@ cache:
   paths:
     - "$NS3/ns-allinone-3.33"
     - "$NS3/ns-allinone-3.33.tar.bz2"
-    - "$NS3-35/ns-allinone-3.35"
-    - "$NS3-35/ns-allinone-3.35.tar.bz2"
+    - "$NS3_35/ns-allinone-3.35"
+    - "$NS3_35/ns-allinone-3.35.tar.bz2"
 
 # Define stages
 stages:
@@ -35,7 +35,7 @@ install_NS3-35:
   rules:
     - when: always
   script:
-    - cd $NS3-35
+    - cd $NS3_35
     - ./dependencies.bsh
     - ./install.bsh
 
