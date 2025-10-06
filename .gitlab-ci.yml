@@ -19,8 +19,9 @@ cache:
 stages:
   - install_v_33
   - install_v_35
-
-# Stage 1: Build
+  - build_v_33
+  - build_v_33
+# Stage 1: Install
 install_NS3-33:
   stage: install_v_33
   rules:
@@ -30,7 +31,7 @@ install_NS3-33:
     - ./dependencies.bsh
     - ./install_lite.bsh
 
-# Stage 1: Build
+# Stage 1: Install
 install_NS3-35:
   stage: install_v_35
   rules:
@@ -39,4 +40,24 @@ install_NS3-35:
     - cd $NS3_35
     - ./dependencies.bsh
     - ./install_lite.bsh
+    
+# Stage 2: Build
+install_NS3-33:
+  stage: build_v_33
+  rules:
+    - when: always
+  script:
+    - cd $NS3
+    - ./dependencies.bsh
+    - ./install.bsh
+
+# Stage 2: Build
+install_NS3-35:
+  stage: build_v_35
+  rules:
+    - when: always
+  script:
+    - cd $NS3_35
+    - ./dependencies.bsh
+    - ./install.bsh
 
