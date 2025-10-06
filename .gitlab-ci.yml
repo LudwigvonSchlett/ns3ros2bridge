@@ -20,8 +20,9 @@ stages:
   - install_v_33
   - install_v_35
   - build_v_33
-  - build_v_33
-# Stage 1: Install
+  - build_v_35
+
+    # Stage 1: Install
 install_NS3-33:
   stage: install_v_33
   rules:
@@ -42,7 +43,7 @@ install_NS3-35:
     - ./install_lite.bsh
     
 # Stage 2: Build
-install_NS3-33:
+build_NS3-33:
   stage: build_v_33
   rules:
     - when: always
@@ -52,7 +53,7 @@ install_NS3-33:
     - ./install.bsh
 
 # Stage 2: Build
-install_NS3-35:
+build_NS3-35:
   stage: build_v_35
   rules:
     - when: always
