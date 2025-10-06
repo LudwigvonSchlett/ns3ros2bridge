@@ -18,6 +18,7 @@ cache:
 # Define stages
 stages:
   - install
+  - install(alt)
 
 # Stage 1: Build
 install_NS3-33:
@@ -31,7 +32,7 @@ install_NS3-33:
 
 # Stage 1: Build
 install_NS3-35:
-  stage: install
+  stage: install(alt)
   rules:
     - when: always
   script:
