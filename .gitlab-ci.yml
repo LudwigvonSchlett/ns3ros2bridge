@@ -17,11 +17,12 @@ cache:
 
 # Define stages
 stages:
-  - install
+  - install_v_33
+  - install_v_35
 
 # Stage 1: Build
 install_NS3-33:
-  stage: install
+  stage: install_v_33
   rules:
     - when: always
   script:
@@ -31,7 +32,7 @@ install_NS3-33:
 
 # Stage 1: Build
 install_NS3-35:
-  stage: install
+  stage: install_v_35
   rules:
     - when: always
   script:
