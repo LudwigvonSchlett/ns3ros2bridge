@@ -15,8 +15,8 @@ fi
 
 cd ns-allinone-3.33
 
-if [ -n "$THREAD" ]; then
-	./build.py --enable-examples --enable-tests --build-options "-j $THREAD"
+if [ -n "$STHREAD" ]; then
+	./build.py --enable-examples --enable-tests --build-options "-j 1"
 else
 	./build.py --enable-examples --enable-tests
 fi

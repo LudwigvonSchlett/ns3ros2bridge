@@ -1,0 +1,16 @@
+#!/bin/bash
+
+apt-get update && \
+apt-get upgrade -y && \
+apt-get install -y \
+    wget \
+    tar \
+    bzip2 \
+    gcc-9 \
+    g++-9 \
+    qtbase5-dev \
+    build-essential \
+    python3 \
+    doxygen \
+    valgrind \
+    pkg-config

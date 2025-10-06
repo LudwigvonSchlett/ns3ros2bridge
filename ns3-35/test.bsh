@@ -1,0 +1,14 @@
+#!/bin/bash
+
+export CC=gcc-9
+export CXX=g++-9
+export LD_LIBRARY_PATH=$PWD/ns-allinone-3.35/ns-3.35/build/lib
+
+cd ns-allinone-3.35/ns-3.35
+
+./waf configure --enable-examples --enable-tests
+./waf build
+./test.py
+./waf --run scratch-simulator
+
+
