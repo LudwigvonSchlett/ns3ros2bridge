@@ -1,4 +1,11 @@
+#NS3
 ns3-33/ns-allinone-3.33
 ns3-33/ns-allinone-3.33.tar.bz2
 ns3-35/ns-allinone-3.35
 ns3-35/ns-allinone-3.35.tar.bz2
+
+#ROS2
+**/ros2_ws/build
+**/ros2_ws/install
+**/ros2_ws/log
+

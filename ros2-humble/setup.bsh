@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "source /opt/ros/humble/setup.bash" >> ~/.bash_aliases
+
