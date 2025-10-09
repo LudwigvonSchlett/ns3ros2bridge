@@ -1,0 +1,6 @@
+#!/bin/bash
+
+wget https://tiny.carla.org/carla-0-9-15-linux
+
+tar xfj CARLA_0.9.15.tar.gz
+
