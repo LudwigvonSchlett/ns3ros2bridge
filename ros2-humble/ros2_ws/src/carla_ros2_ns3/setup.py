@@ -4,7 +4,7 @@ package_name = 'carla_ros2_ns3'
 
 setup(
     name=package_name,
-    version='0.0.0',
+    version='0.0.1',
     packages=find_packages(exclude=['test']),
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -24,6 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'carla_ros2_ns3 = carla_ros2_ns3:carla_ros2_ns3.main
         ],
     },
 )
