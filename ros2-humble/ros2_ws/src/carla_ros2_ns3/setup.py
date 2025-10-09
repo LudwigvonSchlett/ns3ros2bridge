@@ -24,7 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'carla_ros2_ns3 = carla_ros2_ns3:carla_ros2_ns3.main
+            'carla_ros2_ns3 = carla_ros2_ns3.carla_ros2_ns3:main'
         ],
     },
 )
