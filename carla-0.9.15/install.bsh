@@ -1,5 +1,9 @@
 #!/bin/bash
 
+apt update -y && apt upgrade -y
+add-apt-repository ppa:deadsnakes/ppa -y
+apt install python3.7 python3.7-distutils pip -y
+
 cd carla
 
 if [ ! -f "CARLA_0.9.15.tar.gz" ]; then
@@ -9,4 +13,9 @@ fi
 if [ ! -f "CarlaUE4.sh" ]; then
 	tar xfz CARLA_0.9.15.tar.gz
 fi
+
+echo "export CARLA_ROOT=$PWD" >> ~/.bash_aliases
+echo "export PYTHONPATH=$PYTHONPATH:$PWD/PythonAPI/carla/dist/carla-0.9.15-cp37-cp37m-manylinux_2_27_x86_64.whl:$PWD/PythonAPI/carla" >> ~/.bash_aliases 
+echo "alias python='/usr/bin/python3.7'" >> ~/.bash_aliases
+echo "alias python3='/usr/bin/python3.7'" >> ~/.bash_aliases
 
