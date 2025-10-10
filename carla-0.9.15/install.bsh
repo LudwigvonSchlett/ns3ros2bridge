@@ -1,6 +1,12 @@
 #!/bin/bash
 
-wget https://tiny.carla.org/carla-0-9-15-linux
+cd carla
 
-tar xfj CARLA_0.9.15.tar.gz
+if [ ! -f "CARLA_0.9.15.tar.gz" ]; then
+	wget https://carla-releases.b-cdn.net/Linux/CARLA_0.9.15.tar.gz
+fi
+
+if [ ! -f "CarlaUE4.sh" ]; then
+	tar xfz CARLA_0.9.15.tar.gz
+fi
 
