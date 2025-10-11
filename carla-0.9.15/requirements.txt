@@ -1,6 +1,6 @@
-# python -m pip install -r requirements.txt 
-
-carla
+# python3 -m pip install -r requirements.txt 
+ 
+carla==0.9.15
 numpy
 pygame
 
