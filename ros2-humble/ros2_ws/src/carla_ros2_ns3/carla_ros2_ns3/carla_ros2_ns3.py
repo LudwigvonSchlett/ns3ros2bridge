@@ -25,7 +25,7 @@ def main():
         node_name = f'carla_ros2_ns3_{random.randint(0, 9999)}'
         node = rclpy.create_node(node_name)
         s = connect_tap_device("tap0", node)
-        tap_sender("hello from ROS",s,0)
+        tap_sender("hello from ROS", s, 0, node)
         control_node_listener(s)
         
     except KeyboardInterrupt:
@@ -128,14 +128,14 @@ def connect_tap_device(tap_device, node):
                 
 
 
-def tap_sender(message,s,num_node):
+def tap_sender(message, s, num_node, node):
     """
     Permet d'envoyer un message grace a une socket s et un numéro de node
     """
 
     # Créer un éditeur pour publier les paquets sur un topic spécifique
     topic_name = f'/tap{num_node}_packets'
-    pub = rospy.Publisher(topic_name, String, queue_size=10)
+    pub = node.create_publisher(String, topic_name, 10)
 
     try:
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -146,12 +146,12 @@ def tap_sender(message,s,num_node):
         udp_port = 12000+num_node
         packet = message.encode()
         udp_socket.sendto(packet, (udp_ip, udp_port))
-        rospy.loginfo(f"Message envoyé : {message} à {udp_ip}:{udp_port}")
+        inflog(f"Message envoyé : {message} à {udp_ip}:{udp_port}", node)
         # Publier le paquet sous forme hexadécimale
         pub.publish(packet.hex())
         
     except Exception as e:
-        rospy.logerr(f"Erreur lors de l'envoi du message : {e}") 
+        errlog(f"Erreur lors de l'envoi du message : {e}", node) 
     
     
 
