@@ -137,7 +137,9 @@ def tap_sender(message, s, num_node, node):
         udp_socket.sendto(packet, (udp_ip, udp_port))
         inflog(f"Message envoyé : {message} à {udp_ip}:{udp_port}", node)
         # Publier le paquet sous forme hexadécimale
-        pub.publish(packet.hex())
+        msg = String()
+        msg.data = packet.hex()
+        pub.publish(msg)
         
     except Exception as e:
         errlog(f"Erreur lors de l'envoi du message : {e}", node) 
