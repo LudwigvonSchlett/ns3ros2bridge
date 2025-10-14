@@ -3,21 +3,44 @@
 import socket
 import carla
 import random
-import rospy
+import rclpy
 from std_msgs.msg import String
 import time
+import sys
 import os
 import subprocess
 import select
 import threading
 
 
-number_node= 5	# nombre de nodes et donc de voitures dans la simulation
+number_node= 5    # nombre de nodes et donc de voitures dans la simulation
 number_message_sent = 0 #Pour les messages s'envoyant via tap1,2,3,...
 number_message_received = 0 #Pour les messages s'envoyant via tap1,2,3,...
 vehicles = []
 client = carla.Client('localhost', 2000) #connexion a Carla
 
+def main():
+    rclpy.init(args=sys.argv)
+    try:     
+        node_name = f'carla_ros2_ns3_{random.randint(0, 9999)}'
+        node = rclpy.create_node(node_name)
+        s = connect_tap_device("tap0", node)
+        tap_sender("hello from ROS",s,0)
+        control_node_listener(s)
+        
+    except KeyboardInterrupt:
+        pass
+        
+    finally:
+        node.destroy_node()
+        
+#### Utilitaires ####
+
+def inflog(msg, node):
+	node.get_logger().info(msg)
+
+def errlog(msg, node):
+	node.get_logger().error(msg)
 
 ##### Partie Réseau #####
 
@@ -86,22 +109,22 @@ def calculate_udp_checksum(source_ip, dest_ip, src_port, dest_port, udp_payload)
 
 
 
-def connect_tap_device(tap_device):
+def connect_tap_device(tap_device, node):
     """
     Établit une connexion au périphérique TAP avec tentative de reconnexion en boucle si elle échoue.
     Retourne le socket connecté.
     """
-    while not rospy.is_shutdown():
+    while rclpy.ok():
         try:
-            rospy.loginfo(f"Tentative de connexion à {tap_device}...")
+            inflog(f"Tentative de connexion à {tap_device}...", node)
             s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(0x0003))
             s.bind((tap_device, 0))
-            rospy.loginfo(f"Connexion réussie à {tap_device}.")
+            inflog(f"Connexion réussie à {tap_device}.", node)
             return s
         except Exception as e:
-            rospy.logerr(f"Erreur lors de la connexion au périphérique {tap_device}: {e}")
-            rospy.loginfo("Nouvelle tentative dans 5 secondes...")
-            rospy.sleep(5)  # Attendre 5 secondes avant de réessayer
+            errlog(f"Erreur lors de la connexion au périphérique {tap_device}: {e}", node)
+            inflog("Nouvelle tentative dans 5 secondes...", node)
+            time.sleep(5)  # Attendre 5 secondes avant de réessayer
                 
 
 
@@ -212,12 +235,12 @@ def control_node_listener(s):
     except UnicodeDecodeError as e:
         rospy.logerr(f"Erreur de décodage Unicode : {e}")
         rospy.loginfo("Le paquet reçu ne peut pas être décodé en UTF-8.")
-        rospy.sleep(1)
+        time.sleep(1)
         control_node_listener(s)
 
     except Exception as e:
         rospy.logerr(f"Erreur inattendue lors du traitement du paquet : {e}")
-        rospy.sleep(1)
+        time.sleep(1)
         control_node_listener(s)
         stop_simulation()  
 
@@ -233,7 +256,7 @@ def init_carla():
     Initialise la connexion à Carla, configure le monde et spawn un véhicule.
     """
     client.set_timeout(20.0)
-    #client.load_world("Town01")	#Pour changer la carte
+    #client.load_world("Town01")    #Pour changer la carte
     world = client.get_world()
     settings = world.get_settings()
     settings.synchronous_mode = False
@@ -372,7 +395,7 @@ def periodic_position_sender(interval,s):
         try:
             mobilities = get_all_mobility()
             tap_sender("set_mobility " + mobilities,s,0)
-            rospy.sleep(interval)
+            time.sleep(interval)
         except Exception as e:
             rospy.logerr(f"Erreur lors de la récupération/envoie périodique des positions : {e}")
             stop_simulation()
@@ -390,7 +413,7 @@ def comunication_node(interval,sockets):
             position = get_position(vehicles[num_node-1])
             tap_sender(str(num_node) + " position " + str(position),socket,num_node)
             number_message_sent+=1
-            rospy.sleep(interval)
+            time.sleep(interval)
         except Exception as e:
             rospy.logerr(f"Erreur lors de la récupération/envoie périodique des positions : {e}")
             stop_simulation()
@@ -398,19 +421,6 @@ def comunication_node(interval,sockets):
 
 
 
-if __name__ == '__main__':
-    try:
-        
-        rospy.init_node('carla_ros_ns3', anonymous=True)
-        s = connect_tap_device("tap0")
-        tap_sender("hello from ROS",s,0)
-        control_node_listener(s)
-        
-    except rospy.ROSInterruptException:
-        pass
-
-
-
-
-
+if __name__ == '__main__': 
+   	main()
 
