@@ -18,15 +18,18 @@ number_message_sent = 0 #Pour les messages s'envoyant via tap1,2,3,...
 number_message_received = 0 #Pour les messages s'envoyant via tap1,2,3,...
 vehicles = []
 client = carla.Client('localhost', 2000) #connexion a Carla
+node = None
 
 def main():
+    global node
     rclpy.init(args=sys.argv)
     try:     
-        node_name = f'carla_ros2_ns3_{random.randint(0, 9999)}'
+        #node_name = f'carla_ros2_ns3_{random.randint(0, 9999)}'
+        node_name = f'carla_ros2_ns3'
         node = rclpy.create_node(node_name)
-        s = connect_tap_device("tap0", node)
-        tap_sender("hello from ROS", s, 0, node)
-        control_node_listener(s, node)
+        s = connect_tap_device("tap0")
+        tap_sender("hello from ROS", s, 0)
+        control_node_listener(s)
         
     except KeyboardInterrupt:
         pass
@@ -36,11 +39,13 @@ def main():
         
 #### Utilitaires ####
 
-def inflog(msg, node):
-	node.get_logger().info(msg)
+def inflog(msg):
+    global node
+    node.get_logger().info(msg)
 
-def errlog(msg, node):
-	node.get_logger().error(msg)
+def errlog(msg):
+    global node
+    node.get_logger().error(msg)
 
 ##### Partie Réseau #####
 
@@ -100,27 +105,28 @@ def calculate_udp_checksum(source_ip, dest_ip, src_port, dest_port, udp_payload)
     all_words = pseudo_header + udp_header + payload_words
     return calculate_checksum(all_words)
 
-def connect_tap_device(tap_device, node):
+def connect_tap_device(tap_device):
     """
     Établit une connexion au périphérique TAP avec tentative de reconnexion en boucle si elle échoue.
     Retourne le socket connecté.
     """
     while rclpy.ok():
         try:
-            inflog(f"Tentative de connexion à {tap_device}...", node)
+            inflog(f"Tentative de connexion à {tap_device}...")
             s = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(0x0003))
             s.bind((tap_device, 0))
-            inflog(f"Connexion réussie à {tap_device}.", node)
+            inflog(f"Connexion réussie à {tap_device}.")
             return s
         except Exception as e:
-            errlog(f"Erreur lors de la connexion au périphérique {tap_device}: {e}", node)
-            inflog("Nouvelle tentative dans 5 secondes...", node)
+            errlog(f"Erreur lors de la connexion au périphérique {tap_device}: {e}")
+            inflog("Nouvelle tentative dans 5 secondes...")
             time.sleep(5)  # Attendre 5 secondes avant de réessayer
                 
-def tap_sender(message, s, num_node, node):
+def tap_sender(message, s, num_node):
     """
     Permet d'envoyer un message grace a une socket s et un numéro de node
     """
+    global node
 
     # Créer un éditeur pour publier les paquets sur un topic spécifique
     topic_name = f'/tap{num_node}_packets'
@@ -135,14 +141,14 @@ def tap_sender(message, s, num_node, node):
         udp_port = 12000+num_node
         packet = message.encode()
         udp_socket.sendto(packet, (udp_ip, udp_port))
-        inflog(f"Message envoyé : {message} à {udp_ip}:{udp_port}", node)
+        inflog(f"Message envoyé : {message} à {udp_ip}:{udp_port}")
         # Publier le paquet sous forme hexadécimale
         msg = String()
         msg.data = packet.hex()
         pub.publish(msg)
         
     except Exception as e:
-        errlog(f"Erreur lors de l'envoi du message : {e}", node) 
+        errlog(f"Erreur lors de l'envoi du message : {e}") 
            
 def listen_tap_devices(tap_sockets): # à adapter
     """
@@ -168,7 +174,7 @@ def listen_tap_devices(tap_sockets): # à adapter
             rospy.logerr(f"Erreur lors de l'écoute des tap devices: {e}")
             stop_simulation()
 
-def control_node_listener(s, node):
+def control_node_listener(s):
     """
     Permet d'ecouter ce que recoit tap0, noeud de control
     """
@@ -176,7 +182,7 @@ def control_node_listener(s, node):
         
         MTU = 15000  # Maximum Transmission Unit pour Ethernet frame
         packet = s.recv(MTU)
-        inflog(f"tap0 received a packet", node)
+        inflog(f"tap0 received a packet")
         
         # Récupérer l'adresse IP de destination du paquet
         dest_ip = packet[30:34] 
@@ -186,45 +192,45 @@ def control_node_listener(s, node):
 
         # Vérifiez si le paquet est destiné à votre propre adresse TAP pour l'ignorer
         if dest_ip_str == '10.0.0.2': 
-            inflog(f"Message destiné à {dest_ip_str} (envoi propre) ignoré.", node)
-            control_node_listener(s, node)
+            inflog(f"Message destiné à {dest_ip_str} (envoi propre) ignoré.")
+            control_node_listener(s)
 
         elif check_message(packet):
              message = (packet[42:].decode()).rstrip("\n")
-             inflog(f"Received packet (decoded): {message}", node)
+             inflog(f"Received packet (decoded): {message}")
              
              if(message == "hello from NS3"):
              
                  init_carla() # à adapter pour rclpy
                  positions = get_all_position()
-                 tap_sender("create_node" + positions, s, 0, node)
-                 control_node_listener(s, node)
+                 tap_sender("create_node" + positions, s, 0)
+                 control_node_listener(s)
              
              elif (message == "create_success"):
                  sockets = []
                  for num_node in range(1,number_node+1):
-                     s = connect_tap_device("tap"+str(num_node), node)
+                     s = connect_tap_device("tap"+str(num_node))
                      sockets.append(s)
                  launch_simulation(sockets) # à adapter pour rclpy
                  listen_tap_devices(sockets) # à adapter pour rclpy
              
              else:
-                 errlog(f"Erreur message recue : {message}", node) 
-                 control_node_listener(s, node)
+                 errlog(f"Erreur message recue : {message}") 
+                 control_node_listener(s)
         else:
-            control_node_listener(s, node)         
+            control_node_listener(s)         
 
     except UnicodeDecodeError as e:
-        errlog(f"Erreur de décodage Unicode : {e}", node)
-        inflog("Le paquet reçu ne peut pas être décodé en UTF-8.", node)
+        errlog(f"Erreur de décodage Unicode : {e}")
+        inflog("Le paquet reçu ne peut pas être décodé en UTF-8.")
         time.sleep(1)
-        control_node_listener(s, node)
+        control_node_listener(s)
 
     except Exception as e:
-        errlog(f"Erreur inattendue lors du traitement du paquet : {e}", node)
+        errlog(f"Erreur inattendue lors du traitement du paquet : {e}")
         time.sleep(1)
-        #control_node_listener(s, node) semble etre une erreur 
-        stop_simulation(node)  
+        #control_node_listener(s) semble etre une erreur 
+        stop_simulation()  
 
 ##### Partie CARLA #######
 
@@ -301,7 +307,7 @@ def launch_simulation(sockets):
         
     listen_tap_devices(sockets)
 
-def stop_simulation(node):
+def stop_simulation():
 
     #Ce code fonctionnait auparavant mais mene a des bugs desormais, il servait a enlever les voitures a la fin de la simulation
     #afin de ne pas devoir rellancer Carla a chaque fois -> a corriger pour eviter cela
@@ -310,7 +316,7 @@ def stop_simulation(node):
     #    vehicle.destroy()
     #    rospy.loginfo(f"Véhicule {vehicle.id} détruit.")
 
-    inflog("Simulation terminée.", node)
+    inflog("Simulation terminée.")
     if number_message_sent != 0:
        PDR = (number_message_received/number_message_sent)*100
        PDR_division = PDR/(number_node-1)
@@ -318,11 +324,11 @@ def stop_simulation(node):
        PDR = 0
        PDR_division = 0 
     
-    inflog(f"Nombre de paquet envoyés: {number_message_sent}", node)
-    inflog(f"Nombre de paquet recu: {number_message_received}", node)
-    inflog(f"Taux de livraison des paquets: PDR = {PDR}%", node)
-    inflog(f"Taux de livraison des paquets en prenant en compte un broadcast: PDR = {PDR_division}%", node)
-    inflog("Interruption reseau avec NS3", node)
+    inflog(f"Nombre de paquet envoyés: {number_message_sent}")
+    inflog(f"Nombre de paquet recu: {number_message_received}")
+    inflog(f"Taux de livraison des paquets: PDR = {PDR}%")
+    inflog(f"Taux de livraison des paquets en prenant en compte un broadcast: PDR = {PDR_division}%")
+    inflog("Interruption reseau avec NS3")
     rclpy.shutdown()
 
 def get_position(vehicle):
