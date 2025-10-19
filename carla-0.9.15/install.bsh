@@ -1,7 +1,8 @@
 #!/bin/bash
 
-apt update -y && apt upgrade -y
-apt install python3-pip -y
+if [ ! -d "carla" ]; then
+        mkdir carla
+fi
 
 cd carla
 
