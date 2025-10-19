@@ -49,37 +49,37 @@ def errlog(msg):
 
 ##### Partie Réseau #####
 
-def check_message(rawdata):
+def check_message(rawdata, hidden):
     # check udp
     if rawdata[23] == 17 and rawdata[30] == 10:
-        print("UDP Message:")
 
         source_ip = str(rawdata[26]) + "." + str(rawdata[27]) + "." + str(rawdata[28]) + "." + str(rawdata[29])
-        print("  Source: "+ source_ip)
-
         dest_ip = str(rawdata[30]) + "." + str(rawdata[31]) + "." + str(rawdata[32]) + "." + str(rawdata[33])
-        print("  Destination: "+ dest_ip)
-
         src_port = rawdata[34]*256 + rawdata[35]
-        print("  Source port: " + str(src_port))
-
         dest_port = rawdata[36]*256 + rawdata[37]
-        print("  Destination port: " + str(dest_port))
-        print("  Length: " + str(rawdata[38]*256 + rawdata[39] - 8))
         checksum = hex(rawdata[40]*256 + rawdata[41]).upper()
-        print("  Checksum: " + checksum)
-
         udp_payload = rawdata[42:]  # Payload
 
-        checksum = calculate_udp_checksum(source_ip, dest_ip, src_port, dest_port, udp_payload)
-        print(f"  Calculated UDP checksum: 0x{checksum:04X}")
+        if not hidden:
+            print("UDP Message:")
+            print("  Source: "+ source_ip)
+            print("  Destination: "+ dest_ip)
+            print("  Source port: " + str(src_port))
+            print("  Destination port: " + str(dest_port))
+            print("  Length: " + str(rawdata[38]*256 + rawdata[39] - 8))
+            print("  Checksum: " + str(checksum))
+
+            checksum = calculate_udp_checksum(source_ip, dest_ip, src_port, dest_port, udp_payload)
+            print(f"  Calculated UDP checksum: 0x{checksum:04X}")
+
         return True
+
     else:
         return False
 
 def calculate_udp_checksum(source_ip, dest_ip, src_port, dest_port, udp_payload):
     # Pour convertir une adresse IP en une liste de mots de 16 bits
-    def ip_to_words(ip):
+    def ip_to_words(ip):S
         parts = list(map(int, ip.split(".")))
         return [(parts[0] << 8) + parts[1], (parts[2] << 8) + parts[3]]
 
@@ -141,7 +141,7 @@ def tap_sender(message, s, num_node):
         udp_port = 12000+num_node
         packet = message.encode()
         udp_socket.sendto(packet, (udp_ip, udp_port))
-        inflog(f"Message envoyé : {message} à {udp_ip}:{udp_port}")
+        inflog(f"Message envoyé à {udp_ip}:{udp_port} : {message}")
         # Publier le paquet sous forme hexadécimale
         msg = String()
         msg.data = packet.hex()
@@ -150,28 +150,27 @@ def tap_sender(message, s, num_node):
     except Exception as e:
         errlog(f"Erreur lors de l'envoi du message : {e}")
 
-def listen_tap_devices(tap_sockets): # à adapter
+def listen_tap_devices(tap_sockets):
     """
     Écoute sur plusieurs tap devices simultanément (pas le tap de controle: le tap0)
     """
     global number_message_received
-    while not rospy.is_shutdown():
+    while rclpy.ok():
         try:
             # Utiliser select pour écouter plusieurs sockets
             readable, _, _ = select.select(tap_sockets, [], [], 1.0)
             for sock in readable:
                 data, _ = sock.recvfrom(65535)  # Taille max d'un paquet
                 device_name = sock.getsockname()[0]  # Nom du device lié
-                if check_message(data):
+                if check_message(data, True):
                     message = (data[42:].decode()).rstrip("\n")
                     if(message.split(" ")[0] != device_name.replace("tap","")): # exclu le message si l'envoyeur est le meme que le recepteur
                         number_message_received +=1
                         ##A faire: traier ce qu'on recoit sur tap1,2,3,...
-                        rospy.loginfo(f"Données reçues sur {device_name}")
-
+                        inflog(f"Données reçues sur {device_name}")
 
         except Exception as e:
-            rospy.logerr(f"Erreur lors de l'écoute des tap devices: {e}")
+            errlog(f"Erreur lors de l'écoute des tap devices: {e}")
             stop_simulation()
 
 def control_node_listener(s):
@@ -195,24 +194,25 @@ def control_node_listener(s):
             inflog(f"Message destiné à {dest_ip_str} (envoi propre) ignoré.")
             control_node_listener(s)
 
-        elif check_message(packet):
+        elif check_message(packet, False):
              message = (packet[42:].decode()).rstrip("\n")
              inflog(f"Received packet (decoded): {message}")
 
              if(message == "hello from NS3"):
 
-                 init_carla() # à adapter pour rclpy
+                 inflog(f"Initializing carla")
+                 init_carla()
                  positions = get_all_position()
                  tap_sender("create_node" + positions, s, 0)
                  control_node_listener(s)
 
              elif (message == "create_success"):
+
                  sockets = []
-                 for num_node in range(1,number_node+1):
+                 for num_node in range(1, number_node+1):
                      s = connect_tap_device("tap"+str(num_node))
                      sockets.append(s)
-                 launch_simulation(sockets) # à adapter pour rclpy
-                 listen_tap_devices(sockets) # à adapter pour rclpy
+                 launch_simulation(sockets, s)
 
              else:
                  errlog(f"Erreur message recue : {message}")
@@ -223,23 +223,25 @@ def control_node_listener(s):
     except UnicodeDecodeError as e:
         errlog(f"Erreur de décodage Unicode : {e}")
         inflog("Le paquet reçu ne peut pas être décodé en UTF-8.")
-        time.sleep(1)
-        control_node_listener(s)
+        #time.sleep(1)
+        #control_node_listener(s) semble etre une erreur
+        stop_simulation()
 
     except Exception as e:
         errlog(f"Erreur inattendue lors du traitement du paquet : {e}")
-        time.sleep(1)
+        #time.sleep(1)
         #control_node_listener(s) semble etre une erreur
         stop_simulation()
 
 ##### Partie CARLA #######
 
 def init_carla():
-    global vehicles
-
     """
     Initialise la connexion à Carla, configure le monde et spawn un véhicule.
     """
+
+    global vehicles
+
     client.set_timeout(20.0)
     #client.load_world("Town01")    #Pour changer la carte
     world = client.get_world()
@@ -255,20 +257,20 @@ def init_carla():
     map = world.get_map()
     waypoints = map.generate_waypoints(2.0)
     if not waypoints:
-        rospy.logerr("Aucun waypoint trouvé sur la carte.")
+        errlog("Aucun waypoint trouvé sur la carte.")
     else:
-        rospy.loginfo(f"{len(waypoints)} waypoints générés.")
+        inflog(f"{len(waypoints)} waypoints générés.")
 
     # Créer les véhicules
     for num_node in range(number_node):
         vehicle = None
         while(vehicle == None):
-            vehicle = spawn_vehicle(world,num_node)
+            vehicle = spawn_vehicle(world, num_node)
         vehicles.append(vehicle)
 
     return world
 
-def spawn_vehicle(world,num_node):
+def spawn_vehicle(world, num_node):
     """
     Crée et initialise un véhicule dans le simulateur Carla.
     """
@@ -279,7 +281,7 @@ def spawn_vehicle(world,num_node):
     # Choisir un point d'apparition aléatoire
     spawn_points = world.get_map().get_spawn_points()
     if not spawn_points:
-        rospy.logerr("Aucun point d'apparition disponible.")
+        errlog("Aucun point d'apparition disponible.")
         return None
     spawn_point = random.choice(spawn_points)
 
@@ -288,7 +290,7 @@ def spawn_vehicle(world,num_node):
 
     return vehicle
 
-def launch_simulation(sockets):
+def launch_simulation(sockets, s):
     """
     Met les voitures en mouvement et lance la collecte de données sur Carla (position,vitesse) pour les envoyer par la suite
     """
@@ -300,9 +302,12 @@ def launch_simulation(sockets):
         vehicle.set_autopilot(True, 8001)
 
     # Lancer l'écoute périodique des positions dans un thread
-    position_listener_thread = threading.Thread(target=periodic_position_sender, args=(1,s,))
+    inflog(f"Launching  periodic_position_sender")
+    position_listener_thread = threading.Thread(target=periodic_position_sender, args=(1, s,))
     position_listener_thread.start()
-    comunication_nodes_thread = threading.Thread(target=comunication_node, args=(1,sockets,))
+
+    inflog(f"Launching comunication_node")
+    comunication_nodes_thread = threading.Thread(target=comunication_node, args=(1, sockets,))
     comunication_nodes_thread.start()
 
     listen_tap_devices(sockets)
@@ -369,25 +374,25 @@ def get_all_mobility():
 
 ####  Threads  #####
 
-def periodic_position_sender(interval,s):
+def periodic_position_sender(interval, s):
     """
     Envoie sur tap0 les positions et vitesses de tout les véhicule.
     """
-    while not rospy.is_shutdown():
+    while rclpy.ok():
         try:
             mobilities = get_all_mobility()
             tap_sender("set_mobility " + mobilities, s, 0)
             time.sleep(interval)
         except Exception as e:
-            rospy.logerr(f"Erreur lors de la récupération/envoie périodique des positions : {e}")
+            errlog(f"Erreur lors de la récupération/envoie périodique des positions : {e}")
             stop_simulation()
 
-def comunication_node(interval,sockets):
+def comunication_node(interval, sockets):
     """
     Envoie sur un tap (ici pris aléatoirement pour les tests) la position d'un véhicule pour que cette information soit transmise par Wave dans NS3
     """
     global number_message_sent
-    while not rospy.is_shutdown():
+    while rclpy.ok():
         try:
             num_node = random.randint(1, len(sockets))
             socket= sockets[num_node-1]
@@ -396,9 +401,9 @@ def comunication_node(interval,sockets):
             number_message_sent+=1
             time.sleep(interval)
         except Exception as e:
-            rospy.logerr(f"Erreur lors de la récupération/envoie périodique des positions : {e}")
+            errlog(f"Erreur lors de la récupération/envoie périodique des positions : {e}")
             stop_simulation()
 
 if __name__ == '__main__':
-   	main()
+    main()
 
