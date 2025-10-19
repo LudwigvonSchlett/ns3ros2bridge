@@ -79,7 +79,7 @@ def check_message(rawdata, hidden):
 
 def calculate_udp_checksum(source_ip, dest_ip, src_port, dest_port, udp_payload):
     # Pour convertir une adresse IP en une liste de mots de 16 bits
-    def ip_to_words(ip):S
+    def ip_to_words(ip):
         parts = list(map(int, ip.split(".")))
         return [(parts[0] << 8) + parts[1], (parts[2] << 8) + parts[3]]
 
