@@ -1,0 +1,8 @@
+#!/bin/bash
+
+export LD_LIBRARY_PATH=$PWD/ns-allinone-3.36.1/ns-3.36.1/build/lib
+
+cd ns-allinone-3.36.1/ns-3.36.1
+
+./ns3 run ros-ns3-main --enable-sudo
+
