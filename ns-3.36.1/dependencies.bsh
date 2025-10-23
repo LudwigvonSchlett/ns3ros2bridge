@@ -7,8 +7,10 @@ apt-get install -y \
     tar \
     bzip2 \
     qtbase5-dev \
+    cmake \
     build-essential \
     python3 \
     doxygen \
     valgrind \
     pkg-config
+
