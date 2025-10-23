@@ -224,11 +224,11 @@ main (int argc, char *argv[])
   ApplicationContainer ROSAppContainer = ROSVehSyncHelper.Install (controlNode); //On stock notre application dans un conteneur application et on installe sur notre neoud Contrôle Node
 
   //Je déclare les variables ci-dessous pour les réutiliser dans ma boulce For par la suite
-  AddressValue remoteAddress1(InetSocketAddress());
-  AddressValue sinkLocalAddress1(InetSocketAddress());
+  //AddressValue remoteAddress1{InetSocketAddress()};
+  //AddressValue sinkLocalAddress1{InetSocketAddress()};
 
-  AddressValue remoteAddress2(InetSocketAddress());
-  AddressValue sinkLocalAddress2(InetSocketAddress());
+  //AddressValue remoteAddress2{InetSocketAddress()};
+  //AddressValue sinkLocalAddress2{InetSocketAddress()};
 
   //Cette boucle FOR permet la mise en place des tap/FdNetdevice de nos noeuds véhicules
 //  for(int i=1;i<=nb_vehicule;i++)
@@ -399,7 +399,7 @@ main (int argc, char *argv[])
   */
 
   // Voici la section à activer pour avoir la visualisation avec NetAnim !
-  // AnimationInterface anim ("AlexandreAnimation.xml");
+  // AnimationInterface anim ("Animation.xml");
 
 
 //
@@ -457,7 +457,7 @@ main (int argc, char *argv[])
 //        mobilityModel->SetVelocity(Vector(0, 0, 0));         // No movement initially
 //    }
 
-  AnimationInterface anim("AlexandreAnimation.xml");
+  AnimationInterface anim("Animation.xml");
 
   NS_LOG_INFO("Starting simulation of " << simulationTime.GetSeconds() << " seconds");
   //Simulator::Stop (simulationTime);
