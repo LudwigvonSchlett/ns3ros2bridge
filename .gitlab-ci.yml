@@ -2,63 +2,27 @@ image: ubuntu:22.04 # Default container image
 
 # Reusable properties
 variables:
-  NS3: "ns3-33"
-  STHREAD: "true"
-  #NS3_35: "ns3-35"  
+  NS3: "ns-3.36.1"
+  STHREAD: "true" 
 
 # Cache to speed up builds
 cache:
   key: ${CI_COMMIT_BRANCH}
   paths:
-    - "$NS3/ns-allinone-3.33"
-    - "$NS3/ns-allinone-3.33.tar.bz2"
-      #- "$NS3_35/ns-allinone-3.35"
-      #- "$NS3_35/ns-allinone-3.35.tar.bz2"
+    - "$NS3/ns-allinone-3.36.1"
+    - "$NS3/ns-allinone-3.36.1.tar.bz2"
 
 # Define stages
 stages:
-  - install_v_33
-    #- install_v_35
-  - build_v_33
-    #- build_v_35
+  - install
 
-# Stage 1: Install
-install_NS3-33:
-  stage: install_v_33
-  rules:
-    - when: always
-  script:
-    - cd $NS3
-    - ./dependencies.bsh
-    - ./install_lite.bsh
-
-# Stage 1: Install
-#install_NS3-35:
-#  stage: install_v_35
-#  rules:
-#    - when: always
-#  script:
-#    - cd $NS3_35
-#    - ./dependencies.bsh
-#    - ./install_lite.bsh
-    
 # Stage 2: Build
-build_NS3-33:
-  stage: build_v_33
+Install:
+  stage: install
   rules:
     - when: always
   script:
     - cd $NS3
     - ./dependencies.bsh
     - ./install.bsh
-
-# Stage 2: Build
-#build_NS3-35:
-#  stage: build_v_35
-#  rules:
-#    - when: always
-#  script:
-#    - cd $NS3_35
-#    - ./dependencies.bsh
-#    - ./install.bsh
 
