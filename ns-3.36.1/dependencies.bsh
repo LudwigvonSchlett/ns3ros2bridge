@@ -8,6 +8,8 @@ apt-get install -y \
     bzip2 \
     qtbase5-dev \
     cmake \
+    cmake-format \
+    ccache \
     build-essential \
     python3 \
     doxygen \
