@@ -2,8 +2,8 @@
 *.log
 
 #NS3
-ns-*/ns-allinone-3.*
-ns-*/ns-allinone-3.*.tar.bz2
+**/ns-allinone-3.*
+**/ns-allinone-3.*.tar.bz2
 
 #ROS2
 **/ros2_ws/build

@@ -4,5 +4,4 @@ export LD_LIBRARY_PATH=$PWD/ns-allinone-3.35/ns-3.35/build/lib
 
 cd ns-allinone-3.35/ns-3.35
 
-./waf run ros-ns3-main --enable-sudo
-
+./waf  --run scratch/ros-ns3-main.cc

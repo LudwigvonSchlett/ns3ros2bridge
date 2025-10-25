@@ -460,8 +460,8 @@ main (int argc, char *argv[])
   AnimationInterface anim("Animation.xml");
 
   NS_LOG_INFO("Starting simulation of " << simulationTime.GetSeconds() << " seconds");
-  //Simulator::Stop (simulationTime);
-  Simulator::Stop (ns3::Seconds (60));
+  Simulator::Stop (simulationTime);
+  //Simulator::Stop (ns3::Seconds (60));
   Simulator::Run ();
   Simulator::Destroy ();
 

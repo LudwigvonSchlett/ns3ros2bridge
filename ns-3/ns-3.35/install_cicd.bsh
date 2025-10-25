@@ -15,12 +15,12 @@ cd ns-allinone-3.35/ns-3.35
 
 ./utils/create-module.py contrib/rosvehcomm
 
-cd ../..
+cd ../../..
 
-cp -r src/rosvehcomm/* ns-allinone-3.35/ns-3.35/contrib/rosvehcomm/
-cp src/ros-ns3-main.cc ns-allinone-3.35/ns-3.35/scratch/
+cp -r src/rosvehcomm/* ns-3.35/ns-allinone-3.35/ns-3.35/contrib/rosvehcomm/
+cp src/ros-ns3-main.cc ns-3.35/ns-allinone-3.35/ns-3.35/scratch
 
-cd ns-allinone-3.35/ns-3.35
+cd ns-3.35/ns-allinone-3.35/ns-3.35
 
 ./waf configure --disable-python
 ./waf build

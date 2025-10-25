@@ -15,12 +15,12 @@ cd ns-allinone-3.36.1/ns-3.36.1
 
 ./utils/create-module.py contrib/rosvehcomm
 
-cd ../..
+cd ../../..
 
-cp -r src/rosvehcomm/* ns-allinone-3.36.1/ns-3.36.1/contrib/rosvehcomm/
-cp src/ros-ns3-main.cc ns-allinone-3.36.1/ns-3.36.1/scratch/
+cp -r src/rosvehcomm/* ns-3.36.1/ns-allinone-3.36.1/ns-3.36.1/contrib/rosvehcomm/
+cp src/ros-ns3-main.cc ns-3.36.1/ns-allinone-3.36.1/ns-3.36.1/scratch
 
-cd ns-allinone-3.36.1/ns-3.36.1
+cd ns-3.36.1/ns-allinone-3.36.1/ns-3.36.1
 
 ./ns3 configure --enable-examples --enable-tests --disable-python
 ./ns3 build
