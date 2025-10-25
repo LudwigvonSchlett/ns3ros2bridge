@@ -24,5 +24,5 @@ Install:
   script:
     - cd $NS3
     - ./dependencies.bsh
-    - ./install.bsh
+    - ./install_cicd.bsh
 
