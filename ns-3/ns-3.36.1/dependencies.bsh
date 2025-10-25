@@ -1,0 +1,18 @@
+#!/bin/bash
+
+apt-get update && \
+apt-get upgrade -y && \
+apt-get install -y \
+    wget \
+    tar \
+    bzip2 \
+    qtbase5-dev \
+    cmake \
+    cmake-format \
+    ccache \
+    build-essential \
+    python3 \
+    doxygen \
+    valgrind \
+    pkg-config
+

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+export LD_LIBRARY_PATH=$PWD/ns-allinone-3.33/ns-3.33/build/lib
+
+cd ns-allinone-3.35/ns-3.35
+
+./waf configure --enable-examples --enable-tests --disable-python
+./waf build
+./test.py
+./waf run scratch-simulator
+
+

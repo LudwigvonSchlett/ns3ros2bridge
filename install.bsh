@@ -1,0 +1,17 @@
+#!/bin/bash
+
+cd ns-3/ns-3.35
+
+echo "ns-3"
+./install.bsh
+
+cd ../ros2-humble
+
+echo "ros2"
+./install.bsh
+
+cd ../carla-0.9.15
+
+echo "carla"
+./install.bsh
+

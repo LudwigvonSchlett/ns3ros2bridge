@@ -2,30 +2,73 @@
 
 
 
-## NS3-33
+## NS-3.35
 
-- [ ] Contient les scripts et sources nécessaires pour la partie ns3 du projet 
-- [ ] Configurer et vérifier le fonctionnement de ns3 
+- [ ] Contient les scripts et sources nécessaires pour la partie ns-3 du projet 
+- [ ] Configurer et vérifier le fonctionnement de ns-3 
 
 ```
-cd ns3-33
+cd ns-3.35
 sudo ./dependencies.bsh
 ./install.bsh
 ./test.bsh 
-
 ```
 
 - [ ] Compiler de nouveaux changements
 
 ```
-cd ns3-33
+cd ns-3.35
 ./compile.bsh
 ```
 
 - [ ] Lancer le projet
 
 ```
-cd ns3-33
+cd ns-3.35
+./run.bsh
+```
+
+## ROS2 Humble
+
+- [ ] Contient les scripts et sources nécessaires pour la partie ros2 du projet 
+- [ ] Configurer et vérifier le fonctionnement de ros2 
+
+```
+cd ros2-humble
+sudo ./dependencies.bsh
+./install.bsh
+```
+
+- [ ] Compiler de nouveaux changements
+
+```
+cd ros2-humble
+./compile.bsh
+```
+
+- [ ] Lancer le projet
+
+```
+cd ros2-humble
+sudo ./run.bsh
+```
+
+## Carla 0.9.15
+
+- [ ] Contient les scripts nécessaires pour carla
+- [ ] Configurer et vérifier le fonctionnement de carla 
+
+```
+cd carla-0.9.15
+sudo ./dependencies.bsh
+./install.bsh
+sudo python3 -m pip install -r requirements.txt 
+```
+
+- [ ] Lancer carla
+
+```
+cd carla-0.9.15
 sudo ./run.bsh
 ```
 
