@@ -1,0 +1,18 @@
+#!/bin/bash
+
+CARLA_DIR="$PWD/carla-0.9.15"
+ROS2_DIR="$PWD/ros2-humble"
+NS3_DIR="$PWD/ns-3.36.1"
+#LOG_DIR="$PWD"
+
+echo "Launching carla"
+x-terminal-emulator -e bash -c "cd '$CARLA_DIR' && ./run.bsh -RenderOffScreen" &
+
+echo "Launching ros2"
+#x-terminal-emulator -e bash -c "cd '$ROS2_DIR' && sudo ./run.bsh 2>&1 | tee '$LOG_DIR/ros2.log'" &
+x-terminal-emulator -e bash -c "cd '$ROS2_DIR' && sudo ./run.bsh" &
+
+echo "Launching ns-3"
+#x-terminal-emulator -e bash -c "cd '$NS3_DIR' && ./run.bsh 2>&1 | tee '$LOG_DIR/ns3.log'"
+x-terminal-emulator -e bash -c "cd '$NS3_DIR' && ./run.bsh" &
+

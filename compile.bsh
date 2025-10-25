@@ -1,0 +1,12 @@
+#!/bin/bash
+
+cd ns-3.36.1
+
+echo "ns-3"
+./compile.bsh
+
+cd ../ros2-humble
+
+echo "ros2"
+./compile.bsh
+

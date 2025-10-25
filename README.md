@@ -12,7 +12,6 @@ cd ns-3.36.1
 sudo ./dependencies.bsh
 ./install.bsh
 ./test.bsh 
-
 ```
 
 - [ ] Compiler de nouveaux changements
@@ -38,8 +37,6 @@ cd ns-3.36.1
 cd ros2-humble
 sudo ./dependencies.bsh
 ./install.bsh
-./test.bsh 
-
 ```
 
 - [ ] Compiler de nouveaux changements
@@ -65,8 +62,7 @@ sudo ./run.bsh
 cd carla-0.9.15
 sudo ./dependencies.bsh
 ./install.bsh
-python3 -m pip install -r requirements.txt 
-
+sudo python3 -m pip install -r requirements.txt 
 ```
 
 - [ ] Lancer carla

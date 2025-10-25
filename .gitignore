@@ -1,3 +1,6 @@
+#LOGS
+*.log
+
 #NS3
 ns-3.36.1/ns-allinone-3.36.1
 ns-3.36.1/ns-allinone-3.36.1.tar.bz2
