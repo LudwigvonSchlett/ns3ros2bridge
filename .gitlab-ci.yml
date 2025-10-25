@@ -3,7 +3,7 @@ image: ubuntu:22.04 # Default container image
 # Reusable properties
 variables:
   NS3: "ns-3.36.1"
-  STHREAD: "true" 
+  DEBIAN_FRONTEND: "noninteractive"
 
 # Cache to speed up builds
 cache:
