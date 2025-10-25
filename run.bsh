@@ -2,7 +2,7 @@
 
 CARLA_DIR="$PWD/carla-0.9.15"
 ROS2_DIR="$PWD/ros2-humble"
-NS3_DIR="$PWD/ns-3.36.1"
+NS3_DIR="$PWD/ns-3.35"
 #LOG_DIR="$PWD"
 
 echo "Launching carla"

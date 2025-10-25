@@ -2,13 +2,13 @@
 
 
 
-## NS-3.36.1
+## NS-3.35
 
 - [ ] Contient les scripts et sources nécessaires pour la partie ns-3 du projet 
 - [ ] Configurer et vérifier le fonctionnement de ns-3 
 
 ```
-cd ns-3.36.1
+cd ns-3.35
 sudo ./dependencies.bsh
 ./install.bsh
 ./test.bsh 
@@ -17,14 +17,14 @@ sudo ./dependencies.bsh
 - [ ] Compiler de nouveaux changements
 
 ```
-cd ns-3.36.1
+cd ns-3.35
 ./compile.bsh
 ```
 
 - [ ] Lancer le projet
 
 ```
-cd ns-3.36.1
+cd ns-3.35
 ./run.bsh
 ```
 

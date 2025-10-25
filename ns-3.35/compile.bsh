@@ -1,0 +1,12 @@
+#!/bin/bash
+
+export LD_LIBRARY_PATH=$PWD/ns-allinone-3.35/ns-3.35/build/lib
+
+cp -r src/rosvehcomm/* ns-allinone-3.35/ns-3.35/contrib/rosvehcomm/
+cp src/ros-ns3-main.cc ns-allinone-3.35/ns-3.35/scratch
+
+cd ns-allinone-3.35/ns-3.35
+
+./waf configure --enable-examples --enable-tests --disable-python
+./waf build
+

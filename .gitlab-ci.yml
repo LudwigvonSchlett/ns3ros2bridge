@@ -2,15 +2,15 @@ image: ubuntu:22.04 # Default container image
 
 # Reusable properties
 variables:
-  NS3: "ns-3.36.1"
+  NS3: "ns-3.35"
   DEBIAN_FRONTEND: "noninteractive"
 
 # Cache to speed up builds
 cache:
   key: ${CI_COMMIT_BRANCH}
   paths:
-    - "$NS3/ns-allinone-3.36.1"
-    - "$NS3/ns-allinone-3.36.1.tar.bz2"
+    - "$NS3/ns-allinone-3.35"
+    - "$NS3/ns-allinone-3.35.tar.bz2"
 
 # Define stages
 stages:

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd ns-3.36.1
+cd ns-3.35
 
 echo "ns-3"
 ./install.bsh
