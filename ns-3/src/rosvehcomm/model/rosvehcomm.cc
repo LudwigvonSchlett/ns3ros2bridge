@@ -269,7 +269,7 @@ namespace ns3
   {
     NS_LOG_FUNCTION(this);
     NS_LOG_INFO("STOP APPLICATION NUMÉROS 8");
-    if (controlSocket != 0)//si le socket vers Rtmaps n'est pas vide alors on le ferme et on arrete le callback
+    if (controlSocket)//si le socket vers Rtmaps n'est pas vide alors on le ferme et on arrete le callback
       {
         controlSocket->Close ();
         controlSocket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
