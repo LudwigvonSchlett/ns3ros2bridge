@@ -1,16 +1,21 @@
 #!/bin/bash
 
-cd ns-3/ns-3.35
+CARLA_DIR="$PWD/carla-0.9.15"
+ROS2_DIR="$PWD/ros2-humble"
+NS3_DIR="$PWD/ns-3/ns-3.38"
+#NS3_DIR="$PWD/ns-3/ns-3.35"
+
+cd $NS3_DIR
 
 echo "ns-3"
 ./dependencies.bsh
 
-cd ../ros2-humble
+cd $ROS2_DIR
 
 echo "ros2"
 ./dependencies.bsh
 
-cd ../carla-0.9.15
+cd $CARLA_DIR
 
 echo "carla"
 ./dependencies.bsh
