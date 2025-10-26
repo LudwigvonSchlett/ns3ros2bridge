@@ -11,5 +11,5 @@
 **/ros2_ws/log
 
 #CARLA
-carla-0.9.15/carla
+carla-*/carla
 
