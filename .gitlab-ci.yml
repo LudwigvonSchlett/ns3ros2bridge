@@ -2,27 +2,27 @@ image: ubuntu:22.04 # Default container image
 
 # Reusable properties
 variables:
-  NS3: "ns-3/ns-3.35"
+  NS3: "ns-3/ns-3.38"
   DEBIAN_FRONTEND: "noninteractive"
 
 # Cache to speed up builds
 cache:
   key: ${CI_COMMIT_BRANCH}
   paths:
-    - "$NS3/ns-allinone-3.35"
-    - "$NS3/ns-allinone-3.35.tar.bz2"
+    - "$NS3/ns-allinone-3.38"
+    - "$NS3/ns-allinone-3.38.tar.bz2"
 
 # Define stages
-stages:
-  - install
+#stages:
+#  - install
 
-# Stage 2: Build
-Install:
-  stage: install
-  rules:
-    - when: always
-  script:
-    - cd $NS3
-    - ./dependencies.bsh
-    - ./install_cicd.bsh
+# Stage 1: Build
+#Install:
+#  stage: install
+#  rules:
+#    - when: always
+#  script:
+#    - cd $NS3
+#    - ./dependencies.bsh
+#    - ./install_cicd.bsh
 

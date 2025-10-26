@@ -2,7 +2,7 @@
 
 export LD_LIBRARY_PATH=$PWD/ns-allinone-3.33/ns-3.33/build/lib
 
-cd ns-allinone-3.36.1/ns-3.36.1
+cd ns-allinone-3.38/ns-3.38
 
 ./ns3 configure --enable-examples --enable-tests --disable-python
 ./ns3 build
