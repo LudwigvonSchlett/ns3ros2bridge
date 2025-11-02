@@ -57,8 +57,8 @@ def check_message(rawdata, hidden):
     # check udp
     if rawdata[23] == 17 and rawdata[30] == 10:
 
-        source_ip = ".".join(str(byte) for byte in rawdata[26:30])
-        dest_ip = ".".join(str(byte) for byte in rawdata[30:34])
+        source_ip = f"{rawdata[26]}.{rawdata[27]}.{rawdata[28]}.{rawdata[29]}"
+        dest_ip = f"{rawdata[30]}.{rawdata[31]}.{rawdata[32]}.{rawdata[33]}"
         src_port = rawdata[34]*256 + rawdata[35]
         dest_port = rawdata[36]*256 + rawdata[37]
         checksum = hex(rawdata[40]*256 + rawdata[41]).upper()
@@ -66,12 +66,12 @@ def check_message(rawdata, hidden):
 
         if not hidden:
             print("UDP Message:")
-            print("  Source: " + source_ip)
-            print("  Destination: " + dest_ip)
-            print("  Source port: " + str(src_port))
-            print("  Destination port: " + str(dest_port))
+            print(f"  Source: {source_ip}")
+            print(f"  Destination: {dest_ip}")
+            print(f"  Source port: {src_port}")
+            print(f"  Destination port:  {dest_port}")
             print("  Length: " + str(rawdata[38]*256 + rawdata[39] - 8))
-            print("  Checksum: " + str(checksum))
+            print(f"  Checksum: {checksum}")
 
             checksum = calculate_udp_checksum(
                 source_ip, dest_ip, src_port, dest_port, udp_payload)
@@ -152,9 +152,9 @@ def tap_sender(message, s, num_node):
     try:
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         if (num_node == 0):
-            udp_ip = '10.0.0.2'
+            udp_ip = "10.0.0.2"
         else:
-            udp_ip = '10.0.' + str(num_node) + '.1'
+            udp_ip = f"10.0.{num_node}.1"
         udp_port = 12000+num_node
         packet = message.encode()
         udp_socket.sendto(packet, (udp_ip, udp_port))
@@ -201,62 +201,55 @@ def control_node_listener(s):
     """
     Permet d'ecouter ce que recoit tap0, noeud de control
     """
-    try:
+    while rclpy.ok():
+        try:
 
-        MTU = 15000  # Maximum Transmission Unit pour Ethernet frame
-        packet = s.recv(MTU)
-        inflog("tap0 received a packet")
+            MTU = 15000  # Maximum Transmission Unit pour Ethernet frame
+            packet = s.recv(MTU)
+            inflog("tap0 received a packet")
 
-        # Récupérer l'adresse IP de destination du paquet
-        dest_ip = packet[30:34]
+            # Récupérer l'adresse IP de destination du paquet
+            dest_ip = packet[30:34]
 
-        # Convertir l'adresse IP de destination en une chaine lisible
-        dest_ip_str = ".".join(str(byte) for byte in dest_ip)
+            # Convertir l'adresse IP de destination en une chaine lisible
+            dest_ip_str = ".".join(str(byte) for byte in dest_ip)
 
-        # Vérifiez si le paquet est destiné
-        # à votre propre adresse TAP pour l'ignorer
-        if dest_ip_str == '10.0.0.2':
-            inflog(f"Message destiné à {dest_ip_str} (envoi propre) ignoré.")
-            control_node_listener(s)
+            # Vérifiez si le paquet est destiné
+            # à votre propre adresse TAP pour l'ignorer
+            if dest_ip_str == '10.0.0.2':
+                inflog(
+                    f"Message destiné à {dest_ip_str} (envoi propre) ignoré.")
 
-        elif check_message(packet, False):
-            message = (packet[42:].decode()).rstrip("\n")
-            inflog(f"Received packet (decoded): {message}")
+            elif check_message(packet, False):
+                message = (packet[42:].decode()).rstrip("\n")
+                inflog(f"Received packet (decoded): {message}")
 
-            if (message == "hello from NS3"):
+                if (message == "hello from NS3"):
 
-                inflog("Initializing carla")
-                init_carla()
-                positions = get_all_position()
-                tap_sender("create_node" + positions, s, 0)
-                control_node_listener(s)
+                    inflog("Initializing carla")
+                    init_carla()
+                    positions = get_all_position()
+                    tap_sender(f"create_node{positions}", s, 0)
 
-            elif (message == "create_success"):
+                elif (message == "create_success"):
 
-                sockets = []
-                for num_node in range(1, number_node+1):
-                    s = connect_tap_device("tap"+str(num_node))
-                    sockets.append(s)
-                launch_simulation(sockets, s)
+                    sockets = []
+                    for num_node in range(1, number_node+1):
+                        s = connect_tap_device(f"tap{num_node}")
+                        sockets.append(s)
+                    launch_simulation(sockets, s)
 
-            else:
-                errlog(f"Erreur message recue : {message}")
-                control_node_listener(s)
-        else:
-            control_node_listener(s)
+                else:
+                    errlog(f"Erreur message recue : {message}")
 
-    except UnicodeDecodeError as e:
-        errlog(f"Erreur de décodage Unicode : {e}")
-        inflog("Le paquet reçu ne peut pas être décodé en UTF-8.")
-        # time.sleep(1)
-        # control_node_listener(s) semble etre une erreur
-        stop_simulation()
+        except UnicodeDecodeError as e:
+            errlog(f"Erreur de décodage Unicode : {e}")
+            inflog("Le paquet reçu ne peut pas être décodé en UTF-8.")
+            stop_simulation()
 
-    except Exception as e:
-        errlog(f"Erreur inattendue lors du traitement du paquet : {e}")
-        # time.sleep(1)
-        # control_node_listener(s) semble etre une erreur
-        stop_simulation()
+        except Exception as e:
+            errlog(f"Erreur inattendue lors du traitement du paquet : {e}")
+            stop_simulation()
 
 # Partie CARLA
 
@@ -371,7 +364,7 @@ def stop_simulation():
     inflog(f"Nombre de paquet recu: {number_message_received}")
     inflog(f"Taux de livraison des paquets: PDR = {PDR}%")
     inflog("Taux de livraison des paquets en prenant en compte"
-           + "un broadcast: PDR =" f"{PDR_division}%")
+           + f"un broadcast: PDR = {PDR_division}%")
     inflog("Interruption reseau avec NS3")
     rclpy.shutdown()
 
@@ -412,7 +405,7 @@ def get_all_mobility():
     output = ""
     index_vehicle = 1
     for vehicle in vehicles:
-        output += (f" {index_vehicle} {get_position(vehicle)}"
+        output += (f" {index_vehicle} {get_position(vehicle)} "
                    + f"{get_speed(vehicle)}")
         index_vehicle += 1
     return output
@@ -427,7 +420,7 @@ def periodic_position_sender(interval, s):
     while rclpy.ok():
         try:
             mobilities = get_all_mobility()
-            tap_sender("set_mobility " + mobilities, s, 0)
+            tap_sender(f"set_mobility{mobilities}", s, 0)
             time.sleep(interval)
         except Exception as e:
             errlog(
