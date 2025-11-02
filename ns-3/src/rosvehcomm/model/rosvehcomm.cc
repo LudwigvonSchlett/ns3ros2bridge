@@ -477,13 +477,18 @@ std::vector<std::string> ROSVehSync::SplitCharPointerController(const char* inpu
 
   while ((packet = socket->RecvFrom(from)))
   {
-    uint8_t *buffer = new uint8_t[packet->GetSize ()];
-    packet->CopyData(buffer, packet->GetSize ());
+    // Allocate buffer
+    uint32_t size = packet->GetSize();
+    std::vector<uint8_t> buffer(size);
+    packet->CopyData(buffer.data(), size);
 
-    char* contenu = (char *) buffer;
+    // Convert packet data safely to a string
+    std::string contenu(reinterpret_cast<char*>(buffer.data()), size);
+
     NS_LOG_INFO("CONTROLLER SOCKET has received " << contenu);
 
-    std::vector<std::string> instructions = SplitCharPointerController(contenu);
+    // Pass null-terminated string to your splitting function
+    std::vector<std::string> instructions = SplitCharPointerController(contenu.c_str());
 
     if (!instructions.empty())
     {
@@ -1076,10 +1081,18 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
     Ptr<Packet> packet;
 
     while(packet = socket->Recv()) {
-      uint8_t *buffer = new uint8_t[packet->GetSize ()];
-      packet->CopyData(buffer, packet->GetSize ());
-      char* contenu = (char *) buffer;
 
+      // Allocate buffer
+      uint32_t size = packet->GetSize();
+      std::vector<uint8_t> buffer(size);
+      packet->CopyData(buffer.data(), size);
+
+      // Safely construct string from exact packet length
+      std::string contenu(buffer.begin(), buffer.end());
+
+      // Remove any stray nulls
+      contenu.erase(std::remove(contenu.begin(), contenu.end(), '\0'), contenu.end());
+      
       NS_LOG_INFO("Paquet recu sur l'interface Wave du noeud " << socket->GetNode()->GetId());
       NS_LOG_INFO(" Contenu du paquet : " << contenu);
 
@@ -1219,13 +1232,19 @@ void ROSVehicule::HandleReadTapi (Ptr<Socket> socket)
 
   while ((packet = socket->RecvFrom(from)))
   {
-    uint8_t *buffer = new uint8_t[packet->GetSize ()];
-    packet->CopyData(buffer, packet->GetSize ());
+    // Allocate buffer
+    uint32_t size = packet->GetSize();
+    std::vector<uint8_t> buffer(size);  // safer than new[]
+    packet->CopyData(buffer.data(), size);
 
-    char* contenu = (char *) buffer;
-    NS_LOG_INFO("VEHICLE TAP "<< vehicle_number <<" has received " << contenu);
+    // Convert to string
+    std::string contenu(reinterpret_cast<char*>(buffer.data()), size);
 
-    std::vector<std::string> instructions = SplitCharPointer(contenu);
+    // Log received message
+    NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " has received " << contenu);
+
+    // Split into instructions
+    std::vector<std::string> instructions = SplitCharPointer(contenu.c_str());
 
     if (!instructions.empty())
     {
@@ -1241,8 +1260,8 @@ void ROSVehicule::HandleReadTapi (Ptr<Socket> socket)
             continue; // Skip our own
         }
         std::ostringstream ipWave;
-		ipWave << "11.0.0." << i;
-    	Ipv4Address singleAddress = Ipv4Address(ipWave.str().c_str());
+		    ipWave << "11.0.0." << i;
+    	  Ipv4Address singleAddress = Ipv4Address(ipWave.str().c_str());
         InetSocketAddress remoteAddr(singleAddress, portWavei);
       	waveSocketi->SendTo(packet, 0, remoteAddr);
       }
@@ -1328,13 +1347,18 @@ void ROSVehicule::HandleReadWavei (Ptr<Socket> socket)
 
   while ((packet = socket->RecvFrom(from)))
   {
-    uint8_t *buffer = new uint8_t[packet->GetSize ()];
-    packet->CopyData(buffer, packet->GetSize ());
+    // Allocate buffer
+    uint32_t size = packet->GetSize();
+    std::vector<uint8_t> buffer(size);
+    packet->CopyData(buffer.data(), size);
 
-    char* contenu = (char *) buffer;
+    // Create a std::string from the buffer (no garbage, no null-terminator issue)
+    std::string contenu(reinterpret_cast<char*>(buffer.data()), size);
+
     NS_LOG_INFO("VEHICLE WAVE " << vehicle_number << " has received " << contenu);
 
-    std::vector<std::string> instructions = SplitCharPointer(contenu);
+    // Split using your existing function
+    std::vector<std::string> instructions = SplitCharPointer(contenu.c_str());
 
     if (!instructions.empty())
     {

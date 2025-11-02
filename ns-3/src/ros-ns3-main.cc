@@ -69,9 +69,10 @@ void ReceivePacket (Ptr<Socket> socket)
 
   double time_recu = Simulator::Now().GetSeconds();
 
-  while (socket->Recv ())
+  Ptr<Packet> paquet_rcv;
+  while ((paquet_rcv = socket->Recv()))
     {
-      Ptr<Packet> paquet_rcv = socket->Recv();
+      //Ptr<Packet> paquet_rcv = socket->Recv();
       Ptr<Node> Node_rcv = socket->GetNode();
       Ptr<Ipv4> ipv4_test_socket = Node_rcv->GetObject<Ipv4> ();
       Ipv4InterfaceAddress iaddr_socket = ipv4_test_socket->GetAddress(2,0);
