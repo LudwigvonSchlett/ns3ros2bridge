@@ -25,12 +25,11 @@ def main():
     global node
     rclpy.init(args=sys.argv)
     try:
-        # node_name = f'carla_ros2_ns3_{random.randint(0, 9999)}'
         node_name = "carla_ros2_ns3"
         node = rclpy.create_node(node_name)
-        s = connect_tap_device("tap0")
-        tap_sender("hello from ROS", s, 0)
-        control_node_listener(s)
+        socket_tap0 = connect_tap_device("tap0")
+        tap_sender("hello from ROS", 0)
+        control_node_listener(socket_tap0)
 
     except KeyboardInterrupt:
         pass
@@ -42,12 +41,10 @@ def main():
 
 
 def inflog(msg):
-    global node
     node.get_logger().info(msg)
 
 
 def errlog(msg):
-    global node
     node.get_logger().error(msg)
 
 # Partie Réseau
@@ -139,12 +136,10 @@ def connect_tap_device(tap_device):
             time.sleep(5)  # Attendre 5 secondes avant de réessayer
 
 
-def tap_sender(message, s, num_node):
+def tap_sender(message, num_node):
     """
-    Permet d'envoyer un message grace a une socket s et un numéro de node
+    Permet d'envoyer un message grace a un numéro de noeud
     """
-    global node
-
     # Créer un éditeur pour publier les paquets sur un topic spécifique
     topic_name = f'/tap{num_node}_packets'
     pub = node.create_publisher(String, topic_name, 10)
@@ -197,7 +192,7 @@ def listen_tap_devices(tap_sockets):
             stop_simulation()
 
 
-def control_node_listener(s):
+def control_node_listener(socket_tap0):
     """
     Permet d'ecouter ce que recoit tap0, noeud de control
     """
@@ -205,7 +200,7 @@ def control_node_listener(s):
         try:
 
             MTU = 15000  # Maximum Transmission Unit pour Ethernet frame
-            packet = s.recv(MTU)
+            packet = socket_tap0.recv(MTU)
             inflog("tap0 received a packet")
 
             # Récupérer l'adresse IP de destination du paquet
@@ -229,15 +224,15 @@ def control_node_listener(s):
                     inflog("Initializing carla")
                     init_carla()
                     positions = get_all_position()
-                    tap_sender(f"create_node{positions}", s, 0)
+                    tap_sender(f"create_node {positions}", 0)
 
                 elif (message == "create_success"):
 
                     sockets = []
                     for num_node in range(1, number_node+1):
-                        s = connect_tap_device(f"tap{num_node}")
-                        sockets.append(s)
-                    launch_simulation(sockets, s)
+                        socket = connect_tap_device(f"tap{num_node}")
+                        sockets.append(socket)
+                    launch_simulation(sockets)
 
                 else:
                     errlog(f"Erreur message recue : {message}")
@@ -266,6 +261,8 @@ def init_carla():
     # Pour changer la carte
     world = client.get_world()
     settings = world.get_settings()
+    # settings.no_rendering_mode = True
+    # Pour desactiver l'utilisation du gpu
     settings.synchronous_mode = False
     world.apply_settings(settings)
 
@@ -283,16 +280,15 @@ def init_carla():
         inflog(f"{len(waypoints)} waypoints générés.")
 
     # Créer les véhicules
-    for num_node in range(number_node):
+    for _ in range(number_node):
         vehicle = None
-        while (vehicle is None):
-            vehicle = spawn_vehicle(world, num_node)
+        while vehicle is None:
+            vehicle = spawn_vehicle(world)
         vehicles.append(vehicle)
-
     return world
 
 
-def spawn_vehicle(world, num_node):
+def spawn_vehicle(world):
     """
     Crée et initialise un véhicule dans le simulateur Carla.
     """
@@ -313,7 +309,7 @@ def spawn_vehicle(world, num_node):
     return vehicle
 
 
-def launch_simulation(sockets, s):
+def launch_simulation(sockets):
     """
     Met les voitures en mouvement et lance la collecte de données sur Carla
     (position,vitesse) pour les envoyer par la suite
@@ -330,12 +326,12 @@ def launch_simulation(sockets, s):
     # Lancer l'écoute périodique des positions dans un thread
     inflog("Launching  periodic_position_sender")
     position_listener_thread = threading.Thread(
-        target=periodic_position_sender, args=(1, s,))
+        target=periodic_position_sender, args=(1,))
     position_listener_thread.start()
 
     inflog("Launching comunication_node")
     comunication_nodes_thread = threading.Thread(
-        target=comunication_node, args=(1, sockets,))
+        target=comunication_node, args=(1,))
     comunication_nodes_thread.start()
 
     listen_tap_devices(sockets)
@@ -370,7 +366,6 @@ def stop_simulation():
 
 
 def get_position(vehicle):
-
     transform = vehicle.get_transform()
     location = transform.location
     location_string = f"{location.x} {location.y} {location.z}"
@@ -384,14 +379,18 @@ def get_speed(vehicle):
 
 
 def get_all_position():
-    output = ""
+    output = " "
     index_vehicle = 1
     for vehicle in vehicles:
         output += f" {index_vehicle} {get_position(vehicle)}"
-        index_vehicle += 1
+        if index_vehicle < number_node:
+            output += " "
+            index_vehicle += 1
+
     return output
 
 
+"""
 def get_all_speed():
     output = ""
     index_vehicle = 1
@@ -399,28 +398,32 @@ def get_all_speed():
         output += f" {index_vehicle} {get_speed(vehicle)}"
         index_vehicle += 1
     return output
+"""
 
 
 def get_all_mobility():
-    output = ""
+    output = " "
     index_vehicle = 1
     for vehicle in vehicles:
-        output += (f" {index_vehicle} {get_position(vehicle)} "
+        output += (f"{index_vehicle} {get_position(vehicle)} "
                    + f"{get_speed(vehicle)}")
-        index_vehicle += 1
+        if index_vehicle < number_node:
+            output += " "
+            index_vehicle += 1
+
     return output
 
 #  Threads
 
 
-def periodic_position_sender(interval, s):
+def periodic_position_sender(interval):
     """
     Envoie sur tap0 les positions et vitesses de tout les véhicule.
     """
     while rclpy.ok():
         try:
             mobilities = get_all_mobility()
-            tap_sender(f"set_mobility{mobilities}", s, 0)
+            tap_sender(f"set_mobility {mobilities}", 0)
             time.sleep(interval)
         except Exception as e:
             errlog(
@@ -429,7 +432,7 @@ def periodic_position_sender(interval, s):
             stop_simulation()
 
 
-def comunication_node(interval, sockets):
+def comunication_node(interval):
     """
     Envoie sur un tap (ici pris aléatoirement pour les tests) la position
     d'un véhicule pour que cette information soit transmise par Wave dans NS3
@@ -437,10 +440,9 @@ def comunication_node(interval, sockets):
     global number_message_sent
     while rclpy.ok():
         try:
-            num_node = random.randint(1, len(sockets))
-            socket = sockets[num_node-1]
+            num_node = random.randint(1, number_node)
             position = get_position(vehicles[num_node-1])
-            tap_sender(f"{num_node} position {position}", socket, num_node)
+            tap_sender(f"{num_node} position {position}", num_node)
             number_message_sent += 1
             time.sleep(interval)
         except Exception as e:
