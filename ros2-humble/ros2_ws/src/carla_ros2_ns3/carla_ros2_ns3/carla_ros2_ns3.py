@@ -28,7 +28,7 @@ def main():
         node_name = "carla_ros2_ns3"
         node = rclpy.create_node(node_name)
         socket_tap0 = connect_tap_device("tap0")
-        tap_sender("hello from ROS", 0)
+        tap_sender_control("hello from ROS")
         control_node_listener(socket_tap0)
 
     except KeyboardInterrupt:
@@ -146,11 +146,32 @@ def tap_sender(message, num_node):
 
     try:
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        if (num_node == 0):
-            udp_ip = "10.0.0.2"
-        else:
-            udp_ip = f"10.0.{num_node}.1"
+        udp_ip = f"10.0.{num_node}.1"
         udp_port = 12000+num_node
+        packet = message.encode()
+        udp_socket.sendto(packet, (udp_ip, udp_port))
+        inflog(f"Message envoyé à {udp_ip}:{udp_port} : {message}")
+        # Publier le paquet sous forme hexadécimale
+        msg = String()
+        msg.data = packet.hex()
+        pub.publish(msg)
+
+    except Exception as e:
+        errlog(f"Erreur lors de l'envoi du message : {e}")
+
+
+def tap_sender_control(message):
+    """
+    Permet d'envoyer un message grace a un numéro de noeud
+    """
+    # Créer un éditeur pour publier les paquets sur un topic spécifique
+    topic_name = "/tap0_packets"
+    pub = node.create_publisher(String, topic_name, 10)
+
+    try:
+        udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        udp_ip = "10.0.0.2"
+        udp_port = 12000
         packet = message.encode()
         udp_socket.sendto(packet, (udp_ip, udp_port))
         inflog(f"Message envoyé à {udp_ip}:{udp_port} : {message}")
@@ -224,7 +245,7 @@ def control_node_listener(socket_tap0):
                     inflog("Initializing carla")
                     init_carla()
                     positions = get_all_position()
-                    tap_sender(f"create_node {positions}", 0)
+                    tap_sender_control(f"create_node {positions}")
 
                 elif (message == "create_success"):
 
@@ -423,7 +444,7 @@ def periodic_position_sender(interval):
     while rclpy.ok():
         try:
             mobilities = get_all_mobility()
-            tap_sender(f"set_mobility {mobilities}", 0)
+            tap_sender_control(f"set_mobility {mobilities}")
             time.sleep(interval)
         except Exception as e:
             errlog(
