@@ -11,6 +11,7 @@ import sys
 # import subprocess
 import select
 import threading
+import datetime
 
 
 number_node = 5  # nombre de nodes et donc de voitures dans la simulation
@@ -28,7 +29,7 @@ def main():
         node_name = "carla_ros2_ns3"
         node = rclpy.create_node(node_name)
         socket_tap0 = connect_tap_device("tap0")
-        tap_sender_control("hello from ROS")
+        tap_sender_control("hello_ROS2")
         control_node_listener(socket_tap0)
 
     except KeyboardInterrupt:
@@ -148,8 +149,10 @@ def tap_sender(message, num_node):
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udp_ip = f"10.0.{num_node}.1"
         udp_port = 12000+num_node
-        packet = message.encode()
+        null_term_msg = message + "\0"
+        packet = null_term_msg.encode("utf-8")
         udp_socket.sendto(packet, (udp_ip, udp_port))
+        udp_socket.close()
         inflog(f"Message envoyé à {udp_ip}:{udp_port} : {message}")
         # Publier le paquet sous forme hexadécimale
         msg = String()
@@ -172,8 +175,10 @@ def tap_sender_control(message):
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udp_ip = "10.0.0.2"
         udp_port = 12000
-        packet = message.encode()
+        null_term_msg = message + "\0"
+        packet = null_term_msg.encode("utf-8")
         udp_socket.sendto(packet, (udp_ip, udp_port))
+        udp_socket.close()
         inflog(f"Message envoyé à {udp_ip}:{udp_port} : {message}")
         # Publier le paquet sous forme hexadécimale
         msg = String()
@@ -240,7 +245,14 @@ def control_node_listener(socket_tap0):
                 message = (packet[42:].decode()).rstrip("\n")
                 inflog(f"Received packet (decoded): {message}")
 
-                if (message == "hello from NS3"):
+                if (message == "hello_NS3"):
+
+                    now = datetime.datetime.now()
+                    time_str = now.strftime("%Y%m%d_%H%M")
+                    inflog("Setting time")
+                    tap_sender_control(f"time {time_str}")
+
+                elif (message == "time_success"):
 
                     inflog("Initializing carla")
                     init_carla()

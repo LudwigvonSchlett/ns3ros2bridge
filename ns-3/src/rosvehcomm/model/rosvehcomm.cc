@@ -147,13 +147,13 @@ namespace ns3
 
     Ptr<Node> node = GetNode();
 
-	if (node->GetObject<MobilityModel>() == nullptr) {
+	  if (node->GetObject<MobilityModel>() == nullptr) {
     	Ptr<ConstantVelocityMobilityModel> mobility = CreateObject<ConstantVelocityMobilityModel>();
     	node->AggregateObject(mobility);
-	}
+	  }
 
     Ptr<ConstantPositionMobilityModel> mobility = node->GetObject<ConstantPositionMobilityModel>();
-	mobility->SetPosition(Vector(0.0, 0.0, 0.0));
+	  mobility->SetPosition(Vector(0.0, 0.0, 0.0));
     controlSocket = 0;
 
     // Initialize socket
@@ -165,27 +165,29 @@ namespace ns3
     controlSocket->Listen ();
 
     if (addressUtils::IsMulticast (tap_ip))
-      {
-        Ptr<UdpSocket> udpSocket = DynamicCast<UdpSocket> (controlSocket);
-        if (udpSocket)
-          {
-            // equivalent to setsockopt (MCAST_JOIN_GROUP)
-            udpSocket->MulticastJoinGroup (0, tap_ip);
-          }
+    {
+      Ptr<UdpSocket> udpSocket = DynamicCast<UdpSocket> (controlSocket);
+      if (udpSocket)
+        {
+          // equivalent to setsockopt (MCAST_JOIN_GROUP)
+          udpSocket->MulticastJoinGroup (0, tap_ip);
+        }
         else
-          {
-            NS_FATAL_ERROR ("Error: joining multicast on a non-UDP socket");
-          }
-      }
+        {
+          NS_FATAL_ERROR ("Error: joining multicast on a non-UDP socket");
+        }
+    }
 
 
     controlSocket->SetRecvCallback (MakeCallback (&ROSVehSync::HandleRead, this));
     controlSocket->SetAcceptCallback (
       MakeNullCallback<bool, Ptr<Socket>, const Address &> (),
-      MakeCallback (&ROSVehSync::HandleAccept, this));
+      MakeCallback (&ROSVehSync::HandleAccept, this)
+    );
     controlSocket->SetCloseCallbacks (
       MakeCallback (&ROSVehSync::HandlePeerClose, this),
-      MakeCallback (&ROSVehSync::HandlePeerError, this));
+      MakeCallback (&ROSVehSync::HandlePeerError, this)
+    );
   }
 
   void ROSVehSync::HandleRead1 (Ptr<Socket> socket)
@@ -467,7 +469,7 @@ std::vector<std::string> ROSVehSync::SplitCharPointerController(const char* inpu
     return result;
 }
 
- void ROSVehSync::HandleRead (Ptr<Socket> socket)
+void ROSVehSync::HandleRead (Ptr<Socket> socket)
 {
   //NS_LOG_INFO("CONTROLLER SOCKET HAS RECEIVED A MESSAGE");
   NS_LOG_FUNCTION (this << socket);//affichage info de cette fonction
@@ -488,99 +490,105 @@ std::vector<std::string> ROSVehSync::SplitCharPointerController(const char* inpu
     if (!instructions.empty())
     {
       const std::string& command = instructions[0];
-      if(command == "hello")
+      if(command == "hello_ROS2")
       {
-		//NS_LOG_INFO("Received command hello => responding hello");
-    	std::string message = "hello from NS3";
-		Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-    	socket->Send (packet);
+		    //NS_LOG_INFO("Received command hello => responding hello");
+    	  std::string message = "hello_NS3";
+		    Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+    	  socket->Send (packet);
+      }
+      else if (command == "time")
+      {
+        std::string message = "time_success";
+		    Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+        //std::cout << instructions[1] << std::endl;
+    	  socket->Send (packet);
       }
       else if (command == "create_node")
       {
-		//NS_LOG_INFO("Create node command");
+        //NS_LOG_INFO("Create node command");
         unsigned long n = 1;
         int nodeNumber = 1;
         double x = 0.0, y = 0.0, z = 0.0, xs = 0.0, ys = 0.0, zs = 0.0;
         while(n <= instructions.size()-4)
         {
-            nodeNumber = std::stoi(instructions[n]);
-            ++n;
-            std::istringstream(instructions[n]) >> x; // 2) x
-            ++n;
-    		std::istringstream(instructions[n]) >> y; // 3) y
-            ++n;
-    		std::istringstream(instructions[n]) >> z; // 4) z
+          nodeNumber = std::stoi(instructions[n]);
+          ++n;
+          std::istringstream(instructions[n]) >> x; // 2) x
+          ++n;
+          std::istringstream(instructions[n]) >> y; // 3) y
+          ++n;
+          std::istringstream(instructions[n]) >> z; // 4) z
 
-        	CreateVehicle(nodeNumber, x, y, z, xs, ys, zs);
-
-            ++n;
+          CreateVehicle(nodeNumber, x, y, z, xs, ys, zs);
+          ++n;
         }
-		//NS_LOG_UNCOND("On récupère le total");
+        //NS_LOG_UNCOND("On récupère le total");
         int total = (NodeContainer::GetGlobal().GetN())-1;
         NS_LOG_UNCOND("Global total of vehicules is " << total);
 
-    	std::string message = "create_success";
-		Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-    	socket->Send (packet);
+    	  std::string message = "create_success";
+		    Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+    	  socket->Send (packet);
       }
       else if (command == "assert_total")
       {
-		//NS_LOG_INFO("Assert total command");
+      //NS_LOG_INFO("Assert total command");
 
-    	int total = NodeContainer::GetGlobal().GetN()-1;
-        NS_LOG_INFO("Total is " << total);
+        int total = NodeContainer::GetGlobal().GetN()-1;
+          NS_LOG_INFO("Total is " << total);
 
-    	std::ostringstream msgStream;
-    	msgStream << "total " << total;
-    	std::string message = msgStream.str ();
-    	Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-    	socket->Send (packet);
+        std::ostringstream msgStream;
+        msgStream << "total " << total;
+        std::string message = msgStream.str ();
+        Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+        socket->Send (packet);
       }
 
       else if (command == "set_position")
       {
         //NS_LOG_INFO("Set position command");
-		unsigned long n = 1;
+		    unsigned long n = 1;
         NodeContainer Globalnode;
-    	Globalnode = NodeContainer::GetGlobal();
+    	  Globalnode = NodeContainer::GetGlobal();
         double x = 0.0, y = 0.0, z = 0.0;
         while(n <= instructions.size()-4)
         {
-          	Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
-            ++n;
-            std::istringstream(instructions[n]) >> x; // 2) x
-            ++n;
-    		std::istringstream(instructions[n]) >> y; // 3) y
-            ++n;
-    		std::istringstream(instructions[n]) >> z; // 4) z
+          Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
+          ++n;
+          std::istringstream(instructions[n]) >> x; // 2) x
+          ++n;
+      		std::istringstream(instructions[n]) >> y; // 3) y
+          ++n;
+    	  	std::istringstream(instructions[n]) >> z; // 4) z
 
         	const Vector NODE_I_POSITION(x, y, z);
         	mobilityi->SetPosition(NODE_I_POSITION);
 
-            ++n;
+          ++n;
         }
       }
       else if (command == "set_speed")
       {
         //NS_LOG_INFO("Set speed command");
-		unsigned long n = 1;
+		    unsigned long n = 1;
         NodeContainer Globalnode;
-    	Globalnode = NodeContainer::GetGlobal();
+    	  Globalnode = NodeContainer::GetGlobal();
         double xs = 0.0, ys = 0.0, zs = 0.0;
         while(n <= instructions.size()-4)
         {
-          	Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
-            ++n;
-            std::istringstream(instructions[n]) >> xs; // 2) xs
-            ++n;
-    		std::istringstream(instructions[n]) >> ys; // 3) ys
-            ++n;
-    		std::istringstream(instructions[n]) >> zs; // 4) zs
+        	Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
+          ++n;
+          std::istringstream(instructions[n]) >> xs; // 2) xs
+          ++n;
+      		std::istringstream(instructions[n]) >> ys; // 3) ys
+          ++n;
+      		std::istringstream(instructions[n]) >> zs; // 4) zs
 
         	const Vector NODE_I_SPEED(xs, ys, zs);
         	mobilityi->SetPosition(NODE_I_SPEED);
 
-            ++n;
+          ++n;
         }
       }
       else if (command == "set_mobility")
@@ -588,30 +596,30 @@ std::vector<std::string> ROSVehSync::SplitCharPointerController(const char* inpu
         //NS_LOG_INFO("Set mobility command");
         unsigned long n = 1;
         NodeContainer Globalnode;
-    	Globalnode = NodeContainer::GetGlobal();
+    	  Globalnode = NodeContainer::GetGlobal();
         double x = 0.0, y = 0.0, z = 0.0, xs = 0.0, ys = 0.0, zs = 0.0;
         while(n <= instructions.size()-7)
         {
-          	Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
-            ++n;
-            std::istringstream(instructions[n]) >> x; // 2) xs
-            ++n;
-    		std::istringstream(instructions[n]) >> y; // 3) ys
-            ++n;
-    		std::istringstream(instructions[n]) >> z; // 4) zs
-            ++n;
-            std::istringstream(instructions[n]) >> xs; // 5) xs
-            ++n;
-    		std::istringstream(instructions[n]) >> ys; // 6) ys
-            ++n;
-    		std::istringstream(instructions[n]) >> zs; // 7) zs
+        	Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
+          ++n;
+          std::istringstream(instructions[n]) >> x; // 2) xs
+          ++n;
+      		std::istringstream(instructions[n]) >> y; // 3) ys
+          ++n;
+      		std::istringstream(instructions[n]) >> z; // 4) zs
+          ++n;
+          std::istringstream(instructions[n]) >> xs; // 5) xs
+          ++n;
+      		std::istringstream(instructions[n]) >> ys; // 6) ys
+          ++n;
+      		std::istringstream(instructions[n]) >> zs; // 7) zs
 
-            const Vector NODE_I_POSITION(x, y, z);
+          const Vector NODE_I_POSITION(x, y, z);
         	const Vector NODE_I_SPEED(xs, ys, zs);
-            mobilityi->SetPosition(NODE_I_POSITION);
+          mobilityi->SetPosition(NODE_I_POSITION);
         	mobilityi->SetVelocity(NODE_I_SPEED);
 
-            ++n;
+          ++n;
         }
       }
     }
@@ -763,7 +771,7 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
 //Definition des differentes fonction utile a la compilation de notre algorithme (callback)
 
 //-------------------------------------Mise en place de la communication avec RTMaps et des vehicules------------------
-// On a besoin de : 
+// On a besoin de :
 
 //NS_LOG_COMPONENT_DEFINE("ROSVehicule");
 //NS_OBJECT_ENSURE_REGISTERED(ROSVehicule);
@@ -845,7 +853,7 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
     return tid1;
   }
 
-//******************************************* VOICI LA SECTION QUI CONCERNE L'APPLICATION DES VÉHICULES *************************************** 
+//******************************************* VOICI LA SECTION QUI CONCERNE L'APPLICATION DES VÉHICULES ***************************************
 
   // Constructor
   ROSVehicule::ROSVehicule () {
@@ -864,7 +872,7 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
   void ROSVehicule::DoDispose1 (void) {
     NS_LOG_FUNCTION(this);
     tapSocketi = 0;
-    m_socketList1.clear ();//vider le conteneur de socket 
+    m_socketList1.clear ();//vider le conteneur de socket
     Application::DoDispose ();
   }
 
@@ -947,16 +955,16 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
       MakeCallback (&ROSVehicule::HandlePeerClosei, this),
       MakeCallback (&ROSVehicule::HandlePeerErrori, this));
     waveSocketi->SetAllowBroadcast(true);
-   
-    /* Dans ce code nous allons voir la mise en place du PLAN de données 
-    Les changements se sitent dans le code des fonctions 
 
-    StartApplication 
-    HandleRead1 -> cette fonction va lire le paquet qu'elle reçoit puis ajouter à la fin de ce dernier l'adresse d'un destinataire qu'on lira par la suite 
-    ReplaceDestination 
+    /* Dans ce code nous allons voir la mise en place du PLAN de données
+    Les changements se sitent dans le code des fonctions
+
+    StartApplication
+    HandleRead1 -> cette fonction va lire le paquet qu'elle reçoit puis ajouter à la fin de ce dernier l'adresse d'un destinataire qu'on lira par la suite
+    ReplaceDestination
     ReceiveWave
     //SceduleArtemips  - supprimé car envoie un message toutes les secondes à RTMaps
-    Send1 
+    Send1
     */
 
 //************************* SECTION POUR LA RÉCEPTION DE PAQUETS ENNTRE LES NOEUDS**********************************
@@ -984,7 +992,7 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
     //if (socket_send_RT ==0){ // On entre plus dans cette boucle qui envoie un message toutes les secondes à RTMaps
     /*if (socket_send_RT) {
       NS_LOG_UNCOND("CREATE SOCKET FOR SENDING...");
-      socket_send_RT = Socket::CreateSocket (GetNode (), tid1);//creation du socket avec toutes les données : le port Rtmaps, l'adresse IP 
+      socket_send_RT = Socket::CreateSocket (GetNode (), tid1);//creation du socket avec toutes les données : le port Rtmaps, l'adresse IP
       socket_send_RT->SetAllowBroadcast (true);//autoriser la communication broadcast
       socket_send_RT->Connect(ros_ip1);//On connecte à la destination (Adresse IP RTMaps)
       socket_send_RT->ShutdownRecv ();
@@ -1070,7 +1078,7 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
 
 
 
-// Voici la fonction qui nous permet de recevoir les paquets provenant d'autre neoud 
+// Voici la fonction qui nous permet de recevoir les paquets provenant d'autre neoud
 
   void ROSVehicule::ReceiveWave (Ptr<Socket> socket ) {
     Ptr<Packet> packet;
@@ -1091,7 +1099,7 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
   void ROSVehicule::Replace_destination (Ptr<Socket> socket, Ptr<Packet> packet) {
 
   //Recuperation de l'adresse IP et le port  du socket
-      
+
     uint8_t *buffer = new uint8_t[packet->GetSize ()];
     packet->CopyData(buffer, packet->GetSize ());
     char* contenu = (char *) buffer;
@@ -1108,11 +1116,11 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
     //uint16_t port_rtmaps_vehicle = 12110;  // Port RTmaps du premier vehicule = 12110 -> 1211(N-1)
 
     NS_LOG_UNCOND("Create socket for sending to RTMaps");
-    
+
     /**/ // Depuis udp-test.cc dans src/internet/test
-    TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory"); //Definition du protocole 
-    socket_send_RT = Socket::CreateSocket (GetNode (), tid); // Creation d'un socket  
-  
+    TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory"); //Definition du protocole
+    socket_send_RT = Socket::CreateSocket (GetNode (), tid); // Creation d'un socket
+
     //NS_LOG_INFO("Send message from to socket_send_RT");
     // socket_send_RT->SendTo (packet, 0, InetSocketAddress (remote_RTMAPS, 12111)); // Envoi au vehicule 1
     for (int32_t i=0; i<7; i++) {
@@ -1178,22 +1186,22 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
     // We don't have anything to send, so we fill the message with imaginary data.
 
     std::ostringstream msg1;
-    //int identifiant1 = 0; 
+    //int identifiant1 = 0;
     //std::string sign1 = " ";
 
     // Send a big line with a message with various random integers, separated with spaces
 
-    //int route_to_follow1 = rand() % 20 + 1;//choisis des valeur aléatoirement 
-    //int nb_veh1 = rand() % 8 + 1;// de même pour le nombre de véhicule 
-    //On affiche dans la console 
+    //int route_to_follow1 = rand() % 20 + 1;//choisis des valeur aléatoirement
+    //int nb_veh1 = rand() % 8 + 1;// de même pour le nombre de véhicule
+    //On affiche dans la console
     NS_LOG_UNCOND("---Envoie RT--- ");
 
-    //on enoie un paquet contenant un msg (chaine de caractère ) à rtmaps avec un rate spécifié par le schedule à la ligne 283 
+    //on enoie un paquet contenant un msg (chaine de caractère ) à rtmaps avec un rate spécifié par le schedule à la ligne 283
     msg1 << std::string("HELLOWorld");
 
     Ptr<Packet> packet = Create<Packet> ((uint8_t*) msg1.str ().c_str (), msg1.str ().length ());
     socket_send_RT->Send (packet);
-    
+
     ScheduleArtemipsTransmiti (Seconds (1.0));
   }
 
@@ -1290,14 +1298,14 @@ void ROSVehicule::HandleReadTapi (Ptr<Socket> socket)
 
   //Fixe le nombre de véhicule:
   //string notation = ";";
-  //int m_nombre_vehicule1 = 7;// Paramètre à fixer 
+  //int m_nombre_vehicule1 = 7;// Paramètre à fixer
   //int add_choix = rand() % m_nombre_vehicule1 + 1 ;
   //string adresse_add = notation+"11.0.0."+to_string(add_choix);
   //string adresse_add = notation+"11.0.0.255";
   /*string adresse_add = "11.0.0.255";
-  
+
   Ptr<Packet> packet_add = Create<Packet> ((uint8_t*) adresse_add.c_str (), adresse_add.length ());
-  packet->AddAtEnd(packet_add);  
+  packet->AddAtEnd(packet_add);
   uint8_t *buffer = new uint8_t[packet->GetSize ()];
   NS_LOG_INFO(packet->GetSize ());
   packet->CopyData(buffer, packet->GetSize ());
@@ -1308,14 +1316,14 @@ void ROSVehicule::HandleReadTapi (Ptr<Socket> socket)
   socket->GetSockName (localAddress);
   m_rxTrace1 (packet, from);
   m_rxTraceWithAddresses1 (packet, from, localAddress);
- 
+
     if (m_enableSeqTsSizeHeader1) {
       PacketReceived1 (packet, from, localAddress);
     }*/
-    
+
     //Replace_destination (socket, packet);
   //}
-//On passe le paquet avec l'adresse en paramètre de ma fonction. 
+//On passe le paquet avec l'adresse en paramètre de ma fonction.
 }
 
 void ROSVehicule::HandleReadWavei (Ptr<Socket> socket)
@@ -1355,7 +1363,7 @@ void ROSVehicule::PacketReceived1 (const Ptr<Packet> &p, const Address &from, co
   std::cout<<choice<<std::endl;
   //choice_dest -> AddAttribute (choice)
   //----------------------------------------------------------------------------
-  auto itBuffer = m_buffer1.find (from);//on selectionne et récupère la bonne adresse du destinataire 
+  auto itBuffer = m_buffer1.find (from);//on selectionne et récupère la bonne adresse du destinataire
   if (itBuffer == m_buffer1.end ())
     {
       itBuffer = m_buffer1.insert (std::make_pair (from, Create<Packet> (0))).first;
@@ -1392,7 +1400,7 @@ void ROSVehicule::HandlePeerClosei (Ptr<Socket> socket)
 {
   NS_LOG_FUNCTION (this << socket);
 }
- 
+
 void ROSVehicule::HandlePeerErrori (Ptr<Socket> socket)
 {
   NS_LOG_FUNCTION (this << socket);
