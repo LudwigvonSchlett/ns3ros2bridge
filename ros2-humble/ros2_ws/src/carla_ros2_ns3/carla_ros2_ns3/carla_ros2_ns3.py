@@ -11,7 +11,6 @@ import sys
 # import subprocess
 import select
 import threading
-import datetime
 
 
 number_node = 5  # nombre de nodes et donc de voitures dans la simulation
@@ -19,6 +18,7 @@ number_message_sent = 0  # Pour les messages s'envoyant via tap1,2,3,...
 number_message_received = 0  # Pour les messages s'envoyant via tap1,2,3,...
 vehicles = []
 client = carla.Client('localhost', 2000)  # connexion a Carla
+NetAnim_file = ""
 node = None
 
 
@@ -222,6 +222,8 @@ def control_node_listener(socket_tap0):
     """
     Permet d'ecouter ce que recoit tap0, noeud de control
     """
+    global NetAnim_file
+
     while rclpy.ok():
         try:
 
@@ -244,22 +246,24 @@ def control_node_listener(socket_tap0):
             elif check_message(packet, False):
                 message = (packet[42:].decode()).rstrip("\n")
                 inflog(f"Received packet (decoded): {message}")
+                msg_split = message.split(" ")
+                command = msg_split[0]
 
-                if (message == "hello_NS3"):
+                if (command == "hello_NS3"):
 
-                    now = datetime.datetime.now()
-                    time_str = now.strftime("%Y%m%d_%H%M")
-                    inflog("Setting time")
-                    tap_sender_control(f"time {time_str}")
+                    inflog("Requesting NetAnim animation file")
+                    tap_sender_control("request_animfile")
 
-                elif (message == "time_success"):
+                elif (command == "file"):
 
+                    NetAnim_file = msg_split[1]
+                    inflog(f"ns3 Simulation saved on file {NetAnim_file}")
                     inflog("Initializing carla")
                     init_carla()
                     positions = get_all_position()
                     tap_sender_control(f"create_node {positions}")
 
-                elif (message == "create_success"):
+                elif (command == "create_success"):
 
                     sockets = []
                     for num_node in range(1, number_node+1):

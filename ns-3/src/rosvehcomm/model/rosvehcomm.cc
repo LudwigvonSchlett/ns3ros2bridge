@@ -35,6 +35,9 @@ using namespace std;
 
 namespace ns3
 {
+
+  NetAnimFile netAnimFile;
+
   NS_LOG_COMPONENT_DEFINE("ROSVehSync");
   NS_OBJECT_ENSURE_REGISTERED(ROSVehSync);
 
@@ -497,11 +500,10 @@ void ROSVehSync::HandleRead (Ptr<Socket> socket)
 		    Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
     	  socket->Send (packet);
       }
-      else if (command == "time")
+      else if (command == "request_animfile")
       {
-        std::string message = "time_success";
+        std::string message = "file " + netAnimFile.filename;
 		    Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-        //std::cout << instructions[1] << std::endl;
     	  socket->Send (packet);
       }
       else if (command == "create_node")
