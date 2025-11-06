@@ -771,7 +771,7 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
 //Definition des differentes fonction utile a la compilation de notre algorithme (callback)
 
 //-------------------------------------Mise en place de la communication avec RTMaps et des vehicules------------------
-// On a besoin de :
+// On a besoin de : 
 
 //NS_LOG_COMPONENT_DEFINE("ROSVehicule");
 //NS_OBJECT_ENSURE_REGISTERED(ROSVehicule);
@@ -853,7 +853,7 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
     return tid1;
   }
 
-//******************************************* VOICI LA SECTION QUI CONCERNE L'APPLICATION DES VÉHICULES ***************************************
+//******************************************* VOICI LA SECTION QUI CONCERNE L'APPLICATION DES VÉHICULES *************************************** 
 
   // Constructor
   ROSVehicule::ROSVehicule () {
@@ -872,7 +872,7 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
   void ROSVehicule::DoDispose1 (void) {
     NS_LOG_FUNCTION(this);
     tapSocketi = 0;
-    m_socketList1.clear ();//vider le conteneur de socket
+    m_socketList1.clear ();//vider le conteneur de socket 
     Application::DoDispose ();
   }
 
@@ -955,16 +955,16 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
       MakeCallback (&ROSVehicule::HandlePeerClosei, this),
       MakeCallback (&ROSVehicule::HandlePeerErrori, this));
     waveSocketi->SetAllowBroadcast(true);
+   
+    /* Dans ce code nous allons voir la mise en place du PLAN de données 
+    Les changements se sitent dans le code des fonctions 
 
-    /* Dans ce code nous allons voir la mise en place du PLAN de données
-    Les changements se sitent dans le code des fonctions
-
-    StartApplication
-    HandleRead1 -> cette fonction va lire le paquet qu'elle reçoit puis ajouter à la fin de ce dernier l'adresse d'un destinataire qu'on lira par la suite
-    ReplaceDestination
+    StartApplication 
+    HandleRead1 -> cette fonction va lire le paquet qu'elle reçoit puis ajouter à la fin de ce dernier l'adresse d'un destinataire qu'on lira par la suite 
+    ReplaceDestination 
     ReceiveWave
     //SceduleArtemips  - supprimé car envoie un message toutes les secondes à RTMaps
-    Send1
+    Send1 
     */
 
 //************************* SECTION POUR LA RÉCEPTION DE PAQUETS ENNTRE LES NOEUDS**********************************
@@ -992,7 +992,7 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
     //if (socket_send_RT ==0){ // On entre plus dans cette boucle qui envoie un message toutes les secondes à RTMaps
     /*if (socket_send_RT) {
       NS_LOG_UNCOND("CREATE SOCKET FOR SENDING...");
-      socket_send_RT = Socket::CreateSocket (GetNode (), tid1);//creation du socket avec toutes les données : le port Rtmaps, l'adresse IP
+      socket_send_RT = Socket::CreateSocket (GetNode (), tid1);//creation du socket avec toutes les données : le port Rtmaps, l'adresse IP 
       socket_send_RT->SetAllowBroadcast (true);//autoriser la communication broadcast
       socket_send_RT->Connect(ros_ip1);//On connecte à la destination (Adresse IP RTMaps)
       socket_send_RT->ShutdownRecv ();
@@ -1078,7 +1078,7 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
 
 
 
-// Voici la fonction qui nous permet de recevoir les paquets provenant d'autre neoud
+// Voici la fonction qui nous permet de recevoir les paquets provenant d'autre neoud 
 
   void ROSVehicule::ReceiveWave (Ptr<Socket> socket ) {
     Ptr<Packet> packet;
@@ -1099,7 +1099,7 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
   void ROSVehicule::Replace_destination (Ptr<Socket> socket, Ptr<Packet> packet) {
 
   //Recuperation de l'adresse IP et le port  du socket
-
+      
     uint8_t *buffer = new uint8_t[packet->GetSize ()];
     packet->CopyData(buffer, packet->GetSize ());
     char* contenu = (char *) buffer;
@@ -1116,11 +1116,11 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
     //uint16_t port_rtmaps_vehicle = 12110;  // Port RTmaps du premier vehicule = 12110 -> 1211(N-1)
 
     NS_LOG_UNCOND("Create socket for sending to RTMaps");
-
+    
     /**/ // Depuis udp-test.cc dans src/internet/test
-    TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory"); //Definition du protocole
-    socket_send_RT = Socket::CreateSocket (GetNode (), tid); // Creation d'un socket
-
+    TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory"); //Definition du protocole 
+    socket_send_RT = Socket::CreateSocket (GetNode (), tid); // Creation d'un socket  
+  
     //NS_LOG_INFO("Send message from to socket_send_RT");
     // socket_send_RT->SendTo (packet, 0, InetSocketAddress (remote_RTMAPS, 12111)); // Envoi au vehicule 1
     for (int32_t i=0; i<7; i++) {
@@ -1186,22 +1186,22 @@ void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
     // We don't have anything to send, so we fill the message with imaginary data.
 
     std::ostringstream msg1;
-    //int identifiant1 = 0;
+    //int identifiant1 = 0; 
     //std::string sign1 = " ";
 
     // Send a big line with a message with various random integers, separated with spaces
 
-    //int route_to_follow1 = rand() % 20 + 1;//choisis des valeur aléatoirement
-    //int nb_veh1 = rand() % 8 + 1;// de même pour le nombre de véhicule
-    //On affiche dans la console
+    //int route_to_follow1 = rand() % 20 + 1;//choisis des valeur aléatoirement 
+    //int nb_veh1 = rand() % 8 + 1;// de même pour le nombre de véhicule 
+    //On affiche dans la console 
     NS_LOG_UNCOND("---Envoie RT--- ");
 
-    //on enoie un paquet contenant un msg (chaine de caractère ) à rtmaps avec un rate spécifié par le schedule à la ligne 283
+    //on enoie un paquet contenant un msg (chaine de caractère ) à rtmaps avec un rate spécifié par le schedule à la ligne 283 
     msg1 << std::string("HELLOWorld");
 
     Ptr<Packet> packet = Create<Packet> ((uint8_t*) msg1.str ().c_str (), msg1.str ().length ());
     socket_send_RT->Send (packet);
-
+    
     ScheduleArtemipsTransmiti (Seconds (1.0));
   }
 
@@ -1298,14 +1298,14 @@ void ROSVehicule::HandleReadTapi (Ptr<Socket> socket)
 
   //Fixe le nombre de véhicule:
   //string notation = ";";
-  //int m_nombre_vehicule1 = 7;// Paramètre à fixer
+  //int m_nombre_vehicule1 = 7;// Paramètre à fixer 
   //int add_choix = rand() % m_nombre_vehicule1 + 1 ;
   //string adresse_add = notation+"11.0.0."+to_string(add_choix);
   //string adresse_add = notation+"11.0.0.255";
   /*string adresse_add = "11.0.0.255";
-
+  
   Ptr<Packet> packet_add = Create<Packet> ((uint8_t*) adresse_add.c_str (), adresse_add.length ());
-  packet->AddAtEnd(packet_add);
+  packet->AddAtEnd(packet_add);  
   uint8_t *buffer = new uint8_t[packet->GetSize ()];
   NS_LOG_INFO(packet->GetSize ());
   packet->CopyData(buffer, packet->GetSize ());
@@ -1316,14 +1316,14 @@ void ROSVehicule::HandleReadTapi (Ptr<Socket> socket)
   socket->GetSockName (localAddress);
   m_rxTrace1 (packet, from);
   m_rxTraceWithAddresses1 (packet, from, localAddress);
-
+ 
     if (m_enableSeqTsSizeHeader1) {
       PacketReceived1 (packet, from, localAddress);
     }*/
-
+    
     //Replace_destination (socket, packet);
   //}
-//On passe le paquet avec l'adresse en paramètre de ma fonction.
+//On passe le paquet avec l'adresse en paramètre de ma fonction. 
 }
 
 void ROSVehicule::HandleReadWavei (Ptr<Socket> socket)
@@ -1363,7 +1363,7 @@ void ROSVehicule::PacketReceived1 (const Ptr<Packet> &p, const Address &from, co
   std::cout<<choice<<std::endl;
   //choice_dest -> AddAttribute (choice)
   //----------------------------------------------------------------------------
-  auto itBuffer = m_buffer1.find (from);//on selectionne et récupère la bonne adresse du destinataire
+  auto itBuffer = m_buffer1.find (from);//on selectionne et récupère la bonne adresse du destinataire 
   if (itBuffer == m_buffer1.end ())
     {
       itBuffer = m_buffer1.insert (std::make_pair (from, Create<Packet> (0))).first;
@@ -1400,7 +1400,7 @@ void ROSVehicule::HandlePeerClosei (Ptr<Socket> socket)
 {
   NS_LOG_FUNCTION (this << socket);
 }
-
+ 
 void ROSVehicule::HandlePeerErrori (Ptr<Socket> socket)
 {
   NS_LOG_FUNCTION (this << socket);

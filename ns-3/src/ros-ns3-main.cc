@@ -3,8 +3,8 @@
 
 
 /*
-Dans ce code vous trouverez plusieurs choses. Premièrement, il y a la partie Plan de controle où l'on récupère dans NS3 la position des noeuds, leurs vitesses afin de pouvoir placer dans NS3
-les différents neouds dans NetAnim.
+Dans ce code vous trouverez plusieurs choses. Premièrement, il y a la partie Plan de controle où l'on récupère dans NS3 la position des noeuds, leurs vitesses afin de pouvoir placer dans NS3 
+les différents neouds dans NetAnim. 
 
 Nous avons également la mise en place du plan de données qui est réalisé par notre algorithme.
 
@@ -12,8 +12,8 @@ Nous avons également la mise en place du plan de données qui est réalisé par
 Voici Étape par étape ce que réalise ce code:
 
 
--Premièrement Nous avons la fonction ReceivePacket( ): cette fonction nous permet de réceptionner des paquets qui sont envoyés et aussi de les afficher par la suite
--Deuxièmement nous avons la fonction GenerateTraffic celle ci permet d'envoyer des paquets d'un noeud à un autre et également d'afficher toutes les données de ces paquets
+-Premièrement Nous avons la fonction ReceivePacket( ): cette fonction nous permet de réceptionner des paquets qui sont envoyés et aussi de les afficher par la suite 
+-Deuxièmement nous avons la fonction GenerateTraffic celle ci permet d'envoyer des paquets d'un noeud à un autre et également d'afficher toutes les données de ces paquets 
 Ces deux fonctions sont déclarées avant le main() car elle sont utilisées par la suite.
 
 Dans le main, nous avons la disposition suivante:
@@ -88,7 +88,7 @@ void ReceivePacket (Ptr<Socket> socket)
 
 
 
-//RECV from paquet -> à tester dans ma méthode.
+//RECV from paquet -> à tester dans ma méthode.  
 
 static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize,
                              uint32_t pktCount, Time pktInterval,Ptr<Node> node)
@@ -150,8 +150,8 @@ main (int argc, char *argv[])
   ns3::Time simulationTime (ns3::Seconds(500));
 
   // Conteneur des véhicules (1 véhicule = 1 noeud)
-  // NodeContainer Container_veh;
-  // Container_veh.Create(nb_vehicule);
+//  NodeContainer Container_veh;
+//  Container_veh.Create(nb_vehicule);
 
   /*** Mise en place du noeud de contrôle ***/
   NS_LOG_INFO("Initialisation du noeud de contrôle");
@@ -309,7 +309,7 @@ main (int argc, char *argv[])
 //    ROSVehSyncApps1.Start(Seconds(1.0));
 //    ROSVehSyncApps1.Stop(simulationTime);
 //  }
-
+  
   std::string protocol_name("ns3::UdpSocketFactory");
 
   //----------------------WAVE APPLICATION----------------------------------
