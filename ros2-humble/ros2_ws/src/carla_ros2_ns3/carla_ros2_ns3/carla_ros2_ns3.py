@@ -20,6 +20,9 @@ vehicles = []
 client = carla.Client('localhost', 2000)  # connexion a Carla
 NetAnim_file = ""
 node = None
+position_listener_thread = None
+comunication_nodes_thread = None
+stop_lock = threading.Lock()
 
 
 def main():
@@ -351,6 +354,9 @@ def launch_simulation(sockets):
     Met les voitures en mouvement et lance la collecte de données sur Carla
     (position,vitesse) pour les envoyer par la suite
     """
+    global position_listener_thread
+    global comunication_nodes_thread
+
     traffic_manager = client.get_trafficmanager(8001)
     traffic_manager.set_synchronous_mode(False)
     # Désactiver le mode synchrone du Traffic Manager
@@ -376,14 +382,22 @@ def launch_simulation(sockets):
 
 def stop_simulation():
 
-    # Ce code fonctionnait auparavant mais mene a des bugs desormais,
-    # il servait a enlever les voitures a la fin de la simulation
-    # afin de ne pas devoir rellancer Carla a chaque fois
-    # -> a corriger pour eviter cela
+    inflog("Stopping all threads")
+    stop_lock.acquire()
+
+    if position_listener_thread is not None:
+        position_listener_thread.join()
+        inflog("periodic_position_sender is stopped")
+
+    if comunication_nodes_thread is not None:
+        comunication_nodes_thread.join()
+        inflog("periodic_position_sender is stopped")
+
     # Détruire les véhicules pour nettoyer la simulation
-    # for vehicle in vehicles:
-    #    vehicle.destroy()
-    #    rospy.loginfo(f"Véhicule {vehicle.id} détruit.")
+    for vehicle in vehicles:
+        vid = vehicle.id
+        vehicle.destroy()
+        inflog(f"Véhicule {vid} détruit.")
 
     inflog("Simulation terminée.")
     if number_message_sent != 0:
@@ -458,6 +472,9 @@ def periodic_position_sender(interval):
     Envoie sur tap0 les positions et vitesses de tout les véhicule.
     """
     while rclpy.ok():
+        if stop_lock.locked():
+            inflog("Exiting periodic_position_sender")
+            exit()
         try:
             mobilities = get_all_mobility()
             tap_sender_control(f"set_mobility {mobilities}")
@@ -476,6 +493,9 @@ def comunication_node(interval):
     """
     global number_message_sent
     while rclpy.ok():
+        if stop_lock.locked():
+            inflog("Exiting comunication_node")
+            exit()
         try:
             num_node = random.randint(1, number_node)
             position = get_position(vehicles[num_node-1])
