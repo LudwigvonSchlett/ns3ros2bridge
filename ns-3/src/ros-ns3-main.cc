@@ -36,6 +36,7 @@ Et nous avons aussi le plan de données CAD tout les noeuds dans NS3 qui réalis
 #include <vector>
 #include <typeinfo>
 #include <time.h>
+#include <iomanip>
 
 #include "ns3/yans-wifi-helper.h"
 #include "ns3/ipv4-address-helper.h"
@@ -147,7 +148,7 @@ main (int argc, char *argv[])
   /*** Paramètres de la simulation ***/
 
   NS_LOG_INFO("Setting up parameters");
-  ns3::Time simulationTime (ns3::Seconds(500));
+  ns3::Time simulationTime (ns3::Seconds(180));
 
   // Conteneur des véhicules (1 véhicule = 1 noeud)
 //  NodeContainer Container_veh;
@@ -457,7 +458,17 @@ main (int argc, char *argv[])
 //        mobilityModel->SetVelocity(Vector(0, 0, 0));         // No movement initially
 //    }
 
-  AnimationInterface anim("Animation.xml");
+  auto now = std::time(nullptr);
+  std::tm localTime = *std::localtime(&now);
+
+  std::ostringstream oss;
+  oss << std::put_time(&localTime, "%Y%m%d_%H%M");
+
+  std::string animFileName = "Animation_" + oss.str() + ".xml";
+
+  ns3::AnimationInterface anim(animFileName);
+
+  netAnimFile.filename = animFileName;
 
   NS_LOG_INFO("Starting simulation of " << simulationTime.GetSeconds() << " seconds");
   Simulator::Stop (simulationTime);

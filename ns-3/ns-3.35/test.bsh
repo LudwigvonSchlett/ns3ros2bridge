@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export LD_LIBRARY_PATH=$PWD/ns-allinone-3.33/ns-3.33/build/lib
+export LD_LIBRARY_PATH=$PWD/ns-allinone-3.35/ns-3.35/build/lib
 
 cd ns-allinone-3.35/ns-3.35
 

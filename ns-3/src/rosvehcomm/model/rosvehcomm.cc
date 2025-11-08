@@ -35,6 +35,9 @@ using namespace std;
 
 namespace ns3
 {
+
+  NetAnimFile netAnimFile;
+
   NS_LOG_COMPONENT_DEFINE("ROSVehSync");
   NS_OBJECT_ENSURE_REGISTERED(ROSVehSync);
 
@@ -147,13 +150,13 @@ namespace ns3
 
     Ptr<Node> node = GetNode();
 
-	if (node->GetObject<MobilityModel>() == nullptr) {
+	  if (node->GetObject<MobilityModel>() == nullptr) {
     	Ptr<ConstantVelocityMobilityModel> mobility = CreateObject<ConstantVelocityMobilityModel>();
     	node->AggregateObject(mobility);
-	}
+	  }
 
     Ptr<ConstantPositionMobilityModel> mobility = node->GetObject<ConstantPositionMobilityModel>();
-	mobility->SetPosition(Vector(0.0, 0.0, 0.0));
+	  mobility->SetPosition(Vector(0.0, 0.0, 0.0));
     controlSocket = 0;
 
     // Initialize socket
@@ -165,27 +168,29 @@ namespace ns3
     controlSocket->Listen ();
 
     if (addressUtils::IsMulticast (tap_ip))
-      {
-        Ptr<UdpSocket> udpSocket = DynamicCast<UdpSocket> (controlSocket);
-        if (udpSocket)
-          {
-            // equivalent to setsockopt (MCAST_JOIN_GROUP)
-            udpSocket->MulticastJoinGroup (0, tap_ip);
-          }
+    {
+      Ptr<UdpSocket> udpSocket = DynamicCast<UdpSocket> (controlSocket);
+      if (udpSocket)
+        {
+          // equivalent to setsockopt (MCAST_JOIN_GROUP)
+          udpSocket->MulticastJoinGroup (0, tap_ip);
+        }
         else
-          {
-            NS_FATAL_ERROR ("Error: joining multicast on a non-UDP socket");
-          }
-      }
+        {
+          NS_FATAL_ERROR ("Error: joining multicast on a non-UDP socket");
+        }
+    }
 
 
     controlSocket->SetRecvCallback (MakeCallback (&ROSVehSync::HandleRead, this));
     controlSocket->SetAcceptCallback (
       MakeNullCallback<bool, Ptr<Socket>, const Address &> (),
-      MakeCallback (&ROSVehSync::HandleAccept, this));
+      MakeCallback (&ROSVehSync::HandleAccept, this)
+    );
     controlSocket->SetCloseCallbacks (
       MakeCallback (&ROSVehSync::HandlePeerClose, this),
-      MakeCallback (&ROSVehSync::HandlePeerError, this));
+      MakeCallback (&ROSVehSync::HandlePeerError, this)
+    );
   }
 
   void ROSVehSync::HandleRead1 (Ptr<Socket> socket)
@@ -467,7 +472,7 @@ std::vector<std::string> ROSVehSync::SplitCharPointerController(const char* inpu
     return result;
 }
 
- void ROSVehSync::HandleRead (Ptr<Socket> socket)
+void ROSVehSync::HandleRead (Ptr<Socket> socket)
 {
   //NS_LOG_INFO("CONTROLLER SOCKET HAS RECEIVED A MESSAGE");
   NS_LOG_FUNCTION (this << socket);//affichage info de cette fonction
@@ -488,99 +493,104 @@ std::vector<std::string> ROSVehSync::SplitCharPointerController(const char* inpu
     if (!instructions.empty())
     {
       const std::string& command = instructions[0];
-      if(command == "hello")
+      if(command == "hello_ROS2")
       {
-		//NS_LOG_INFO("Received command hello => responding hello");
-    	std::string message = "hello from NS3";
-		Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-    	socket->Send (packet);
+		    //NS_LOG_INFO("Received command hello => responding hello");
+    	  std::string message = "hello_NS3";
+		    Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+    	  socket->Send (packet);
+      }
+      else if (command == "request_animfile")
+      {
+        std::string message = "file " + netAnimFile.filename;
+		    Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+    	  socket->Send (packet);
       }
       else if (command == "create_node")
       {
-		//NS_LOG_INFO("Create node command");
+        //NS_LOG_INFO("Create node command");
         unsigned long n = 1;
         int nodeNumber = 1;
         double x = 0.0, y = 0.0, z = 0.0, xs = 0.0, ys = 0.0, zs = 0.0;
         while(n <= instructions.size()-4)
         {
-            nodeNumber = std::stoi(instructions[n]);
-            ++n;
-            std::istringstream(instructions[n]) >> x; // 2) x
-            ++n;
-    		std::istringstream(instructions[n]) >> y; // 3) y
-            ++n;
-    		std::istringstream(instructions[n]) >> z; // 4) z
+          nodeNumber = std::stoi(instructions[n]);
+          ++n;
+          std::istringstream(instructions[n]) >> x; // 2) x
+          ++n;
+          std::istringstream(instructions[n]) >> y; // 3) y
+          ++n;
+          std::istringstream(instructions[n]) >> z; // 4) z
 
-        	CreateVehicle(nodeNumber, x, y, z, xs, ys, zs);
-
-            ++n;
+          CreateVehicle(nodeNumber, x, y, z, xs, ys, zs);
+          ++n;
         }
-		//NS_LOG_UNCOND("On récupère le total");
+        //NS_LOG_UNCOND("On récupère le total");
         int total = (NodeContainer::GetGlobal().GetN())-1;
         NS_LOG_UNCOND("Global total of vehicules is " << total);
 
-    	std::string message = "create_success";
-		Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-    	socket->Send (packet);
+    	  std::string message = "create_success";
+		    Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+    	  socket->Send (packet);
       }
       else if (command == "assert_total")
       {
-		//NS_LOG_INFO("Assert total command");
+      //NS_LOG_INFO("Assert total command");
 
-    	int total = NodeContainer::GetGlobal().GetN()-1;
-        NS_LOG_INFO("Total is " << total);
+        int total = NodeContainer::GetGlobal().GetN()-1;
+          NS_LOG_INFO("Total is " << total);
 
-    	std::ostringstream msgStream;
-    	msgStream << "total " << total;
-    	std::string message = msgStream.str ();
-    	Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-    	socket->Send (packet);
+        std::ostringstream msgStream;
+        msgStream << "total " << total;
+        std::string message = msgStream.str ();
+        Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+        socket->Send (packet);
       }
 
       else if (command == "set_position")
       {
         //NS_LOG_INFO("Set position command");
-		unsigned long n = 1;
+		    unsigned long n = 1;
         NodeContainer Globalnode;
-    	Globalnode = NodeContainer::GetGlobal();
+    	  Globalnode = NodeContainer::GetGlobal();
         double x = 0.0, y = 0.0, z = 0.0;
         while(n <= instructions.size()-4)
         {
-          	Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
-            ++n;
-            std::istringstream(instructions[n]) >> x; // 2) x
-            ++n;
-    		std::istringstream(instructions[n]) >> y; // 3) y
-            ++n;
-    		std::istringstream(instructions[n]) >> z; // 4) z
+          Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
+          ++n;
+          std::istringstream(instructions[n]) >> x; // 2) x
+          ++n;
+      		std::istringstream(instructions[n]) >> y; // 3) y
+          ++n;
+    	  	std::istringstream(instructions[n]) >> z; // 4) z
 
         	const Vector NODE_I_POSITION(x, y, z);
         	mobilityi->SetPosition(NODE_I_POSITION);
 
-            ++n;
+          ++n;
         }
       }
       else if (command == "set_speed")
       {
         //NS_LOG_INFO("Set speed command");
-		unsigned long n = 1;
+		    unsigned long n = 1;
         NodeContainer Globalnode;
-    	Globalnode = NodeContainer::GetGlobal();
+    	  Globalnode = NodeContainer::GetGlobal();
         double xs = 0.0, ys = 0.0, zs = 0.0;
         while(n <= instructions.size()-4)
         {
-          	Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
-            ++n;
-            std::istringstream(instructions[n]) >> xs; // 2) xs
-            ++n;
-    		std::istringstream(instructions[n]) >> ys; // 3) ys
-            ++n;
-    		std::istringstream(instructions[n]) >> zs; // 4) zs
+        	Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
+          ++n;
+          std::istringstream(instructions[n]) >> xs; // 2) xs
+          ++n;
+      		std::istringstream(instructions[n]) >> ys; // 3) ys
+          ++n;
+      		std::istringstream(instructions[n]) >> zs; // 4) zs
 
         	const Vector NODE_I_SPEED(xs, ys, zs);
         	mobilityi->SetPosition(NODE_I_SPEED);
 
-            ++n;
+          ++n;
         }
       }
       else if (command == "set_mobility")
@@ -588,30 +598,30 @@ std::vector<std::string> ROSVehSync::SplitCharPointerController(const char* inpu
         //NS_LOG_INFO("Set mobility command");
         unsigned long n = 1;
         NodeContainer Globalnode;
-    	Globalnode = NodeContainer::GetGlobal();
+    	  Globalnode = NodeContainer::GetGlobal();
         double x = 0.0, y = 0.0, z = 0.0, xs = 0.0, ys = 0.0, zs = 0.0;
         while(n <= instructions.size()-7)
         {
-          	Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
-            ++n;
-            std::istringstream(instructions[n]) >> x; // 2) xs
-            ++n;
-    		std::istringstream(instructions[n]) >> y; // 3) ys
-            ++n;
-    		std::istringstream(instructions[n]) >> z; // 4) zs
-            ++n;
-            std::istringstream(instructions[n]) >> xs; // 5) xs
-            ++n;
-    		std::istringstream(instructions[n]) >> ys; // 6) ys
-            ++n;
-    		std::istringstream(instructions[n]) >> zs; // 7) zs
+        	Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
+          ++n;
+          std::istringstream(instructions[n]) >> x; // 2) xs
+          ++n;
+      		std::istringstream(instructions[n]) >> y; // 3) ys
+          ++n;
+      		std::istringstream(instructions[n]) >> z; // 4) zs
+          ++n;
+          std::istringstream(instructions[n]) >> xs; // 5) xs
+          ++n;
+      		std::istringstream(instructions[n]) >> ys; // 6) ys
+          ++n;
+      		std::istringstream(instructions[n]) >> zs; // 7) zs
 
-            const Vector NODE_I_POSITION(x, y, z);
+          const Vector NODE_I_POSITION(x, y, z);
         	const Vector NODE_I_SPEED(xs, ys, zs);
-            mobilityi->SetPosition(NODE_I_POSITION);
+          mobilityi->SetPosition(NODE_I_POSITION);
         	mobilityi->SetVelocity(NODE_I_SPEED);
 
-            ++n;
+          ++n;
         }
       }
     }

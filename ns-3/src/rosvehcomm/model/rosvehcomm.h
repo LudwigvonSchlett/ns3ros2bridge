@@ -45,6 +45,11 @@ namespace ns3 {
 class Socket;
 class Packet;
 
+struct NetAnimFile {
+    std::string filename;
+};
+
+extern NetAnimFile netAnimFile;
 
 class ROSVehSync : public Application 
 {

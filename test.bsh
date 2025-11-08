@@ -1,0 +1,16 @@
+#!/bin/bash
+
+ROS2_DIR="$PWD/ros2-humble"
+NS3_DIR="$PWD/ns-3/ns-3.38"
+#NS3_DIR="$PWD/ns-3/ns-3.35"
+
+cd $NS3_DIR
+
+echo "ns-3"
+./test.bsh
+
+cd $ROS2_DIR
+
+echo "ros2"
+./test.bsh
+
