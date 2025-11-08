@@ -148,7 +148,7 @@ main (int argc, char *argv[])
   /*** Paramètres de la simulation ***/
 
   NS_LOG_INFO("Setting up parameters");
-  ns3::Time simulationTime (ns3::Seconds(500));
+  ns3::Time simulationTime (ns3::Seconds(180));
 
   // Conteneur des véhicules (1 véhicule = 1 noeud)
 //  NodeContainer Container_veh;

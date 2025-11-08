@@ -19,10 +19,13 @@ number_message_received = 0  # Pour les messages s'envoyant via tap1,2,3,...
 vehicles = []
 client = carla.Client('localhost', 2000)  # connexion a Carla
 NetAnim_file = ""
+# Noeud principal
 node = None
+# Thread et essentiels pour la sychronisation
 position_listener_thread = None
 comunication_nodes_thread = None
-stop_lock = threading.Lock()
+stop_state = False
+error_state = False
 
 
 def main():
@@ -192,35 +195,6 @@ def tap_sender_control(message):
         errlog(f"Erreur lors de l'envoi du message : {e}")
 
 
-def listen_tap_devices(tap_sockets):
-    """
-    Écoute sur plusieurs tap devices simultanément
-    (pas le tap de controle: le tap0)
-    """
-    global number_message_received
-    while rclpy.ok():
-        try:
-            # Utiliser select pour écouter plusieurs sockets
-            readable, _, _ = select.select(tap_sockets, [], [], 1.0)
-            for sock in readable:
-                data, _ = sock.recvfrom(65535)  # Taille max d'un paquet
-                device_name = sock.getsockname()[0]  # Nom du device lié
-                if check_message(data, True):
-                    message = (data[42:].decode()).rstrip("\n")
-                    if (message.split(" ")[0]
-                       != device_name.replace("tap", "")):
-                        # exclu le message si l'envoyeur
-                        # est le meme que le recepteur
-
-                        number_message_received += 1
-                        # A faire: traier ce qu'on recoit sur tap1,2,3,...
-                        inflog(f"Données reçues sur {device_name}")
-
-        except Exception as e:
-            errlog(f"Erreur lors de l'écoute des tap devices: {e}")
-            stop_simulation()
-
-
 def control_node_listener(socket_tap0):
     """
     Permet d'ecouter ce que recoit tap0, noeud de control
@@ -381,9 +355,10 @@ def launch_simulation(sockets):
 
 
 def stop_simulation():
+    global stop_state
 
     inflog("Stopping all threads")
-    stop_lock.acquire()
+    stop_state = True
 
     if position_listener_thread is not None:
         position_listener_thread.join()
@@ -391,13 +366,15 @@ def stop_simulation():
 
     if comunication_nodes_thread is not None:
         comunication_nodes_thread.join()
-        inflog("periodic_position_sender is stopped")
+        inflog("comunication_nodes_thread is stopped")
 
     # Détruire les véhicules pour nettoyer la simulation
     for vehicle in vehicles:
-        vid = vehicle.id
-        vehicle.destroy()
-        inflog(f"Véhicule {vid} détruit.")
+        if vehicle.is_alive:
+            vid = vehicle.id
+            vehicle.set_autopilot(False, 8001)
+            vehicle.destroy()
+            inflog(f"Véhicule {vid} détruit.")
 
     inflog("Simulation terminée.")
     if number_message_sent != 0:
@@ -414,65 +391,113 @@ def stop_simulation():
            + f"un broadcast: PDR = {PDR_division}%")
     inflog("Interruption reseau avec NS3")
     rclpy.shutdown()
+    exit()
 
 
 def get_position(vehicle):
-    transform = vehicle.get_transform()
-    location = transform.location
-    location_string = f"{location.x} {location.y} {location.z}"
-    return location_string
+    try:
+        transform = vehicle.get_transform()
+        location = transform.location
+        location_string = f"{location.x} {location.y} {location.z}"
+        return location_string
+    except Exception as e:
+        raise e
 
 
 def get_speed(vehicle):
-    velocity = vehicle.get_velocity()
-    velocity_string = f"{velocity.x} {velocity.y} {velocity.z}"
-    return velocity_string
+    try:
+        velocity = vehicle.get_velocity()
+        velocity_string = f"{velocity.x} {velocity.y} {velocity.z}"
+        return velocity_string
+    except Exception as e:
+        raise e
 
 
 def get_all_position():
-    output = " "
-    index_vehicle = 1
-    for vehicle in vehicles:
-        output += f" {index_vehicle} {get_position(vehicle)}"
-        if index_vehicle < number_node:
-            output += " "
-            index_vehicle += 1
-
-    return output
+    try:
+        output = " "
+        index_vehicle = 1
+        for vehicle in vehicles:
+            output += f" {index_vehicle} {get_position(vehicle)}"
+            if index_vehicle < number_node:
+                output += " "
+                index_vehicle += 1
+        return output
+    except Exception as e:
+        raise e
 
 
 """
 def get_all_speed():
-    output = ""
-    index_vehicle = 1
-    for vehicle in vehicles:
-        output += f" {index_vehicle} {get_speed(vehicle)}"
-        index_vehicle += 1
-    return output
+    try:
+        output = ""
+        index_vehicle = 1
+        for vehicle in vehicles:
+            output += f" {index_vehicle} {get_speed(vehicle)}"
+            index_vehicle += 1
+        return output
+    except Exception as e:
+        raise e
 """
 
 
 def get_all_mobility():
-    output = " "
-    index_vehicle = 1
-    for vehicle in vehicles:
-        output += (f"{index_vehicle} {get_position(vehicle)} "
-                   + f"{get_speed(vehicle)}")
-        if index_vehicle < number_node:
-            output += " "
-            index_vehicle += 1
-
-    return output
+    try:
+        output = " "
+        index_vehicle = 1
+        for vehicle in vehicles:
+            output += (f"{index_vehicle} {get_position(vehicle)} "
+                       + f"{get_speed(vehicle)}")
+            if index_vehicle < number_node:
+                output += " "
+                index_vehicle += 1
+        return output
+    except Exception as e:
+        raise e
 
 #  Threads
+
+
+def listen_tap_devices(tap_sockets):
+    """
+    Écoute sur plusieurs tap devices simultanément
+    (pas le tap de controle: le tap0)
+    """
+    global number_message_received
+    while rclpy.ok():
+        try:
+            if error_state:
+                errlog("Erreur dans l'un des threads")
+                stop_simulation()
+
+            # Utiliser select pour écouter plusieurs sockets
+            readable, _, _ = select.select(tap_sockets, [], [], 1.0)
+            for sock in readable:
+                data, _ = sock.recvfrom(65535)  # Taille max d'un paquet
+                device_name = sock.getsockname()[0]  # Nom du device lié
+                if check_message(data, True):
+                    message = (data[42:].decode()).rstrip("\n")
+                    if (message.split(" ")[0]
+                       != device_name.replace("tap", "")):
+                        # exclu le message si l'envoyeur
+                        # est le meme que le recepteur
+
+                        number_message_received += 1
+                        # A faire: traier ce qu'on recoit sur tap1,2,3,...
+                        inflog(f"Données reçues sur {device_name}")
+
+        except Exception as e:
+            errlog(f"Erreur lors de l'écoute des tap devices: {e}")
+            stop_simulation()
 
 
 def periodic_position_sender(interval):
     """
     Envoie sur tap0 les positions et vitesses de tout les véhicule.
     """
+    global error_state
     while rclpy.ok():
-        if stop_lock.locked():
+        if error_state or stop_state:
             inflog("Exiting periodic_position_sender")
             exit()
         try:
@@ -483,7 +508,7 @@ def periodic_position_sender(interval):
             errlog(
                 "Erreur lors de la récupération/"
                 + f"envoie périodique des positions : {e}")
-            stop_simulation()
+            error_state = True
 
 
 def comunication_node(interval):
@@ -491,9 +516,10 @@ def comunication_node(interval):
     Envoie sur un tap (ici pris aléatoirement pour les tests) la position
     d'un véhicule pour que cette information soit transmise par Wave dans NS3
     """
+    global error_state
     global number_message_sent
     while rclpy.ok():
-        if stop_lock.locked():
+        if error_state or stop_state:
             inflog("Exiting comunication_node")
             exit()
         try:
@@ -505,7 +531,7 @@ def comunication_node(interval):
         except Exception as e:
             errlog("Erreur lors de la récupération/"
                    + f"envoie périodique des positions : {e}")
-            stop_simulation()
+            error_state = True
 
 
 if __name__ == '__main__':
