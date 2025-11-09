@@ -6,16 +6,22 @@ NS3_DIR="$PWD/ns-3/ns-3.38"
 #NS3_DIR="$PWD/ns-3/ns-3.35"
 #LOG_DIR="$PWD"
 
-echo "Launching carla"
-x-terminal-emulator -e bash -c "cd '$CARLA_DIR' && ./run.bsh -RenderOffScreen" &
-#x-terminal-emulator -e bash -c "cd '$CARLA_DIR' && ./run.bsh" & # Lancer avec fenètre 
+if [ "$1" == "carla" ]; then
+    echo "Launching carla"
+    x-terminal-emulator -e bash -c "cd '$CARLA_DIR' && ./run.bsh" &
+elif [ "$1" == "carla_wdl" ]; then
+    echo "Launching carla windowless"
+    x-terminal-emulator -e bash -c "cd '$CARLA_DIR' && ./run.bsh -RenderOffScreen" &
+else
+    echo "Skip carla"
+fi
 
 echo "Launching ros2"
 #x-terminal-emulator -e bash -c "cd '$ROS2_DIR' && sudo ./run.bsh 2>&1 | tee '$LOG_DIR/ros2.log'" &
-x-terminal-emulator -e bash -c "cd '$ROS2_DIR' && sudo ./run.bsh" &
+x-terminal-emulator -e bash -c "cd '$ROS2_DIR' && sudo ./run.bsh && bash" &
 
 echo "Launching ns-3"
 #x-terminal-emulator -e bash -c "cd '$NS3_DIR' && ./run.bsh 2>&1 | tee '$LOG_DIR/ns3.log'"
 #x-terminal-emulator -e bash -c "cd '$NS3_DIR' && sudo ./run.bsh"  # ns-3.xx < 36
-x-terminal-emulator -e bash -c "cd '$NS3_DIR' && ./run.bsh"  # ns-3.xx > 35
+x-terminal-emulator -e bash -c "cd '$NS3_DIR' && ./run.bsh && bash"  # ns-3.xx > 35
 
