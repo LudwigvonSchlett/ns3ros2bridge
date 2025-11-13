@@ -1,34 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 
-
-
-/*
-Dans ce code vous trouverez plusieurs choses. Premièrement, il y a la partie Plan de controle où l'on récupère dans NS3 la position des noeuds, leurs vitesses afin de pouvoir placer dans NS3 
-les différents neouds dans NetAnim. 
-
-Nous avons également la mise en place du plan de données qui est réalisé par notre algorithme.
-
-
-Voici Étape par étape ce que réalise ce code:
-
-
--Premièrement Nous avons la fonction ReceivePacket( ): cette fonction nous permet de réceptionner des paquets qui sont envoyés et aussi de les afficher par la suite 
--Deuxièmement nous avons la fonction GenerateTraffic celle ci permet d'envoyer des paquets d'un noeud à un autre et également d'afficher toutes les données de ces paquets 
-Ces deux fonctions sont déclarées avant le main() car elle sont utilisées par la suite.
-
-Dans le main, nous avons la disposition suivante:
-
-Tout d'abord nous avons la création du container du controle node:
-Nous lui assignonsn une adresse IP ainsi qu'un masque de sous réseaux (FdNetDevice)
-
-Une fois que cela est fait, nous devons mettre en place le Tap device qui gère la réception des données provenant de RTMaps.
-
-
-
-Et nous avons aussi le plan de données CAD tout les noeuds dans NS3 qui réalise le flux de données.
-*/
-
-
 //On défini les différentes bibliothèque nécéssaire pour le bon déroulement du programme
 #include "ns3/rosvehcomm-helper.h"
 #include "ns3/netanim-module.h"
@@ -60,55 +31,6 @@ using namespace ns3;
 
 // Définition du nom du programme pour les LOGS
 NS_LOG_COMPONENT_DEFINE("ROSNS3Example");
-
-void ReceivePacket (Ptr<Socket> socket)
-{
-  double time_recu = Simulator::Now().GetSeconds();
-
-  while (socket->Recv ())
-  {
-    Ptr<Packet> paquet_rcv = socket->Recv();
-    Ptr<Node> Node_rcv = socket->GetNode();
-    Ptr<Ipv4> ipv4_test_socket = Node_rcv->GetObject<Ipv4> ();
-    Ipv4InterfaceAddress iaddr_socket = ipv4_test_socket->GetAddress(2,0);
-    Ipv4Address ipAddr1 = iaddr_socket.GetLocal ();
-
-    //NS_LOG_UNCOND ("Received one packet!---------------------------------------------------");
-    NS_LOG_UNCOND ("Paquet reçu par le noeud  : " << Node_rcv->GetId() <<" L'adresse IP est : " << ipAddr1<<" . Le message est reçu à :" << time_recu <<" secondes" );
-    //NS_LOG_UNCOND("Received packet :"<< paquet_rcv->GetUid());
-  }
-}
-
-//RECV from paquet -> à tester dans ma méthode.  
-
-static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize,
-                             uint32_t pktCount, Time pktInterval,Ptr<Node> node)
-{
-  double time_send = Simulator::Now().GetSeconds();
-
-  if (pktCount > 0)
-  {
-    Ptr<Ipv4> ipv4_test = node->GetObject<Ipv4> ();
-    Ipv4InterfaceAddress iaddr = ipv4_test->GetAddress(2,0);
-    Ipv4Address ipAddr = iaddr.GetLocal ();
-
-    Ptr<Packet> paquet = Create<Packet> (pktSize);
-    socket->Send (paquet);
-    Simulator::Schedule (pktInterval, &GenerateTraffic,
-                           socket, pktSize,pktCount - 1, pktInterval,node);
-    NS_LOG_UNCOND(" NODE :" << node->GetId() <<" , Adresse IP :" << ipAddr<<" , envoie le paquet numéros : " <<paquet->GetUid() << " , de taille : " <<paquet->GetSize() << " le paquet est envoyé à: "<< time_send << " secondes");
-  }
-  else
-  {
-    socket->Close ();
-    NS_LOG_INFO("J'envoie pas de paquet ! attention il faut corrigé cette erreur ");
-  }
-}
-
-void WhenConditionMet(std::string message)
-{
-  NS_LOG_UNCOND(message);
-}
 
 int
 main (int argc, char *argv[])
@@ -234,7 +156,7 @@ main (int argc, char *argv[])
 
   // NetAnim does not support creating nodes at run-time
   // We have to create nodes and then update them according to ROS
-  const uint32_t maxNodes = 5;
+  const uint32_t maxNodes = 254;
 
   // Create a container for the nodes
   NodeContainer nodes;
