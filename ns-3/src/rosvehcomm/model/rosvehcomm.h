@@ -63,17 +63,6 @@ namespace ns3 {
       ROSVehSync ();
       virtual ~ROSVehSync ();
 
-      uint64_t GetTotalRx () const;
-
-      /**
-       * \return pointer to listening socket
-       */
-      Ptr<Socket> GetListeningSocket (void) const;
-
-      /**
-       * \return list of pointers to accepted sockets
-       */
-      std::list<Ptr<Socket> > GetAcceptedSockets (void) const;
 
       typedef void (* SeqTsSizeCallback)(Ptr<const Packet> p, const Address &from, const Address & to,
                                        const SeqTsSizeHeader &header);
@@ -99,18 +88,6 @@ namespace ns3 {
 
       virtual void StartApplication (void);
       virtual void StopApplication (void);
-
-      /**
-      * \brief Schedule the next packet transmission
-      * \param dt time interval between packets.
-      */
-      void ScheduleArtemipsTransmit (Time dt);
-
-      /**
-      * \brief Send a packet
-      */
-      void SendArtemips (void);
-      void HandleRead1 (Ptr<Socket> socket);
 
       void CreateVehicle (int i, double x, double y, double z, double xs, double ys, double zs);
 

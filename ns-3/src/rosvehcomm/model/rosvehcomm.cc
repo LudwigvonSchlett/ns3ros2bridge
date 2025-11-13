@@ -120,28 +120,6 @@ namespace ns3
     Application::DoDispose ();
   }
 
-  uint64_t ROSVehSync::GetTotalRx () const
-  {
-    NS_LOG_FUNCTION (this);
-    NS_LOG_INFO("GET TOTAL RX NUMEROS 3  ");
-    return m_totalRx;//pour connaître le nombre de byte reçus.
-  }
-
-  Ptr<Socket> ROSVehSync::GetListeningSocket (void) const//fonction qui va recevoir les sockets de Rtmaps
-  {
-    NS_LOG_FUNCTION (this);
-    NS_LOG_INFO(" GET LISTENNING SOCKET NUMEROS 4  ");
-
-    return m_socket_from_rtmaps;
-  }
-
-  std::list<Ptr<Socket>> ROSVehSync::GetAcceptedSockets (void) const
-  {
-    NS_LOG_FUNCTION (this);
-    NS_LOG_INFO("GET ACCEPTED SOCKET NUMEROS 5");
-    return m_socketList;
-  }
-
   //Fonction qui lance l'appliction
   void ROSVehSync::StartApplication (void)
   {
@@ -193,47 +171,6 @@ namespace ns3
     );
   }
 
-  void ROSVehSync::HandleRead1 (Ptr<Socket> socket)
-  {
-    NS_LOG_UNCOND("HandleRead1");
-    NS_LOG_FUNCTION (this << socket);
-
-    Ptr<Packet> packet;
-    Address from;
-    Address localAddress;
-    Address Adress_socket;
-
-    uint32_t totalRx = 0;
-
-    while ((packet = socket->RecvFrom (from)))
-    {
-      if (packet->GetSize () == 0)
-      {
-        //EOF
-        break;
-      }
-      totalRx += packet->GetSize ();
-      if (InetSocketAddress::IsMatchingType (from))
-      {
-        NS_LOG_INFO ("In HandleRead1, at time " << Simulator::Now ().As (Time::S)
-          << " packet sink received "
-          <<  packet->GetSize () << " bytes from "
-          << InetSocketAddress::ConvertFrom(from).GetIpv4 ()
-          << " port " << InetSocketAddress::ConvertFrom (from).GetPort ()
-          << " total Rx " << totalRx << " bytes");
-      }
-    }
-  }
-
-  void
-  ROSVehSync::ScheduleArtemipsTransmit (Time dt)//cette fonction nous permet d'envoyer des informations  vers Rtmaps ( timer, et info du LOG)
-  {
-    NS_LOG_FUNCTION(this << dt);
-    NS_LOG_INFO("SCHEDULE TRANSMIT NUMEROS 7");
-    m_sendEvent_rtmaps = Simulator::Schedule (dt, &ROSVehSync::SendArtemips, this);
-  }
-
-
   void
   ROSVehSync::StopApplication ()//cette fonction nous permet lors de l'arret de la simulation de premièrement fermer le socket créer vers RTmaps, et aussi ceux provenant de Rtmaps
   {
@@ -259,37 +196,6 @@ namespace ns3
       m_socket_from_rtmaps->Close ();
       m_socket_from_rtmaps->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
-  }
-
-  //cette fonction permet d'afficher ce qu'on envoie
-  void ROSVehSync::SendArtemips ()
-  {
-    NS_LOG_FUNCTION(this << controlSocket);
-    NS_LOG_INFO("SEND ARTEMIP NUMEROS 9 ");
-    // We don't have anything to send, so we fill the message with imaginary data.
-
-    std::ostringstream msg;
-    int identifiant = 0;
-    std::string sign = " ";
-
-    // Send a big line with a message with various random integers, separated with spaces
-
-    int route_to_follow = rand() % 20 + 1;//choisis des valeur aléatoirement
-    int nb_veh = rand() % 8 + 1;// de même pour le nombre de véhicule
-    //On affiche dans la console
-    NS_LOG_INFO("Now we SEND Message To Artemips [id: 0] & "
-        << "[route: " << route_to_follow << "]"
-        << " & [nb_veh: " << nb_veh  << "]");
-
-    //on envoie un paquet contenant un msg (chaine de caractère ) à rtmaps avec un rate spécifié par le schedule à la ligne 283
-    msg << std::to_string(identifiant) << sign << std::to_string(route_to_follow) << sign << std::to_string (nb_veh) << '\n';
-    std::ostringstream msg2;
-    msg2 << std::to_string(0) << sign << std::to_string(19) << sign << std::to_string (7) << '\n';
-    Ptr<Packet> packet = Create<Packet> ((uint8_t*) msg2.str ().c_str (), msg.str ().length ());
-    NS_LOG_INFO("Message length: " << msg2.str().length());
-    controlSocket->Send (packet);
-
-    ScheduleArtemipsTransmit (m_interval);
   }
 
   void ROSVehSync::CreateVehicle (int i, double x, double y, double z, double xs, double ys, double zs)
