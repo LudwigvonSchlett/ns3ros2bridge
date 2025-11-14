@@ -1,10 +1,12 @@
 build_lib(
 	LIBNAME rosvehcomm
 	SOURCE_FILES
-		model/rosvehcomm.cc
+		model/rosvehicule.cc
+		model/rosvehsync.cc
     	helper/rosvehcomm-helper.cc
     HEADER_FILES
-    	model/rosvehcomm.h
+    	model/rosvehicule.h
+		model/rosvehsync.h
     	helper/rosvehcomm-helper.h
     LIBRARIES_TO_LINK 	${libcore}
     					${libwifi}

@@ -2,7 +2,8 @@
 #ifndef ROSVEHCOMM_HELPER_H
 #define ROSVEHCOMM_HELPER_H
 
-#include "ns3/rosvehcomm.h"
+#include "ns3/rosvehsync.h"
+#include "ns3/rosvehicule.h"
 #include <stdint.h>
 #include "ns3/application-container.h"
 #include "ns3/node-container.h"

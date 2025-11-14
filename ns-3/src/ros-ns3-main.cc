@@ -30,7 +30,7 @@ using namespace std;
 using namespace ns3;
 
 // Définition du nom du programme pour les LOGS
-NS_LOG_COMPONENT_DEFINE("ROSNS3Example");
+NS_LOG_COMPONENT_DEFINE("ROS2NS3Main");
 
 int
 main (int argc, char *argv[])
@@ -44,8 +44,9 @@ main (int argc, char *argv[])
   cmd.Parse (argc, argv);//mise en place de l'analyse
   cmd.AddValue ("phyMode", "Wifi Phy mode", phyMode);
   // Activation des LOGS
-  LogComponentEnable ("ROSNS3Example", LOG_LEVEL_INFO);
+  LogComponentEnable ("ROS2NS3Main", LOG_LEVEL_INFO);
   LogComponentEnable ("ROSVehSync", LOG_LEVEL_INFO);
+  LogComponentEnable ("ROSVehicule", LOG_LEVEL_INFO);
 
 
   NS_LOG_INFO("Starting program");

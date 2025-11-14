@@ -1,6 +1,8 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-#ifndef ROSVEHCOMM_H
-#define ROSVEHCOMM_H
+#ifndef ROSVEHSYNC_H
+#define ROSVEHSYNC_H
+
+#include "ns3/rosvehcomm-helper.h"
 
 #include "ns3/application.h"
 #include "ns3/event-id.h"
@@ -157,99 +159,6 @@ namespace ns3 {
       TracedCallback<Ptr<const Packet>, const Address &, const Address &, const SeqTsSizeHeader&> m_rxTraceWithSeqTsSize;
 
   };
-
-  class ROSVehicule : public Application
-  {
-    public:
-      static TypeId GetTypeId1 (void);
-      ROSVehicule ();
-      virtual ~ROSVehicule ();
-      uint64_t GetTotalRx1 () const;
-      Ptr<Socket> GetListeningSocket1 (void) const;
-      std::list<Ptr<Socket> > GetAcceptedSockets1 (void) const;
-
-    typedef void (* SeqTsSizeCallback)(Ptr<const Packet> p, const Address &from, const Address & to,
-                                        const SeqTsSizeHeader &header);
-    protected:
-      virtual void DoDispose1 (void);
-    //-------------------------------------------Start of new changement-----------------------------
-
-    private:
-      // inherited from Application base class.
-      virtual void StartApplication (void);    // Called at time specified by Start
-      virtual void StopApplication (void);     // Called at time specified by Stop
-
-      std::vector<std::string> SplitCharPointer(const char* input);
-      void HandleReadTapi (Ptr<Socket> socket);
-      void HandleReadWavei (Ptr<Socket> socket);
-      void HandleAccepti (Ptr<Socket> socket, const Address& from);
-      void HandlePeerClosei (Ptr<Socket> socket);
-      void HandlePeerErrori (Ptr<Socket> socket);
-      void ScheduleArtemipsTransmiti (Time dt);
-  
-      void Replace_destination(Ptr<Socket> socket, Ptr<Packet> packet);
-
-      void SendWithWave (Address waveSrcIP, Address waveDstIP, Ptr<Socket>socket, Ptr<Packet>packet);
-
-      void ReceiveWave (Ptr<Socket> socket);
-
-      void SendArtemips1 (void);
-
-      void Send1(Ptr<Packet> packet);
-
-      void PacketReceived1 (const Ptr<Packet> &p, const Address &from, const Address &localAddress);
-
-       //void SendWave (const Address& from);
-
-      EventId m_sendEvent_rtmaps1; //!< Event to send the next packet
-      int m_nombre_vehicule1;
-
-      Ptr< Packet> choice_dest; // for making choice to send data
-
-      Ptr<Socket> socket_send_RT;
-
-      struct AddressHash1
-      {
-        size_t operator() (const Address &x) const
-        {
-          NS_ABORT_IF (!InetSocketAddress::IsMatchingType (x));
-          InetSocketAddress a = InetSocketAddress::ConvertFrom (x);
-          return std::hash<uint32_t>()(a.GetIpv4 ().Get ());
-        }
-      };
- 
-      std::unordered_map<Address, Ptr<Packet>, AddressHash1> m_buffer1;
- 
-      // In the case of TCP, each socket accept returns a new socket, so the
-      // listening socket is stored separately from the accepted sockets
-
-      // ATTRIBUTES
-
-      // Socket with tap device
-      Ptr<Socket>     tapSocketi;
-      TypeId          m_tapSocket_tidi;
-      Address         tap_ipi;
-      uint16_t portTapi; // socket port
-      Address ros_ipi;
-
-      Ptr<Socket>     waveSocketi;
-      TypeId          m_waveSocket_tidi;
-      uint16_t portWavei; // socket port
-      Address         wave_ipi;
-
-      std::list<Ptr<Socket> > m_socketList1;
-      Address        m_adressewave;
-      int         		vehicle_number;
-      uint64_t        m_totalRx1;
-
-      Address         copy_pkt;
-      bool            m_enableSeqTsSizeHeader1 {false};
-      Ptr<Socket>    m_socket_wave;
-
-      TracedCallback<Ptr<const Packet>, const Address &> m_rxTrace1;
-      TracedCallback<Ptr<const Packet>, const Address &, const Address &> m_rxTraceWithAddresses1;
-      TracedCallback<Ptr<const Packet>, const Address &, const Address &, const SeqTsSizeHeader&> m_rxTraceWithSeqTsSize1;
-  };
-
 }
-#endif /* ROSVEHCOMM_H */
+
+#endif /* ROSVEHSYNC_H */
