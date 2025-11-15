@@ -67,7 +67,6 @@ namespace ns3 {
       ROSVehSync ();
       virtual ~ROSVehSync ();
 
-
       typedef void (* SeqTsSizeCallback)(Ptr<const Packet> p, const Address &from, const Address & to,
                                        const SeqTsSizeHeader &header);
 
@@ -95,9 +94,6 @@ namespace ns3 {
 
       void CreateVehicle (int i, double x, double y, double z, double xs, double ys, double zs);
 
-      // Ptr<ConstantVelocityMobilityModel> m_m1; // For mobility of node1
-      // Ptr<ConstantVelocityMobilityModel> m_m2; // For mobility of node1
-
       Ptr<Socket> m_socket_from_rtmaps; //!< IPv4 Socket
 
       EventId m_sendEvent_rtmaps; //!< Event to send the next packet
@@ -122,8 +118,6 @@ namespace ns3 {
        * \param socket the connected socket
        */
       void HandlePeerError (Ptr<Socket> socket);
-
-      void PacketReceived (const Ptr<Packet> &p, const Address &from, const Address &localAddress);
 
       struct AddressHash
       {

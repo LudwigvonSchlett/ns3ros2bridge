@@ -64,7 +64,7 @@ namespace ns3
   ROSVehSync::ROSVehSync ()
   {
     NS_LOG_FUNCTION(this);//pour obtenir des infos lors de la compilation de cette fonction.
-    NS_LOG_INFO("Constructeur NUMEROS 0 ");
+    NS_LOG_INFO("Constructeur RosvehSync");
     m_sendEvent_rtmaps = EventId ();//obtenir l'id de l'evènement.
 
     // Create Wave PHY using the shared channel
@@ -76,14 +76,14 @@ namespace ns3
   ROSVehSync::~ROSVehSync ()
   {
     NS_LOG_FUNCTION(this);
-    NS_LOG_INFO("destructeur NUMEROS 1 ");
+    NS_LOG_INFO("Destructeur RosvehSync");
     controlSocket = 0;
   }
 
   void ROSVehSync::DoDispose (void)
   {
     NS_LOG_FUNCTION(this);
-    NS_LOG_INFO("DODISPOSE NUMEROS 2  ");
+    NS_LOG_INFO("DoDispose RosvehSync");
     m_socket_from_rtmaps = 0;
     m_socketList.clear ();//vider le conteneur de socket
     Application::DoDispose ();
@@ -93,7 +93,7 @@ namespace ns3
   void ROSVehSync::StartApplication (void)
   {
     NS_LOG_FUNCTION(this);
-    NS_LOG_INFO("STARTING ROSVehSync");
+    NS_LOG_INFO("Starting ROSVehSync");
 
     Ptr<Node> node = GetNode();
 
@@ -465,48 +465,6 @@ namespace ns3
             ++n;
           }
         }
-      }
-    }
-  }
-
-
-  void
-  ROSVehSync::PacketReceived (const Ptr<Packet> &p, const Address &from, const Address &localAddress)
-  {
-    NS_LOG_INFO("Packet RECEIVED  NUMEROS 11  ");
-    SeqTsSizeHeader header;
-    Ptr<Packet> buffer;
-    //----------------------------------------------------------------------------
-    auto itBuffer = m_buffer.find (from);//on selectionne et récupère la bonne adresse du destinataire
-    if (itBuffer == m_buffer.end ())
-    {
-      itBuffer = m_buffer.insert (std::make_pair (from, Create<Packet> (0))).first;
-    }
-    //-------------------------------------------
-
-    buffer = itBuffer->second;
-    buffer->AddAtEnd (p);
-    buffer->PeekHeader (header);
-
-    NS_ABORT_IF (header.GetSize () == 0);
-
-    while (buffer->GetSize () >= header.GetSize ())
-    {
-      NS_LOG_DEBUG ("Removing packet of size " << header.GetSize () << " from buffer of size " << buffer->GetSize ());
-      Ptr<Packet> complete = buffer->CreateFragment (0, static_cast<uint32_t> (header.GetSize ()));
-      buffer->RemoveAtStart (static_cast<uint32_t> (header.GetSize ()));
-
-      complete->RemoveHeader (header);
-
-      m_rxTraceWithSeqTsSize (complete, from, localAddress, header);
-
-      if (buffer->GetSize () > header.GetSerializedSize ())//couche présentation -> serialized.
-      {
-        buffer->PeekHeader (header);
-      }
-      else
-      {
-        break;
       }
     }
   }

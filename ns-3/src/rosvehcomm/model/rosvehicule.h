@@ -49,14 +49,11 @@ namespace ns3 {
       static TypeId GetTypeId (void);
       ROSVehicule ();
       virtual ~ROSVehicule ();
-      uint64_t GetTotalRx1 () const;
-      Ptr<Socket> GetListeningSocket1 (void) const;
-      std::list<Ptr<Socket> > GetAcceptedSockets1 (void) const;
 
     typedef void (* SeqTsSizeCallback)(Ptr<const Packet> p, const Address &from, const Address & to,
                                         const SeqTsSizeHeader &header);
     protected:
-      virtual void DoDispose1 (void);
+      virtual void DoDispose (void);
     //-------------------------------------------Start of new changement-----------------------------
 
     private:
@@ -70,26 +67,11 @@ namespace ns3 {
       void HandleAccepti (Ptr<Socket> socket, const Address& from);
       void HandlePeerClosei (Ptr<Socket> socket);
       void HandlePeerErrori (Ptr<Socket> socket);
-      void ScheduleArtemipsTransmiti (Time dt);
-  
-      void Replace_destination(Ptr<Socket> socket, Ptr<Packet> packet);
-
-      void SendWithWave (Address waveSrcIP, Address waveDstIP, Ptr<Socket>socket, Ptr<Packet>packet);
-
-      void ReceiveWave (Ptr<Socket> socket);
-
-      void SendArtemips1 (void);
-
-      void Send1(Ptr<Packet> packet);
-
-      void PacketReceived1 (const Ptr<Packet> &p, const Address &from, const Address &localAddress);
-
-       //void SendWave (const Address& from);
 
       EventId m_sendEvent_rtmaps1; //!< Event to send the next packet
       int m_nombre_vehicule1;
 
-      Ptr< Packet> choice_dest; // for making choice to send data
+      Ptr<Packet> choice_dest; // for making choice to send data
 
       Ptr<Socket> socket_send_RT;
 
