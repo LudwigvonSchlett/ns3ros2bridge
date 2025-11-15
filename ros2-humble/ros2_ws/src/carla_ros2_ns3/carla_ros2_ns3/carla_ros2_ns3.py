@@ -25,6 +25,7 @@ node = None
 # Thread et essentiels pour la sychronisation
 position_listener_thread = None
 comunication_nodes_thread = None
+listen_tap_devices_thread = None
 stop_state = False
 error_state = False
 
@@ -255,7 +256,7 @@ def control_node_listener(socket_tap0):
                     for num_node in range(1, number_node+1):
                         socket = connect_tap_device(f"tap{num_node}")
                         sockets.append(socket)
-                    launch_simulation(sockets)
+                    launch_simulation(sockets, socket_tap0)
 
                 else:
                     errlog(f"Erreur message recue : {message}")
@@ -332,13 +333,14 @@ def spawn_vehicle(world):
     return vehicle
 
 
-def launch_simulation(sockets):
+def launch_simulation(sockets, control_socket):
     """
     Met les voitures en mouvement et lance la collecte de données sur Carla
     (position,vitesse) pour les envoyer par la suite
     """
     global position_listener_thread
     global comunication_nodes_thread
+    global listen_tap_devices_thread
 
     traffic_manager = client.get_trafficmanager(8001)
     traffic_manager.set_synchronous_mode(False)
@@ -360,7 +362,12 @@ def launch_simulation(sockets):
         target=comunication_node, args=(1,))
     comunication_nodes_thread.start()
 
-    listen_tap_devices(sockets)
+    inflog("Launching comunication_node")
+    listen_tap_devices_thread = threading.Thread(
+        target=listen_tap_devices, args=(sockets,))
+    listen_tap_devices_thread.start()
+
+    listen_control_tap(control_socket)
 
 
 def stop_simulation():
@@ -376,6 +383,10 @@ def stop_simulation():
     if comunication_nodes_thread is not None:
         comunication_nodes_thread.join()
         inflog("comunication_nodes_thread is stopped")
+
+    if listen_tap_devices_thread is not None:
+        listen_tap_devices_thread.join()
+        inflog("listen_tap_devices_thread is stopped")     
 
     # Détruire les véhicules pour nettoyer la simulation
     for vehicle in vehicles:
@@ -467,17 +478,34 @@ def get_all_mobility():
 #  Threads
 
 
+def listen_control_tap(control_socket):
+    """
+    Écoute sur le tape de controle
+    et control les threads du programme
+    """
+    while rclpy.ok():
+        try:
+            if error_state:
+                errlog("Erreur dans l'un des threads")
+                stop_simulation()
+
+        except Exception as e:
+            errlog(f"Erreur lors de l'écoute du tape 0: {e}")
+            stop_simulation()
+
+
 def listen_tap_devices(tap_sockets):
     """
     Écoute sur plusieurs tap devices simultanément
     (pas le tap de controle: le tap0)
     """
     global number_message_received
+    global error_state
     while rclpy.ok():
         try:
-            if error_state:
-                errlog("Erreur dans l'un des threads")
-                stop_simulation()
+            if error_state or stop_state:
+                inflog("Exiting listen_tap_devices")
+                exit()
 
             # Utiliser select pour écouter plusieurs sockets
             readable, _, _ = select.select(tap_sockets, [], [], 1.0)
@@ -497,7 +525,7 @@ def listen_tap_devices(tap_sockets):
 
         except Exception as e:
             errlog(f"Erreur lors de l'écoute des tap devices: {e}")
-            stop_simulation()
+            error_state = True
 
 
 def periodic_position_sender(interval):
