@@ -18,7 +18,8 @@ number_message_sent = 0  # Pour les messages s'envoyant via tap1,2,3,...
 number_message_received = 0  # Pour les messages s'envoyant via tap1,2,3,...
 vehicles = []
 client = carla.Client('localhost', 2000)  # connexion a Carla
-NetAnim_file = ""
+netAnim_file = ""
+simulation_duration = 0
 # Noeud principal
 node = None
 # Thread et essentiels pour la sychronisation
@@ -199,7 +200,8 @@ def control_node_listener(socket_tap0):
     """
     Permet d'ecouter ce que recoit tap0, noeud de control
     """
-    global NetAnim_file
+    global netAnim_file
+    global simulation_duration
 
     while rclpy.ok():
         try:
@@ -228,13 +230,20 @@ def control_node_listener(socket_tap0):
 
                 if (command == "hello_NS3"):
 
+                    inflog("Requesting duration length")
+                    tap_sender_control("request_duration")
+
+                elif (command == "duration"):
+
+                    simulation_duration = msg_split[1]
+                    inflog(f"ns3 Simulation duration is {simulation_duration}")
                     inflog("Requesting NetAnim animation file")
                     tap_sender_control("request_animfile")
 
                 elif (command == "file"):
 
-                    NetAnim_file = msg_split[1]
-                    inflog(f"ns3 Simulation saved on file {NetAnim_file}")
+                    netAnim_file = msg_split[1]
+                    inflog(f"ns3 Simulation saved on file {netAnim_file}")
                     inflog("Initializing carla")
                     init_carla()
                     positions = get_all_position()

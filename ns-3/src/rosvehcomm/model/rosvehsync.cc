@@ -336,15 +336,24 @@ namespace ns3
         const std::string& command = instructions[0];
         if(command == "hello_ROS2")
         {
-		      //NS_LOG_INFO("Received command hello => responding hello");
     	    std::string message = "hello_NS3";
 		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+          NS_LOG_INFO("Received hello_ROS2 => responding hello_NS3");
     	    socket->Send (packet);
         }
         else if (command == "request_animfile")
         {
           std::string message = "file " + simInfo.filename;
 		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+          NS_LOG_INFO("Received request_animfile => responding " << message);
+    	    socket->Send (packet);
+        }
+        else if (command == "request_duration")
+        { 
+          Time::Unit unit = Time::Unit::S;
+          std::string message = "duration " + std::to_string(simInfo.duration.ToInteger(unit));
+		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+          NS_LOG_INFO("Received request_duration => responding " << message);
     	    socket->Send (packet);
         }
         else if (command == "create_node")
