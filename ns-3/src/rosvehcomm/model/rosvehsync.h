@@ -2,7 +2,8 @@
 #ifndef ROSVEHSYNC_H
 #define ROSVEHSYNC_H
 
-#include "ns3/rosvehcomm-helper.h"
+#include "ns3/rosvehsync-helper.h"
+#include "ns3/rosvehicule-helper.h"
 
 #include "ns3/application.h"
 #include "ns3/event-id.h"

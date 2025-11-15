@@ -1,7 +1,7 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 
 //On défini les différentes bibliothèque nécéssaire pour le bon déroulement du programme
-#include "ns3/rosvehcomm-helper.h"
+#include "ns3/rosvehsync-helper.h"
 #include "ns3/netanim-module.h"
 
 

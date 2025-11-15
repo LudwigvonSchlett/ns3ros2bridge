@@ -3,11 +3,13 @@ build_lib(
 	SOURCE_FILES
 		model/rosvehicule.cc
 		model/rosvehsync.cc
-    	helper/rosvehcomm-helper.cc
+    	helper/rosvehsync-helper.cc
+		helper/rosvehicule-helper.cc
     HEADER_FILES
     	model/rosvehicule.h
 		model/rosvehsync.h
-    	helper/rosvehcomm-helper.h
+    	helper/rosvehsync-helper.h
+		helper/rosvehicule-helper.h
     LIBRARIES_TO_LINK 	${libcore}
     					${libwifi}
     					${libapplications}

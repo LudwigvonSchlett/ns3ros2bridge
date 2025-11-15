@@ -2,7 +2,7 @@
 #ifndef ROSVEHICULE_H
 #define ROSVEHICULE_H
 
-#include "ns3/rosvehcomm-helper.h"
+#include "ns3/rosvehsync-helper.h"
 #include "ns3/application.h"
 #include "ns3/event-id.h"
 #include "ns3/ptr.h"

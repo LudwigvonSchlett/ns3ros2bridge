@@ -9,8 +9,10 @@
 def build(bld):
     module = bld.create_ns3_module('rosvehcomm', ['core', 'wifi', 'applications', 'mobility','internet', 'config-store','stats', 'applications', 'fd-net-device','netanim'])
     module.source = [
-        'model/rosvehcomm.cc',
-        'helper/rosvehcomm-helper.cc',
+        'model/rosvehicule.cc',
+		'model/rosvehsync.cc',
+    	'helper/rosvehsync-helper.cc',
+		'helper/rosvehicule-helper.cc',
         ]
 
     module_test = bld.create_ns3_module_test_library('rosvehcomm')
@@ -26,8 +28,10 @@ def build(bld):
     headers = bld(features='ns3header')
     headers.module = 'rosvehcomm'
     headers.source = [
-        'model/rosvehcomm.h',
-        'helper/rosvehcomm-helper.h',
+        'model/rosvehicule.h',
+		'model/rosvehsync.h',
+    	'helper/rosvehsync-helper.h',
+		'helper/rosvehicule-helper.h',
         ]
 
     if bld.env.ENABLE_EXAMPLES:

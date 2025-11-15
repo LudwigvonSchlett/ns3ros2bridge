@@ -284,16 +284,16 @@ namespace ns3
 	  }
 
     //Mettre en place les paramètres de ROS
-    ROSVehicule1Helper rosVehicule1Helper;
-    rosVehicule1Helper.SetAttribute ("RemoteROS",remoteAddressi);
-    rosVehicule1Helper.SetAttribute ("LocalTap", sinkLocalAddressi);
-    rosVehicule1Helper.SetAttribute ("LocalWave", waveLocalAddressi);
-    rosVehicule1Helper.SetAttribute ("VehicleNumber", IntegerValue(i));
-    rosVehicule1Helper.SetAttribute ("PortTap", UintegerValue(portveh));
-    rosVehicule1Helper.SetAttribute ("PortWave", UintegerValue(portwave));
+    ROSVehiculeHelper rosVehiculeHelper;
+    rosVehiculeHelper.SetAttribute ("RemoteROS",remoteAddressi);
+    rosVehiculeHelper.SetAttribute ("LocalTap", sinkLocalAddressi);
+    rosVehiculeHelper.SetAttribute ("LocalWave", waveLocalAddressi);
+    rosVehiculeHelper.SetAttribute ("VehicleNumber", IntegerValue(i));
+    rosVehiculeHelper.SetAttribute ("PortTap", UintegerValue(portveh));
+    rosVehiculeHelper.SetAttribute ("PortWave", UintegerValue(portwave));
     //Ajout adresse destination dans le node 1 ex :  tap 1 -> wave
 
-    ApplicationContainer ROSVehSyncApps1 = rosVehicule1Helper.Install (nodei);
+    ApplicationContainer ROSVehSyncApps1 = rosVehiculeHelper.Install (nodei);
 
     ROSVehSyncApps1.Start(Seconds(1.0));
     ROSVehSyncApps1.Stop(Seconds(500));

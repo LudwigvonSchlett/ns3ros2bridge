@@ -1,18 +1,16 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-#ifndef ROSVEHCOMM_HELPER_H
-#define ROSVEHCOMM_HELPER_H
+#ifndef ROSVEHSYNC_HELPER_H
+#define ROSVEHSYNC_HELPER_H
 
-#include "ns3/rosvehsync.h"
-#include "ns3/rosvehicule.h"
 #include <stdint.h>
+#include "ns3/rosvehsync.h"
 #include "ns3/application-container.h"
 #include "ns3/node-container.h"
 #include "ns3/object-factory.h"
 #include "ns3/ipv4-address.h"
 #include "ns3/ipv6-address.h"
-
-
-
+#include "ns3/uinteger.h"
+#include "ns3/names.h"
 
 
 namespace ns3 {
@@ -76,29 +74,7 @@ namespace ns3 {
       ObjectFactory m_factory; //!< Object factory.
   };
 
-  class ROSVehicule1Helper
-  {
-
-    public:
-      ROSVehicule1Helper ();
-
-      void SetAttribute (std::string name, const AttributeValue &value);
-      //void SetAttribute (std::string name, AddressValue adress);
-
-        ApplicationContainer Install (Ptr<Node> node) const;
-
-        ApplicationContainer Install (std::string nodeName) const;
-
-        ApplicationContainer Install (NodeContainer c) const;
-
-    private:
-
-      Ptr<Application> InstallPriv (Ptr<Node> node) const;
-
-      ObjectFactory m_factory;
-
-  };
 }
 
-#endif /* ROSVEHCOMM_HELPER_H */
+#endif /* ROSVEHSYNC_HELPER_H */
 

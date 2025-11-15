@@ -1,26 +1,22 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 
 //On défini les différentes bibliothèque nécéssaire pour le bon déroulement du programme
-#include "ns3/rosvehcomm-helper.h"
-#include "ns3/netanim-module.h"
 #include <iostream>
 #include <vector>
 #include <typeinfo>
 #include <time.h>
 #include <iomanip>
 
+#include "ns3/rosvehsync-helper.h"
+
+#include "ns3/netanim-module.h"
 #include "ns3/yans-wifi-helper.h"
 #include "ns3/ipv4-address-helper.h"
 #include "ns3/ipv4-interface-container.h"
-#include <iostream>
-
 #include "ns3/ocb-wifi-mac.h"
 #include "ns3/wifi-80211p-helper.h"
 #include "ns3/wave-mac-helper.h"
-
 #include "ns3/ipv4-static-routing-helper.h"
-
-
 #include "ns3/network-module.h"
 #include "ns3/ipv4.h"
 #include "ns3/timer.h"
