@@ -6,7 +6,7 @@ namespace ns3 {
 
   ROSVehiculeHelper::ROSVehiculeHelper ()
   {
-    m_factory.SetTypeId (ROSVehicule::GetTypeId1 ());
+    m_factory.SetTypeId (ROSVehicule::GetTypeId ());
   }
 
   void

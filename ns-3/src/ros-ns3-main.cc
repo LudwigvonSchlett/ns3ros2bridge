@@ -174,7 +174,8 @@ main (int argc, char *argv[])
 
   ns3::AnimationInterface anim(animFileName);
 
-  netAnimFile.filename = animFileName;
+  simInfo.filename = animFileName;
+  simInfo.duration = simulationTime;
 
   NS_LOG_INFO("Starting simulation of " << simulationTime.GetSeconds() << " seconds");
   Simulator::Stop (simulationTime);

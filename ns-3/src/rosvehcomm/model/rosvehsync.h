@@ -48,11 +48,12 @@ namespace ns3 {
   class Socket;
   class Packet;
 
-  struct NetAnimFile {
+  struct SimInfo {
       std::string filename;
+      ns3::Time duration;
   };
 
-  extern NetAnimFile netAnimFile;
+  extern SimInfo simInfo;
 
   class ROSVehSync : public Application
   {

@@ -5,7 +5,7 @@ using namespace std;
 namespace ns3
 {
 
-  NetAnimFile netAnimFile;
+  SimInfo simInfo;
 
   NS_LOG_COMPONENT_DEFINE("ROSVehSync");
   NS_OBJECT_ENSURE_REGISTERED(ROSVehSync);
@@ -296,7 +296,7 @@ namespace ns3
     ApplicationContainer ROSVehSyncApps1 = rosVehiculeHelper.Install (nodei);
 
     ROSVehSyncApps1.Start(Seconds(1.0));
-    ROSVehSyncApps1.Stop(Seconds(500));
+    ROSVehSyncApps1.Stop(simInfo.duration);
   }
 
   std::vector<std::string> ROSVehSync::SplitCharPointerController(const char* input)
@@ -343,7 +343,7 @@ namespace ns3
         }
         else if (command == "request_animfile")
         {
-          std::string message = "file " + netAnimFile.filename;
+          std::string message = "file " + simInfo.filename;
 		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
     	    socket->Send (packet);
         }

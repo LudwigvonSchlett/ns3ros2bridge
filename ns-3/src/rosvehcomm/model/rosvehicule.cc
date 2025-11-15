@@ -8,7 +8,7 @@ namespace ns3
   NS_LOG_COMPONENT_DEFINE("ROSVehicule");
   NS_OBJECT_ENSURE_REGISTERED(ROSVehicule);
 
-  TypeId ROSVehicule::GetTypeId1 (void)
+  TypeId ROSVehicule::GetTypeId (void)
   {
     static TypeId tid1 = TypeId ("ns3::PacketSink2")
     .SetParent<Application> ()
@@ -277,14 +277,14 @@ namespace ns3
  }
 
 
-//Cette fonction permet de scheduler l'envoie des paquets NS3 vers RTMaps
+  //Cette fonction permet de scheduler l'envoie des paquets NS3 vers RTMaps
   void ROSVehicule::ScheduleArtemipsTransmiti (Time dt)
   { //cette fonction nous permet d'envoyer des informations  vers Rtmaps ( timer, et info du LOG)
     NS_LOG_FUNCTION(this << dt);
     m_sendEvent_rtmaps1 = Simulator::Schedule (dt, &ROSVehicule::SendArtemips1, this);
   }
 
-//Voici la fonction qui me permet de faire l'envoie de paquet vers RTMaps
+  //Voici la fonction qui me permet de faire l'envoie de paquet vers RTMaps
   void ROSVehicule::Send1(Ptr<Packet> packet)
   {
     NS_LOG_FUNCTION(this << packet);
@@ -331,7 +331,7 @@ namespace ns3
     }
 
     return result;
-}
+  }
 
   void ROSVehicule::HandleReadTapi (Ptr<Socket> socket)
   {

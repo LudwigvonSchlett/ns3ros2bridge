@@ -46,7 +46,7 @@ namespace ns3 {
   class ROSVehicule : public Application
   {
     public:
-      static TypeId GetTypeId1 (void);
+      static TypeId GetTypeId (void);
       ROSVehicule ();
       virtual ~ROSVehicule ();
       uint64_t GetTotalRx1 () const;

@@ -23,11 +23,11 @@ namespace ns3 {
       void SetAttribute (std::string name, const AttributeValue &value);
       //void SetAttribute (std::string name, AddressValue adress);
 
-        ApplicationContainer Install (Ptr<Node> node) const;
+      ApplicationContainer Install (Ptr<Node> node) const;
 
-        ApplicationContainer Install (std::string nodeName) const;
+      ApplicationContainer Install (std::string nodeName) const;
 
-        ApplicationContainer Install (NodeContainer c) const;
+      ApplicationContainer Install (NodeContainer c) const;
 
     private:
 
