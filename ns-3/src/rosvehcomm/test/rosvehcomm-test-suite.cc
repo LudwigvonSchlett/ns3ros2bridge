@@ -1,7 +1,7 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 
 // Include a header file from your module to test.
-#include "ns3/rosvehcomm.h"
+#include "ns3/rosvehsync.h"
 
 // An essential include is test.h
 #include "ns3/test.h"
@@ -13,12 +13,12 @@ using namespace ns3;
 // This is an example TestCase.
 class RosvehcommTestCase1 : public TestCase
 {
-public:
-  RosvehcommTestCase1 ();
-  virtual ~RosvehcommTestCase1 ();
+  public:
+    RosvehcommTestCase1 ();
+    virtual ~RosvehcommTestCase1 ();
 
-private:
-  virtual void DoRun (void);
+  private:
+    virtual void DoRun (void);
 };
 
 // Add some help text to this case to describe what it is intended to test
@@ -52,8 +52,8 @@ RosvehcommTestCase1::DoRun (void)
 //
 class RosvehcommTestSuite : public TestSuite
 {
-public:
-  RosvehcommTestSuite ();
+  public:
+    RosvehcommTestSuite ();
 };
 
 RosvehcommTestSuite::RosvehcommTestSuite ()
