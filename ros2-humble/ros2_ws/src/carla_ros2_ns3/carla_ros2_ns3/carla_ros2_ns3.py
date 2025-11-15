@@ -231,12 +231,12 @@ def control_node_listener(socket_tap0):
 
                 if (command == "hello_NS3"):
 
-                    inflog("Requesting duration length")
+                    inflog("Requesting simulation duration")
                     tap_sender_control("request_duration")
 
                 elif (command == "duration"):
 
-                    simulation_duration = msg_split[1]
+                    simulation_duration = int(msg_split[1])
                     inflog(f"ns3 Simulation duration is {simulation_duration}")
                     inflog("Requesting NetAnim animation file")
                     tap_sender_control("request_animfile")
@@ -351,18 +351,20 @@ def launch_simulation(sockets, control_socket):
     for vehicle in vehicles:
         vehicle.set_autopilot(True, 8001)
 
+    interval = 1
+
     # Lancer l'écoute périodique des positions dans un thread
     inflog("Launching  periodic_position_sender")
     position_listener_thread = threading.Thread(
-        target=periodic_position_sender, args=(1,))
+        target=periodic_position_sender, args=(interval,))
     position_listener_thread.start()
 
     inflog("Launching comunication_node")
     comunication_nodes_thread = threading.Thread(
-        target=comunication_node, args=(1,))
+        target=comunication_node, args=(interval,))
     comunication_nodes_thread.start()
 
-    inflog("Launching comunication_node")
+    inflog("Launching listen_tap_devices")
     listen_tap_devices_thread = threading.Thread(
         target=listen_tap_devices, args=(sockets,))
     listen_tap_devices_thread.start()
@@ -386,7 +388,7 @@ def stop_simulation():
 
     if listen_tap_devices_thread is not None:
         listen_tap_devices_thread.join()
-        inflog("listen_tap_devices_thread is stopped")     
+        inflog("listen_tap_devices_thread is stopped")
 
     # Détruire les véhicules pour nettoyer la simulation
     for vehicle in vehicles:
@@ -481,16 +483,57 @@ def get_all_mobility():
 def listen_control_tap(control_socket):
     """
     Écoute sur le tape de controle
-    et control les threads du programme
+    et controle les threads du programme
     """
+
+    MTU = 15000  # Maximum Transmission Unit pour Ethernet frame
+
     while rclpy.ok():
         try:
             if error_state:
                 errlog("Erreur dans l'un des threads")
                 stop_simulation()
 
+            packet = control_socket.recv(MTU)
+            inflog("tap0 received a packet")
+
+            # Récupérer l'adresse IP de destination du paquet
+            dest_ip = packet[30:34]
+
+            # Convertir l'adresse IP de destination en une chaine lisible
+            dest_ip_str = ".".join(str(byte) for byte in dest_ip)
+
+            # Vérifiez si le paquet est destiné
+            # à votre propre adresse TAP pour l'ignorer
+            if dest_ip_str == '10.0.0.2':
+                inflog(
+                    f"Message destiné à {dest_ip_str} (envoi propre) ignoré.")
+
+            elif check_message(packet, False):
+                message = (packet[42:].decode()).rstrip("\n")
+                inflog(f"Received packet (decoded): {message}")
+                msg_split = message.split(" ")
+                command = msg_split[0]
+
+                if (command == "time"):
+
+                    simulation_time = int(msg_split[1])
+                    inflog(f"ns3 Simulation time is {simulation_time} seconds")
+
+                    if simulation_duration - simulation_time < 5:
+                        inflog("Fin de la simulation")
+                        stop_simulation()
+
+                else:
+                    errlog(f"Erreur message recue : {message}")
+
+        except UnicodeDecodeError as e:
+            errlog(f"Erreur de décodage Unicode : {e}")
+            inflog("Le paquet reçu ne peut pas être décodé en UTF-8.")
+            stop_simulation()
+
         except Exception as e:
-            errlog(f"Erreur lors de l'écoute du tape 0: {e}")
+            errlog(f"Erreur inattendue lors du traitement du paquet : {e}")
             stop_simulation()
 
 
@@ -531,6 +574,7 @@ def listen_tap_devices(tap_sockets):
 def periodic_position_sender(interval):
     """
     Envoie sur tap0 les positions et vitesses de tout les véhicule.
+    Demande également le temps de la simulation
     """
     global error_state
     while rclpy.ok():
@@ -540,6 +584,7 @@ def periodic_position_sender(interval):
         try:
             mobilities = get_all_mobility()
             tap_sender_control(f"set_mobility {mobilities}")
+            tap_sender_control("request_time")
             time.sleep(interval)
         except Exception as e:
             errlog(
