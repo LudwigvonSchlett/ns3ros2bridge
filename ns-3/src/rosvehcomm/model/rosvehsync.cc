@@ -356,6 +356,14 @@ namespace ns3
           NS_LOG_INFO("Received request_duration => responding " << message);
     	    socket->Send (packet);
         }
+        else if (command == "request_time")
+        { 
+          Time::Unit unit = Time::Unit::S;
+          std::string message = "time " + std::to_string(Simulator::Now().ToInteger(unit));
+		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+          NS_LOG_INFO("Received request_time => responding " << message);
+    	    socket->Send (packet);
+        }
         else if (command == "create_node")
         {
           //NS_LOG_INFO("Create node command");

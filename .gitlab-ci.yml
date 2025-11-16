@@ -3,6 +3,7 @@ image: ubuntu:22.04 # Default container image
 # Reusable properties
 variables:
   NS3: "ns-3/ns-3.38"
+  ROS2: "ros2-humble"
   DEBIAN_FRONTEND: "noninteractive"
 
 # Cache to speed up builds
@@ -11,18 +12,34 @@ cache:
   paths:
     - "$NS3/ns-allinone-3.38"
     - "$NS3/ns-allinone-3.38.tar.bz2"
+    - "$ROS2/ros2_ws/src"
+    - "$ROS2/ros2_ws/install"
+    - "$ROS2/ros2_ws/build"
+
 
 # Define stages
-#stages:
-#  - install
+stages:
+  - build
+  - test
 
 # Stage 1: Build
-#Install:
-#  stage: install
-#  rules:
-#    - when: always
-#  script:
-#    - cd $NS3
-#    - ./dependencies.bsh
-#    - ./install_cicd.bsh
+Install_ROS2:
+  stage: build
+  rules:
+    - when: always
+  script:
+    - cd $ROS2
+    - ./dependencies.bsh
+    - source /opt/ros/humble/setup.bash
+    - ./compile.bsh
 
+# Stage 2: Build
+Test_ROS2:
+  stage: test
+  rules:
+    - when: always
+  script:
+    - cd $ROS2
+    - ./dependencies.bsh
+    - source /opt/ros/humble/setup.bash
+    - ./test.bsh
