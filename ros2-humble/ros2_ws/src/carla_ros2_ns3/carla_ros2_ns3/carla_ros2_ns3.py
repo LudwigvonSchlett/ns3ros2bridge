@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 
 import socket
-import carla
 import random
-import rclpy
-from std_msgs.msg import String
 import time
 import sys
-# import os
-# import subprocess
 import select
 import threading
 
+import carla
+import rclpy
+from std_msgs.msg import String
 
-number_node = 5  # nombre de nodes et donc de voitures dans la simulation
+# Constantes
+NB_NODE = 5  # nombre de nodes et donc de voitures dans la simulation
+MTU = 15000  # Maximum Transmission Unit pour Ethernet frame
+# Variables de simulation
 number_message_sent = 0  # Pour les messages s'envoyant via tap1,2,3,...
 number_message_received = 0  # Pour les messages s'envoyant via tap1,2,3,...
 vehicles = []
@@ -31,6 +32,7 @@ error_state = False
 
 
 def main():
+    """Initialise le noeud principal et lance le programme."""
     global node
     rclpy.init(args=sys.argv)
     try:
@@ -50,16 +52,19 @@ def main():
 
 
 def inflog(msg):
+    """Logger d'info pour le noeud principal."""
     node.get_logger().info(msg)
 
 
 def errlog(msg):
+    """Logger d'erreur pour le noeud principal."""
     node.get_logger().error(msg)
 
 # Partie Réseau
 
 
 def check_message(rawdata, hidden):
+    """Verify que le message est UDP et la destination est dans 10.0.0.0."""
     # check udp
     if rawdata[23] == 17 and rawdata[30] == 10:
 
@@ -85,12 +90,12 @@ def check_message(rawdata, hidden):
 
         return True
 
-    else:
-        return False
+    return False
 
 
 def calculate_udp_checksum(
         source_ip, dest_ip, src_port, dest_port, udp_payload):
+    """Calculate la somme de controle d'un paquet UDP."""
     # Pour convertir une adresse IP en une liste de mots de 16 bits
     def ip_to_words(ip):
         parts = list(map(int, ip.split(".")))
@@ -124,8 +129,9 @@ def calculate_udp_checksum(
 
 def connect_tap_device(tap_device):
     """
-    Établit une connexion au périphérique TAP avec tentative de
-    reconnexion en boucle si elle échoue.
+    Établit une connexion au périphérique TAP.
+
+    Reconnexion en boucle si elle échoue.
     Retourne le socket connecté.
     """
     while rclpy.ok():
@@ -143,12 +149,11 @@ def connect_tap_device(tap_device):
 
             inflog("Nouvelle tentative dans 5 secondes...")
             time.sleep(5)  # Attendre 5 secondes avant de réessayer
+    return None
 
 
 def tap_sender(message, num_node):
-    """
-    Permet d'envoyer un message grace a un numéro de noeud
-    """
+    """Permet d'envoyer un message grace a un numéro de noeud."""
     # Créer un éditeur pour publier les paquets sur un topic spécifique
     topic_name = f'/tap{num_node}_packets'
     pub = node.create_publisher(String, topic_name, 10)
@@ -172,9 +177,7 @@ def tap_sender(message, num_node):
 
 
 def tap_sender_control(message):
-    """
-    Permet d'envoyer un message grace a un numéro de noeud
-    """
+    """Permet d'envoyer un message au noeud de controle."""
     # Créer un éditeur pour publier les paquets sur un topic spécifique
     topic_name = "/tap0_packets"
     pub = node.create_publisher(String, topic_name, 10)
@@ -198,16 +201,13 @@ def tap_sender_control(message):
 
 
 def control_node_listener(socket_tap0):
-    """
-    Permet d'ecouter ce que recoit tap0, noeud de control
-    """
+    """Permet d'ecouter ce que recoit tap0, noeud de controle."""
     global netAnim_file
     global simulation_duration
 
     while rclpy.ok():
         try:
 
-            MTU = 15000  # Maximum Transmission Unit pour Ethernet frame
             packet = socket_tap0.recv(MTU)
             inflog("tap0 received a packet")
 
@@ -227,21 +227,21 @@ def control_node_listener(socket_tap0):
                 message = (packet[42:].decode()).rstrip("\n")
                 inflog(f"Received packet (decoded): {message}")
                 msg_split = message.split(" ")
-                command = msg_split[0]
+                response_command = msg_split[0]
 
-                if (command == "hello_NS3"):
+                if response_command == "hello_NS3":
 
                     inflog("Requesting simulation duration")
                     tap_sender_control("request_duration")
 
-                elif (command == "duration"):
+                elif response_command == "duration":
 
                     simulation_duration = int(msg_split[1])
                     inflog(f"ns3 Simulation duration is {simulation_duration}")
                     inflog("Requesting NetAnim animation file")
                     tap_sender_control("request_animfile")
 
-                elif (command == "file"):
+                elif response_command == "file":
 
                     netAnim_file = msg_split[1]
                     inflog(f"ns3 Simulation saved on file {netAnim_file}")
@@ -250,12 +250,12 @@ def control_node_listener(socket_tap0):
                     positions = get_all_position()
                     tap_sender_control(f"create_node {positions}")
 
-                elif (command == "create_success"):
+                elif response_command == "create_success":
 
                     sockets = []
-                    for num_node in range(1, number_node+1):
-                        socket = connect_tap_device(f"tap{num_node}")
-                        sockets.append(socket)
+                    for num_node in range(1, NB_NODE+1):
+                        tap_socket = connect_tap_device(f"tap{num_node}")
+                        sockets.append(tap_socket)
                     launch_simulation(sockets, socket_tap0)
 
                 else:
@@ -274,10 +274,7 @@ def control_node_listener(socket_tap0):
 
 
 def init_carla():
-    """
-    Initialise la connexion à Carla, configure le monde et spawn un véhicule.
-    """
-
+    """Initialise la connexion à Carla."""
     global vehicles
 
     client.set_timeout(20.0)
@@ -304,7 +301,7 @@ def init_carla():
         inflog(f"{len(waypoints)} waypoints générés.")
 
     # Créer les véhicules
-    for _ in range(number_node):
+    for _ in range(NB_NODE):
         vehicle = None
         while vehicle is None:
             vehicle = spawn_vehicle(world)
@@ -313,9 +310,7 @@ def init_carla():
 
 
 def spawn_vehicle(world):
-    """
-    Crée et initialise un véhicule dans le simulateur Carla.
-    """
+    """Crée et initialise un véhicule dans le simulateur Carla."""
     # Obtenir la bibliothèque de blueprints
     blueprint_library = world.get_blueprint_library()
     vehicle_bp = random.choice(blueprint_library.filter('vehicle.*'))
@@ -334,10 +329,7 @@ def spawn_vehicle(world):
 
 
 def launch_simulation(sockets, control_socket):
-    """
-    Met les voitures en mouvement et lance la collecte de données sur Carla
-    (position,vitesse) pour les envoyer par la suite
-    """
+    """Lance la simulation."""
     global position_listener_thread
     global comunication_nodes_thread
     global listen_tap_devices_thread
@@ -373,6 +365,7 @@ def launch_simulation(sockets, control_socket):
 
 
 def stop_simulation():
+    """Arrete la simulation."""
     global stop_state
 
     inflog("Stopping all threads")
@@ -400,23 +393,24 @@ def stop_simulation():
 
     inflog("Simulation terminée.")
     if number_message_sent != 0:
-        PDR = (number_message_received/number_message_sent)*100
-        PDR_division = PDR/(number_node-1)
+        pdr = (number_message_received/number_message_sent)*100
+        pdr_division = pdr/(NB_NODE-1)
     else:
-        PDR = 0
-        PDR_division = 0
+        pdr = 0
+        pdr_division = 0
 
     inflog(f"Nombre de paquet envoyés: {number_message_sent}")
     inflog(f"Nombre de paquet recu: {number_message_received}")
-    inflog(f"Taux de livraison des paquets: PDR = {PDR}%")
+    inflog(f"Taux de livraison des paquets: PDR = {pdr}%")
     inflog("Taux de livraison des paquets en prenant en compte"
-           + f"un broadcast: PDR = {PDR_division}%")
+           + f"un broadcast: PDR = {pdr_division}%")
     inflog("Interruption reseau avec NS3")
     rclpy.shutdown()
-    exit()
+    sys.exit()
 
 
 def get_position(vehicle):
+    """Recupère la position d'un vehicule carla."""
     try:
         transform = vehicle.get_transform()
         location = transform.location
@@ -427,6 +421,7 @@ def get_position(vehicle):
 
 
 def get_speed(vehicle):
+    """Recupère la vitesse d'un vehicule carla."""
     try:
         velocity = vehicle.get_velocity()
         velocity_string = f"{velocity.x} {velocity.y} {velocity.z}"
@@ -436,12 +431,13 @@ def get_speed(vehicle):
 
 
 def get_all_position():
+    """Recupère les positions de tous les vehicules carla."""
     try:
         output = " "
         index_vehicle = 1
         for vehicle in vehicles:
             output += f" {index_vehicle} {get_position(vehicle)}"
-            if index_vehicle < number_node:
+            if index_vehicle < NB_NODE:
                 output += " "
                 index_vehicle += 1
         return output
@@ -449,8 +445,8 @@ def get_all_position():
         raise e
 
 
-"""
 def get_all_speed():
+    """Recupère les vitesses de tous les vehicules carla."""
     try:
         output = ""
         index_vehicle = 1
@@ -460,17 +456,17 @@ def get_all_speed():
         return output
     except Exception as e:
         raise e
-"""
 
 
 def get_all_mobility():
+    """Recupère les positions et vitesses de tous les vehicules carla."""
     try:
         output = " "
         index_vehicle = 1
         for vehicle in vehicles:
             output += (f"{index_vehicle} {get_position(vehicle)} "
                        + f"{get_speed(vehicle)}")
-            if index_vehicle < number_node:
+            if index_vehicle < NB_NODE:
                 output += " "
                 index_vehicle += 1
         return output
@@ -481,13 +477,7 @@ def get_all_mobility():
 
 
 def listen_control_tap(control_socket):
-    """
-    Écoute sur le tape de controle
-    et controle les threads du programme
-    """
-
-    MTU = 15000  # Maximum Transmission Unit pour Ethernet frame
-
+    """Écoute sur le tape de controle et controle les threads du programme."""
     while rclpy.ok():
         try:
             if error_state:
@@ -515,7 +505,7 @@ def listen_control_tap(control_socket):
                 msg_split = message.split(" ")
                 command = msg_split[0]
 
-                if (command == "time"):
+                if command == "time":
 
                     simulation_time = int(msg_split[1])
                     inflog(f"ns3 Simulation time is {simulation_time} seconds")
@@ -538,17 +528,14 @@ def listen_control_tap(control_socket):
 
 
 def listen_tap_devices(tap_sockets):
-    """
-    Écoute sur plusieurs tap devices simultanément
-    (pas le tap de controle: le tap0)
-    """
+    """Écoute les tap devices."""
     global number_message_received
     global error_state
     while rclpy.ok():
         try:
             if error_state or stop_state:
                 inflog("Exiting listen_tap_devices")
-                exit()
+                sys.exit()
 
             # Utiliser select pour écouter plusieurs sockets
             readable, _, _ = select.select(tap_sockets, [], [], 1.0)
@@ -573,14 +560,16 @@ def listen_tap_devices(tap_sockets):
 
 def periodic_position_sender(interval):
     """
-    Envoie sur tap0 les positions et vitesses de tout les véhicule.
-    Demande également le temps de la simulation
+    Envoie sur tap0 les informations de controle.
+
+    Envoie les positions et vitesses de tous les véhicule.
+    Demande également le temps de la simulation.
     """
     global error_state
     while rclpy.ok():
         if error_state or stop_state:
             inflog("Exiting periodic_position_sender")
-            exit()
+            sys.exit()
         try:
             mobilities = get_all_mobility()
             tap_sender_control(f"set_mobility {mobilities}")
@@ -595,7 +584,9 @@ def periodic_position_sender(interval):
 
 def comunication_node(interval):
     """
-    Envoie sur un tap (ici pris aléatoirement pour les tests) la position
+    Génère du traffic réseau dans ns3.
+
+    Envoie sur un tap (pris aléatoirement pour les tests) la position
     d'un véhicule pour que cette information soit transmise par Wave dans NS3
     """
     global error_state
@@ -603,9 +594,9 @@ def comunication_node(interval):
     while rclpy.ok():
         if error_state or stop_state:
             inflog("Exiting comunication_node")
-            exit()
+            sys.exit()
         try:
-            num_node = random.randint(1, number_node)
+            num_node = random.randint(1, NB_NODE)
             position = get_position(vehicles[num_node-1])
             tap_sender(f"{num_node} position {position}", num_node)
             number_message_sent += 1
