@@ -383,6 +383,10 @@ def stop_simulation():
         listen_tap_devices_thread.join()
         inflog("listen_tap_devices_thread is stopped")
 
+    # Arrete les vehicules dans ns3
+    inflog("Stoping vehicules in ns3")
+    tap_sender_control(f"set_mobility {stop_vehicules()}")
+
     # Détruire les véhicules pour nettoyer la simulation
     for vehicle in vehicles:
         if vehicle.is_alive:
@@ -466,6 +470,21 @@ def get_all_mobility():
         for vehicle in vehicles:
             output += (f"{index_vehicle} {get_position(vehicle)} "
                        + f"{get_speed(vehicle)}")
+            if index_vehicle < NB_NODE:
+                output += " "
+                index_vehicle += 1
+        return output
+    except Exception as e:
+        raise e
+
+
+def stop_vehicules():
+    """Recupère les positions et met leur vitesse à 0 pour les vehicules."""
+    try:
+        output = " "
+        index_vehicle = 1
+        for vehicle in vehicles:
+            output += (f"{index_vehicle} {get_position(vehicle)} 0.0 0.0 0.0")
             if index_vehicle < NB_NODE:
                 output += " "
                 index_vehicle += 1
