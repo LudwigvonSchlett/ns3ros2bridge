@@ -12,7 +12,10 @@ cache:
   paths:
     - "$NS3/ns-allinone-3.38"
     - "$NS3/ns-allinone-3.38.tar.bz2"
-    - "$ROS2/ros2_ws"
+    - "$ROS2/ros2_ws/src"
+    - "$ROS2/ros2_ws/install"
+    - "$ROS2/ros2_ws/build"
+
 
 # Define stages
 stages:
