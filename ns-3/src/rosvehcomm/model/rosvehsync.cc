@@ -187,8 +187,8 @@ namespace ns3
     bool modePi = false;
 
     //IP WAVE
-    string Adresse_Ip_Wave = "11.0.0."+nodeNumberString;
-    string wave_mask = "255.255.255.255";
+    //string Adresse_Ip_Wave = "11.0.0."+nodeNumberString;
+    //string wave_mask = "255.255.255.255";
 
     std::string tap_mask_string ("255.255.255.0"); //On lui assigne également un masque
 

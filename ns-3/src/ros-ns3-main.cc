@@ -10,7 +10,8 @@
 #include "ns3/rosvehsync-helper.h"
 
 #include "ns3/netanim-module.h"
-#include "ns3/yans-wifi-helper.h"
+//#include "ns3/yans-wifi-helper.h"
+#include "ns3/wave-helper.h"
 #include "ns3/ipv4-address-helper.h"
 #include "ns3/ipv4-interface-container.h"
 #include "ns3/ocb-wifi-mac.h"
@@ -173,6 +174,7 @@ main (int argc, char *argv[])
   std::string animFileName = "Animation_" + oss.str() + ".xml";
 
   ns3::AnimationInterface anim(animFileName);
+  anim.EnablePacketMetadata(true);
 
   simInfo.filename = animFileName;
   simInfo.duration = simulationTime;
