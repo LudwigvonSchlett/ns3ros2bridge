@@ -63,34 +63,34 @@ def errlog(msg):
 # Partie Réseau
 
 
-def check_message(rawdata, hidden):
+def check_message(rawdata):
     """Verify que le message est UDP et la destination est dans 10.0.0.0."""
     # check udp
     if rawdata[23] == 17 and rawdata[30] == 10:
-
-        source_ip = f"{rawdata[26]}.{rawdata[27]}.{rawdata[28]}.{rawdata[29]}"
-        dest_ip = f"{rawdata[30]}.{rawdata[31]}.{rawdata[32]}.{rawdata[33]}"
-        src_port = rawdata[34]*256 + rawdata[35]
-        dest_port = rawdata[36]*256 + rawdata[37]
-        checksum = hex(rawdata[40]*256 + rawdata[41]).upper()
-        udp_payload = rawdata[42:]  # Payload
-
-        if not hidden:
-            print("UDP Message:")
-            print(f"  Source: {source_ip}")
-            print(f"  Destination: {dest_ip}")
-            print(f"  Source port: {src_port}")
-            print(f"  Destination port:  {dest_port}")
-            print("  Length: " + str(rawdata[38]*256 + rawdata[39] - 8))
-            print(f"  Checksum: {checksum}")
-
-            checksum = calculate_udp_checksum(
-                source_ip, dest_ip, src_port, dest_port, udp_payload)
-            print(f"  Calculated UDP checksum: 0x{checksum:04X}")
-
         return True
-
     return False
+
+
+def print_udp(rawdata):
+    """Print an UDP packet."""
+    source_ip = f"{rawdata[26]}.{rawdata[27]}.{rawdata[28]}.{rawdata[29]}"
+    dest_ip = f"{rawdata[30]}.{rawdata[31]}.{rawdata[32]}.{rawdata[33]}"
+    src_port = rawdata[34]*256 + rawdata[35]
+    dest_port = rawdata[36]*256 + rawdata[37]
+    checksum = hex(rawdata[40]*256 + rawdata[41]).upper()
+    udp_payload = rawdata[42:]  # Payload
+
+    print("UDP Message:")
+    print(f"  Source: {source_ip}")
+    print(f"  Destination: {dest_ip}")
+    print(f"  Source port: {src_port}")
+    print(f"  Destination port:  {dest_port}")
+    print("  Length: " + str(rawdata[38]*256 + rawdata[39] - 8))
+    print(f"  Checksum: {checksum}")
+
+    checksum = calculate_udp_checksum(
+        source_ip, dest_ip, src_port, dest_port, udp_payload)
+    print(f"  Calculated UDP checksum: 0x{checksum:04X}")
 
 
 def calculate_udp_checksum(
@@ -223,7 +223,8 @@ def control_node_listener(socket_tap0):
                 inflog(
                     f"Message destiné à {dest_ip_str} (envoi propre) ignoré.")
 
-            elif check_message(packet, False):
+            elif check_message(packet):
+                print_udp(packet)
                 message = (packet[42:].decode()).rstrip("\n")
                 inflog(f"Received packet (decoded): {message}")
                 msg_split = message.split(" ")
@@ -519,7 +520,7 @@ def listen_control_tap(control_socket):
                 inflog(
                     f"Message destiné à {dest_ip_str} (envoi propre) ignoré.")
 
-            elif check_message(packet, False):
+            elif check_message(packet):
                 message = (packet[42:].decode()).rstrip("\n")
                 inflog(f"Received packet (decoded): {message}")
                 msg_split = message.split(" ")
@@ -562,7 +563,7 @@ def listen_tap_devices(tap_sockets):
             for sock in readable:
                 data, _ = sock.recvfrom(65535)  # Taille max d'un paquet
                 device_name = sock.getsockname()[0]  # Nom du device lié
-                if check_message(data, True):
+                if check_message(data):
                     message = (data[42:].decode()).rstrip("\n")
                     if (message.split(" ")[0]
                        != device_name.replace("tap", "")):
