@@ -384,8 +384,9 @@ def stop_simulation():
         inflog("listen_tap_devices_thread is stopped")
 
     # Arrete les vehicules dans ns3
-    inflog("Stoping vehicules in ns3")
-    tap_sender_control(f"set_mobility {stop_vehicules()}")
+    if len(vehicles) > 0:
+        inflog("Stoping vehicules in ns3")
+        tap_sender_control(f"set_mobility {stop_vehicules()}")
 
     # Détruire les véhicules pour nettoyer la simulation
     for vehicle in vehicles:
