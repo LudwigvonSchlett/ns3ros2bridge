@@ -10,7 +10,7 @@ namespace ns3
   NS_LOG_COMPONENT_DEFINE("ROSVehSync");
   NS_OBJECT_ENSURE_REGISTERED(ROSVehSync);
 
-  TypeId ROSVehSync::GetTypeId (void)
+  TypeId ROSVehSync::GetTypeId ()
   {
     static TypeId tid = TypeId ("ns3::ROSVehSync")
     .SetParent<Application> ()
@@ -77,20 +77,20 @@ namespace ns3
   {
     NS_LOG_FUNCTION(this);
     NS_LOG_INFO("Destructeur RosvehSync");
-    controlSocket = 0;
+    controlSocket = nullptr;
   }
 
-  void ROSVehSync::DoDispose (void)
+  void ROSVehSync::DoDispose ()
   {
     NS_LOG_FUNCTION(this);
     NS_LOG_INFO("DoDispose RosvehSync");
-    m_socket_from_rtmaps = 0;
+    m_socket_from_rtmaps = nullptr;
     m_socketList.clear ();//vider le conteneur de socket
     Application::DoDispose ();
   }
 
   //Fonction qui lance l'appliction
-  void ROSVehSync::StartApplication (void)
+  void ROSVehSync::StartApplication ()
   {
     NS_LOG_FUNCTION(this);
     NS_LOG_INFO("Starting ROSVehSync");
@@ -167,7 +167,7 @@ namespace ns3
     }
   }
 
-  void ROSVehSync::CreateVehicle (int i, double x, double y, double z, double xs, double ys, double zs)
+  void ROSVehSync::CreateVehicle (int i, double x, double y, double z, double xs, double ys, double zs) const
   {
     Ptr<Node> nodei = NodeContainer::GetGlobal().Get(i);
 
@@ -179,16 +179,11 @@ namespace ns3
     string tap_neti_string = "10.0."+nodeNumberString+".0";
 
     //Nom du tap device
-    string test_tap ="tap";
-    string nom_tap = test_tap+nodeNumberString;
+    string nom_tap = "tap"+nodeNumberString;
 
     //Port:
     uint16_t portveh = 12000+i;
     bool modePi = false;
-
-    //IP WAVE
-    //string Adresse_Ip_Wave = "11.0.0."+nodeNumberString;
-    //string wave_mask = "255.255.255.255";
 
     std::string tap_mask_string ("255.255.255.0"); //On lui assigne également un masque
 
@@ -278,10 +273,10 @@ namespace ns3
 
     // Check installation
     Ptr<Ipv4> ipv4check = nodei->GetObject<Ipv4>();
-	  for (uint32_t j = 0; j < ipv4check->GetNInterfaces(); ++j)
+    for (uint32_t j = 0; j < ipv4check->GetNInterfaces(); ++j)
     {
-    	NS_LOG_INFO("Node " << i << " Interface " << j  << " IP: " << ipv4check->GetAddress(j, 0).GetLocal());
-	  }
+      NS_LOG_INFO("Node " << i << " Interface " << j  << " IP: " << ipv4check->GetAddress(j, 0).GetLocal());
+    }
 
     //Mettre en place les paramètres de ROS
     ROSVehiculeHelper rosVehiculeHelper;
@@ -295,8 +290,6 @@ namespace ns3
 
     ApplicationContainer ROSVehSyncApps1 = rosVehiculeHelper.Install (nodei);
 
-    ROSVehSyncApps1.Start(Seconds(1.0));
-    ROSVehSyncApps1.Stop(simInfo.duration);
   }
 
   std::vector<std::string> ROSVehSync::SplitCharPointerController(const char* input)
@@ -336,7 +329,7 @@ namespace ns3
         const std::string& command = instructions[0];
         if(command == "hello_ROS2")
         {
-    	    std::string message = "hello_NS3";
+          std::string message = "hello_NS3";
 		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           NS_LOG_INFO("Received hello_ROS2 => responding hello_NS3");
     	    socket->Send (packet);
@@ -404,7 +397,6 @@ namespace ns3
           Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           socket->Send (packet);
         }
-
         else if (command == "set_position")
         {
           //NS_LOG_INFO("Set position command");

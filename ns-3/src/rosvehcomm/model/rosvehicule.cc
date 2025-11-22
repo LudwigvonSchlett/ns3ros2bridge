@@ -8,7 +8,7 @@ namespace ns3
   NS_LOG_COMPONENT_DEFINE("ROSVehicule");
   NS_OBJECT_ENSURE_REGISTERED(ROSVehicule);
 
-  TypeId ROSVehicule::GetTypeId (void)
+  TypeId ROSVehicule::GetTypeId()
   {
     static TypeId tid1 = TypeId ("ns3::PacketSink2")
     .SetParent<Application> ()
@@ -91,7 +91,7 @@ namespace ns3
   {
     NS_LOG_FUNCTION(this);
     NS_LOG_INFO("Constructeur Rosvehicule");
-    tapSocketi = 0;
+    tapSocketi = nullptr;
     m_totalRx1 = 0;
     m_sendEvent_rtmaps1 = EventId ();//obtenir l'id de l'evènement.
   }
@@ -104,7 +104,7 @@ namespace ns3
     //controlSocket1 = 0;
   }
 
-  void ROSVehicule::DoDispose (void)
+  void ROSVehicule::DoDispose ()
   {
     NS_LOG_FUNCTION(this);
     NS_LOG_INFO("DoDispose Rosvehicule "  << vehicle_number);
@@ -113,7 +113,7 @@ namespace ns3
     Application::DoDispose ();
   }
 
-  void ROSVehicule::StartApplication (void)
+  void ROSVehicule::StartApplication ()
   {
     NS_LOG_FUNCTION(this);
     NS_LOG_INFO("Starting RosVehicle " << vehicle_number);
@@ -212,7 +212,6 @@ namespace ns3
 
   void ROSVehicule::HandleReadTapi (Ptr<Socket> socket)
   {
-    //NS_LOG_INFO("VEHICLE SOCKET " << vehicle_number << " HAS RECEIVED A MESSAGE");
     NS_LOG_FUNCTION (this << socket);//affichage info de cette fonction
 
     Ptr<Packet> packet;
@@ -230,12 +229,6 @@ namespace ns3
 
       if (!instructions.empty())
       {
-        Ptr<Node> node = NodeContainer::GetGlobal().Get(vehicle_number); // Get each node globally
-
-        Ptr<NetDevice> device = node->GetDevice(2);
-        Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
-        //Ipv4Address ipAddress = ipv4->GetAddress(1, 0).GetLocal(); // Get the local IP of the node
-
         // Broadcast address (all nodes in the network)
         for(uint32_t i = 1; i < NodeContainer::GetGlobal().GetN(); i++)
         {
@@ -255,7 +248,6 @@ namespace ns3
 
   void ROSVehicule::HandleReadWavei (Ptr<Socket> socket)
   {
-    //NS_LOG_INFO("VEHICLE WAVE " << vehicle_number << " HAS RECEIVED A MESSAGE");
     NS_LOG_FUNCTION (this << socket);//affichage info de cette fonction
 
     Ptr<Packet> packet;
@@ -289,11 +281,11 @@ namespace ns3
     NS_LOG_FUNCTION (this << socket);
   }
 
-  void ROSVehicule::HandleAccepti (Ptr<Socket> s, const Address& from)
+  void ROSVehicule::HandleAccepti (Ptr<Socket> socket, const Address& from)
   {
-    NS_LOG_FUNCTION (this << s << from);
-    s->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadTapi, this));
-    m_socketList1.push_back (s);
+    NS_LOG_FUNCTION (this << socket << from);
+    socket->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadTapi, this));
+    m_socketList1.push_back (socket);
   }
 
 }

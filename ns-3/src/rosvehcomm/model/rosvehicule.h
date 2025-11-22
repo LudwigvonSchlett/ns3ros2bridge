@@ -2,44 +2,17 @@
 #ifndef ROSVEHICULE_H
 #define ROSVEHICULE_H
 
-#include "ns3/rosvehsync-helper.h"
-#include "ns3/application.h"
-#include "ns3/event-id.h"
-#include "ns3/ptr.h"
-#include "ns3/traced-callback.h"
-#include "ns3/address.h"
-#include "ns3/ipv4-address.h"
-#include "ns3/inet-socket-address.h"
-#include "ns3/seq-ts-size-header.h"
-#include "ns3/pointer.h"
-#include "ns3/object-vector.h"
-#include "ns3/object-ptr-container.h"
-#include <ns3/double.h>
-
-#include "ns3/core-module.h"
-#include "ns3/internet-module.h"
-#include "ns3/wifi-module.h"
-#include "ns3/mobility-module.h"
-#include "ns3/ipv4-global-routing-helper.h"
-#include "ns3/network-module.h"
-#include "ns3/wave-module.h"
-#include "ns3/ocb-wifi-mac.h"
-#include "ns3/wifi-80211p-helper.h"
-#include "ns3/wave-mac-helper.h"
-#include "ns3/netanim-module.h"
-#include "ns3/csma-module.h"
-#include "ns3/point-to-point-module.h"
-#include "ns3/applications-module.h"  // for bulk send 
-#include "ns3/tap-fd-net-device-helper.h" // for bulk send
-#include "ns3/object-map.h"
 #include <functional>
-#include <stdlib.h>
-
 #include <unordered_map>
 
-#include "ns3/constant-position-mobility-model.h"
-#include "ns3/constant-velocity-mobility-model.h"
-#include "ns3/netanim-module.h"
+#include "ns3/core-module.h"
+#include "ns3/event-id.h"
+#include "ns3/network-module.h"
+#include "ns3/ptr.h"
+#include "ns3/rosvehsync-helper.h"
+#include "ns3/seq-ts-size-header.h"
+#include "ns3/traced-callback.h"
+#include "ns3/wifi-module.h"
 
 namespace ns3 {
 
@@ -61,7 +34,7 @@ namespace ns3 {
       virtual void StartApplication (void);    // Called at time specified by Start
       virtual void StopApplication (void);     // Called at time specified by Stop
 
-      std::vector<std::string> SplitCharPointer(const char* input);
+      static std::vector<std::string> SplitCharPointer(const char* input);
       void HandleReadTapi (Ptr<Socket> socket);
       void HandleReadWavei (Ptr<Socket> socket);
       void HandleAccepti (Ptr<Socket> socket, const Address& from);

@@ -1,26 +1,14 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 
 //On défini les différentes bibliothèque nécéssaire pour le bon déroulement du programme
-#include <iostream>
-#include <vector>
-#include <typeinfo>
-#include <time.h>
 #include <iomanip>
+#include <iostream>
+#include <time.h>
 
-#include "ns3/rosvehsync-helper.h"
-
-#include "ns3/netanim-module.h"
-//#include "ns3/yans-wifi-helper.h"
-#include "ns3/wave-helper.h"
-#include "ns3/ipv4-address-helper.h"
-#include "ns3/ipv4-interface-container.h"
-#include "ns3/ocb-wifi-mac.h"
-#include "ns3/wifi-80211p-helper.h"
-#include "ns3/wave-mac-helper.h"
-#include "ns3/ipv4-static-routing-helper.h"
 #include "ns3/network-module.h"
-#include "ns3/ipv4.h"
-#include "ns3/timer.h"
+#include "ns3/rosvehsync-helper.h"
+#include "ns3/wifi-80211p-helper.h"
+#include "ns3/netanim-module.h"
 
 using namespace std;
 
@@ -45,18 +33,16 @@ main (int argc, char *argv[])
   LogComponentEnable ("ROSVehSync", LOG_LEVEL_INFO);
   LogComponentEnable ("ROSVehicule", LOG_LEVEL_INFO);
 
-
   NS_LOG_INFO("Starting program");
 
   // Simulateur en temps réel
   GlobalValue::Bind ("SimulatorImplementationType", StringValue ("ns3::RealtimeSimulatorImpl"));
-
   // Activation des sommes de contrôle
   GlobalValue::Bind ("ChecksumEnabled", BooleanValue (true));
 
   /*** Paramètres de la simulation ***/
   NS_LOG_INFO("Setting up parameters");
-  ns3::Time simulationTime (ns3::Seconds(180));
+  Time simulationTime (Seconds(180));
 
   /*** Mise en place du noeud de contrôle ***/
   NS_LOG_INFO("Initialisation du noeud de contrôle");
@@ -66,7 +52,6 @@ main (int argc, char *argv[])
   // Peu importe l'adresse ROS peut voir tout ce qui se passe sur le TAP
   std::string ip_ROS ("10.255.255.254");
   uint16_t port = 12000;// Attention au port qui doit être le même dans ROS
-
 
   //Mise en place de l'adressage IP du noeud de contrôle
   std::string network ("10.0.0.0");
@@ -131,17 +116,9 @@ main (int argc, char *argv[])
   std::string protocol_name("ns3::UdpSocketFactory");
 
   //----------------------WAVE APPLICATION----------------------------------
-  //Mise en place de l'interface wifi 80211p dans notre noeud véhicule
-
-  // On crée un objet de type WifiPhyHelper (couche physique et canal)
-  YansWifiPhyHelper wifiPhy;
-  // On crée un canal avec un modele de propag par defaut (Methode YansWifiChannelHelper dans src/wifi/helper/yans-wifi-helper)
-  YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
-  // On positionne le canal dans le wifiPhy
-  wifiPhy.SetChannel (wifiChannel.Create ());
+  //Mise en place de l'interface wifi 80211p
 
   //Dénifition des différents paramètre du wifi 80211p
-  NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
   Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
 
   //La ligne qui nous permet de désactiver tout Les LOGS de WAVE :
@@ -154,7 +131,7 @@ main (int argc, char *argv[])
 
   // NetAnim does not support creating nodes at run-time
   // We have to create nodes and then update them according to ROS
-  const uint32_t maxNodes = 254;
+  const uint32_t maxNodes = 5;
 
   // Create a container for the nodes
   NodeContainer nodes;
@@ -173,7 +150,7 @@ main (int argc, char *argv[])
 
   std::string animFileName = "Animation_" + oss.str() + ".xml";
 
-  ns3::AnimationInterface anim(animFileName);
+  AnimationInterface anim(animFileName);
   anim.EnablePacketMetadata(true);
 
   simInfo.filename = animFileName;
