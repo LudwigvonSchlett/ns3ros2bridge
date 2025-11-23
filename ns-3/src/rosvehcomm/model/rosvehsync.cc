@@ -327,36 +327,36 @@ namespace ns3
       if (!instructions.empty())
       {
         const std::string& command = instructions[0];
-        Ptr<Packet> packet;
+        Ptr<Packet> responsePacket;
         if(command == "hello_ROS2")
         {
           std::string message = "hello_NS3";
-		      packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           NS_LOG_INFO("Received hello_ROS2 => responding hello_NS3");
-    	    socket->Send (packet);
+    	    socket->Send (responsePacket);
         }
         else if (command == "request_animfile")
         {
           std::string message = "file " + simInfo.filename;
-		      packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           NS_LOG_INFO("Received request_animfile => responding " << message);
-    	    socket->Send (packet);
+    	    socket->Send (responsePacket);
         }
         else if (command == "request_duration")
         { 
           Time::Unit unit = Time::Unit::S;
           std::string message = "duration " + std::to_string(simInfo.duration.ToInteger(unit));
-		      packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           NS_LOG_INFO("Received request_duration => responding " << message);
-    	    socket->Send (packet);
+    	    socket->Send (responsePacket);
         }
         else if (command == "request_time")
         { 
           Time::Unit unit = Time::Unit::S;
           std::string message = "time " + std::to_string(Simulator::Now().ToInteger(unit));
-		      packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           NS_LOG_INFO("Received request_time => responding " << message);
-    	    socket->Send (packet);
+    	    socket->Send (responsePacket);
         }
         else if (command == "create_node")
         {
@@ -382,8 +382,9 @@ namespace ns3
           NS_LOG_UNCOND("Global total of vehicules is " << total);
 
     	    std::string message = "create_success";
-		      packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-    	    socket->Send (packet);
+		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+          NS_LOG_INFO("Received create_node => responding " << message);
+    	    socket->Send (responsePacket);
         }
         else if (command == "set_mobility")
         {
