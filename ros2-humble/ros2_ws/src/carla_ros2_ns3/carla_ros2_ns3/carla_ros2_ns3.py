@@ -454,11 +454,13 @@ def get_all_position():
 def get_all_speed():
     """Recupère les vitesses de tous les vehicules carla."""
     try:
-        output = ""
+        output = " "
         index_vehicle = 1
         for vehicle in vehicles:
             output += f" {index_vehicle} {get_speed(vehicle)}"
-            index_vehicle += 1
+            if index_vehicle < NB_NODE:
+                output += " "
+                index_vehicle += 1
         return output
     except Exception as e:
         raise e

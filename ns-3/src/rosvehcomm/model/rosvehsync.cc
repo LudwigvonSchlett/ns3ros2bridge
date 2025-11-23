@@ -384,65 +384,6 @@ namespace ns3
 		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
     	    socket->Send (packet);
         }
-        else if (command == "assert_total")
-        {
-          //NS_LOG_INFO("Assert total command");
-
-          int total = NodeContainer::GetGlobal().GetN()-1;
-            NS_LOG_INFO("Total is " << total);
-
-          std::ostringstream msgStream;
-          msgStream << "total " << total;
-          std::string message = msgStream.str ();
-          Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-          socket->Send (packet);
-        }
-        else if (command == "set_position")
-        {
-          //NS_LOG_INFO("Set position command");
-		      unsigned long n = 1;
-          NodeContainer Globalnode;
-    	    Globalnode = NodeContainer::GetGlobal();
-          double x = 0.0, y = 0.0, z = 0.0;
-          while(n <= instructions.size()-4)
-          {
-            Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
-            ++n;
-            std::istringstream(instructions[n]) >> x; // 2) x
-            ++n;
-      		  std::istringstream(instructions[n]) >> y; // 3) y
-            ++n;
-    	  	  std::istringstream(instructions[n]) >> z; // 4) z
-
-        	  const Vector NODE_I_POSITION(x, y, z);
-        	  mobilityi->SetPosition(NODE_I_POSITION);
-
-            ++n;
-          }
-        }
-        else if (command == "set_speed")
-        {
-          //NS_LOG_INFO("Set speed command");
-		      unsigned long n = 1;
-          NodeContainer Globalnode;
-    	    Globalnode = NodeContainer::GetGlobal();
-          double xs = 0.0, ys = 0.0, zs = 0.0;
-          while(n <= instructions.size()-4)
-          {
-        	  Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
-            ++n;
-            std::istringstream(instructions[n]) >> xs; // 2) xs
-            ++n;
-      		  std::istringstream(instructions[n]) >> ys; // 3) ys
-            ++n;
-      		  std::istringstream(instructions[n]) >> zs; // 4) zs
-
-        	  const Vector NODE_I_SPEED(xs, ys, zs);
-        	  mobilityi->SetPosition(NODE_I_SPEED);
-
-            ++n;
-          }
-        }
         else if (command == "set_mobility")
         {
           //NS_LOG_INFO("Set mobility command");

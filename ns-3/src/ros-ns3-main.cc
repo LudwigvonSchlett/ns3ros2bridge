@@ -17,35 +17,9 @@ using namespace ns3;
 // Définition du nom du programme pour les LOGS
 NS_LOG_COMPONENT_DEFINE("ROS2NS3Main");
 
-int
-main (int argc, char *argv[])
+void
+initControlNode ()
 {
-  std::string phyMode ("OfdmRate6MbpsBW10MHz");// A voir --------------
-
-  /*** Options ***/
-
-  //Mise en place de l'analyseur de ligne de commande
-  CommandLine cmd (__FILE__);
-  cmd.Parse (argc, argv);//mise en place de l'analyse
-  cmd.AddValue ("phyMode", "Wifi Phy mode", phyMode);
-  // Activation des LOGS
-  LogComponentEnable ("ROS2NS3Main", LOG_LEVEL_INFO);
-  LogComponentEnable ("ROSVehSync", LOG_LEVEL_INFO);
-  LogComponentEnable ("ROSVehicule", LOG_LEVEL_INFO);
-
-  NS_LOG_INFO("Starting program");
-
-  // Simulateur en temps réel
-  GlobalValue::Bind ("SimulatorImplementationType", StringValue ("ns3::RealtimeSimulatorImpl"));
-  // Activation des sommes de contrôle
-  GlobalValue::Bind ("ChecksumEnabled", BooleanValue (true));
-
-  /*** Paramètres de la simulation ***/
-  NS_LOG_INFO("Setting up parameters");
-  Time simulationTime (Seconds(180));
-
-  /*** Mise en place du noeud de contrôle ***/
-  NS_LOG_INFO("Initialisation du noeud de contrôle");
   //Noeud de contrôle <=> tap0
   std::string tapName ("tap0");
 
@@ -112,8 +86,39 @@ main (int argc, char *argv[])
   ROSVehSyncHelper.SetAttribute ("Protocol", StringValue("ns3::UdpSocketFactory"));    //protocol de communication UDPSocket
   ROSVehSyncHelper.SetAttribute ("Port", UintegerValue(port));    //  port de Rtmaps par défaut
   ApplicationContainer ROSAppContainer = ROSVehSyncHelper.Install (controlNode); //On stock notre application dans un conteneur application et on installe sur notre neoud Contrôle Node
-  
-  std::string protocol_name("ns3::UdpSocketFactory");
+
+}
+
+int
+main (int argc, char *argv[])
+{
+  std::string phyMode ("OfdmRate6MbpsBW10MHz");// A voir --------------
+
+  /*** Options ***/
+
+  //Mise en place de l'analyseur de ligne de commande
+  CommandLine cmd (__FILE__);
+  cmd.Parse (argc, argv);//mise en place de l'analyse
+  cmd.AddValue ("phyMode", "Wifi Phy mode", phyMode);
+  // Activation des LOGS
+  LogComponentEnable ("ROS2NS3Main", LOG_LEVEL_INFO);
+  LogComponentEnable ("ROSVehSync", LOG_LEVEL_INFO);
+  LogComponentEnable ("ROSVehicule", LOG_LEVEL_INFO);
+
+  NS_LOG_INFO("Starting program");
+
+  // Simulateur en temps réel
+  GlobalValue::Bind ("SimulatorImplementationType", StringValue ("ns3::RealtimeSimulatorImpl"));
+  // Activation des sommes de contrôle
+  GlobalValue::Bind ("ChecksumEnabled", BooleanValue (true));
+
+  /*** Paramètres de la simulation ***/
+  NS_LOG_INFO("Setting up parameters");
+  Time simulationTime (Seconds(180));
+
+  /*** Mise en place du noeud de contrôle ***/
+  NS_LOG_INFO("Initialisation du noeud de contrôle");
+  initControlNode();
 
   //----------------------WAVE APPLICATION----------------------------------
   //Mise en place de l'interface wifi 80211p
