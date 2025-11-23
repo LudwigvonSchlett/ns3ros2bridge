@@ -327,17 +327,18 @@ namespace ns3
       if (!instructions.empty())
       {
         const std::string& command = instructions[0];
+        Ptr<Packet> packet;
         if(command == "hello_ROS2")
         {
           std::string message = "hello_NS3";
-		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+		      packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           NS_LOG_INFO("Received hello_ROS2 => responding hello_NS3");
     	    socket->Send (packet);
         }
         else if (command == "request_animfile")
         {
           std::string message = "file " + simInfo.filename;
-		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+		      packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           NS_LOG_INFO("Received request_animfile => responding " << message);
     	    socket->Send (packet);
         }
@@ -345,7 +346,7 @@ namespace ns3
         { 
           Time::Unit unit = Time::Unit::S;
           std::string message = "duration " + std::to_string(simInfo.duration.ToInteger(unit));
-		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+		      packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           NS_LOG_INFO("Received request_duration => responding " << message);
     	    socket->Send (packet);
         }
@@ -353,7 +354,7 @@ namespace ns3
         { 
           Time::Unit unit = Time::Unit::S;
           std::string message = "time " + std::to_string(Simulator::Now().ToInteger(unit));
-		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+		      packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           NS_LOG_INFO("Received request_time => responding " << message);
     	    socket->Send (packet);
         }
@@ -381,7 +382,7 @@ namespace ns3
           NS_LOG_UNCOND("Global total of vehicules is " << total);
 
     	    std::string message = "create_success";
-		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+		      packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
     	    socket->Send (packet);
         }
         else if (command == "set_mobility")
