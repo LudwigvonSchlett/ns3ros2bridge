@@ -19,7 +19,6 @@
 #include "ns3/tap-fd-net-device-helper.h" // for bulk send
 #include "ns3/traced-callback.h"
 #include "ns3/wave-module.h"
-#include "ns3/wifi-module.h"
 
 namespace ns3 {
 

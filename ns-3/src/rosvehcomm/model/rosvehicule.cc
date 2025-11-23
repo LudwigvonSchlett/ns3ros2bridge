@@ -108,7 +108,7 @@ namespace ns3
   {
     NS_LOG_FUNCTION(this);
     NS_LOG_INFO("DoDispose Rosvehicule "  << vehicle_number);
-    tapSocketi = 0;
+    tapSocketi = nullptr;
     m_socketList1.clear ();//vider le conteneur de socket 
     Application::DoDispose ();
   }

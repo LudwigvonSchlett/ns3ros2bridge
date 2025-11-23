@@ -105,7 +105,7 @@ namespace ns3
 
     Ptr<ConstantPositionMobilityModel> mobility = node->GetObject<ConstantPositionMobilityModel>();
 	  mobility->SetPosition(Vector(0.0, 0.0, 0.0));
-    controlSocket = 0;
+    controlSocket = nullptr;
 
     // Initialize socket
     controlSocket = Socket::CreateSocket(GetNode (), controlSocket_tid);
@@ -362,7 +362,7 @@ namespace ns3
         {
           //NS_LOG_INFO("Create node command");
           unsigned long n = 1;
-          int nodeNumber = 1;
+          int nodeNumber;
           double x = 0.0, y = 0.0, z = 0.0, xs = 0.0, ys = 0.0, zs = 0.0;
           while(n <= instructions.size()-4)
           {

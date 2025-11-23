@@ -12,7 +12,7 @@
 #include "ns3/rosvehsync-helper.h"
 #include "ns3/seq-ts-size-header.h"
 #include "ns3/traced-callback.h"
-#include "ns3/wifi-module.h"
+#include "ns3/wave-module.h"
 
 namespace ns3 {
 
