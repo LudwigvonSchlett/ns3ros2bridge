@@ -1,28 +1,43 @@
 #!/usr/bin/env python
 
-import socket
 import random
 import time
 import sys
 import select
 import threading
 
-import carla
 import rclpy
-from std_msgs.msg import String
 
-# Constantes
-NB_NODE = 5  # nombre de nodes et donc de voitures dans la simulation
-MTU = 15000  # Maximum Transmission Unit pour Ethernet frame
+from carla_ros2_ns3.const import MTU, NB_NODE
+from carla_ros2_ns3.lib.carla_sim import (
+    client,
+    vehicles,
+    init_carla,
+    get_all_mobility,
+    get_all_position,
+    get_position,
+    stop_vehicules
+)
+from carla_ros2_ns3.lib.net import (
+    check_message,
+    print_udp,
+    tap_sender,
+    tap_sender_control,
+    connect_tap_device
+)
+from carla_ros2_ns3.lib.ros import (
+    create_node,
+    destroy_node,
+    inflog,
+    errlog
+)
+
+
 # Variables de simulation
 number_message_sent = 0  # Pour les messages s'envoyant via tap1,2,3,...
 number_message_received = 0  # Pour les messages s'envoyant via tap1,2,3,...
-vehicles = []
-client = carla.Client('localhost', 2000)  # connexion a Carla
 netAnim_file = ""
 simulation_duration = 0
-# Noeud principal
-node = None
 # Thread et essentiels pour la sychronisation
 position_listener_thread = None
 comunication_nodes_thread = None
@@ -33,11 +48,10 @@ error_state = False
 
 def main():
     """Initialise le noeud principal et lance le programme."""
-    global node
     rclpy.init(args=sys.argv)
     try:
         node_name = "carla_ros2_ns3"
-        node = rclpy.create_node(node_name)
+        create_node(node_name)
         socket_tap0 = connect_tap_device("tap0")
         tap_sender_control("hello_ROS2")
         control_node_listener(socket_tap0)
@@ -46,158 +60,7 @@ def main():
         pass
 
     finally:
-        node.destroy_node()
-
-# Utilitaires
-
-
-def inflog(msg):
-    """Logger d'info pour le noeud principal."""
-    node.get_logger().info(msg)
-
-
-def errlog(msg):
-    """Logger d'erreur pour le noeud principal."""
-    node.get_logger().error(msg)
-
-# Partie Réseau
-
-
-def check_message(rawdata):
-    """Verify que le message est UDP et la destination est dans 10.0.0.0."""
-    # check udp
-    if rawdata[23] == 17 and rawdata[30] == 10:
-        return True
-    return False
-
-
-def print_udp(rawdata):
-    """Print an UDP packet."""
-    source_ip = f"{rawdata[26]}.{rawdata[27]}.{rawdata[28]}.{rawdata[29]}"
-    dest_ip = f"{rawdata[30]}.{rawdata[31]}.{rawdata[32]}.{rawdata[33]}"
-    src_port = rawdata[34]*256 + rawdata[35]
-    dest_port = rawdata[36]*256 + rawdata[37]
-    checksum = hex(rawdata[40]*256 + rawdata[41]).upper()
-    udp_payload = rawdata[42:]  # Payload
-
-    print("UDP Message:")
-    print(f"  Source: {source_ip}")
-    print(f"  Destination: {dest_ip}")
-    print(f"  Source port: {src_port}")
-    print(f"  Destination port:  {dest_port}")
-    print("  Length: " + str(rawdata[38]*256 + rawdata[39] - 8))
-    print(f"  Checksum: {checksum}")
-
-    checksum = calculate_udp_checksum(
-        source_ip, dest_ip, src_port, dest_port, udp_payload)
-    print(f"  Calculated UDP checksum: 0x{checksum:04X}")
-
-
-def calculate_udp_checksum(
-        source_ip, dest_ip, src_port, dest_port, udp_payload):
-    """Calculate la somme de controle d'un paquet UDP."""
-    # Pour convertir une adresse IP en une liste de mots de 16 bits
-    def ip_to_words(ip):
-        parts = list(map(int, ip.split(".")))
-        return [(parts[0] << 8) + parts[1], (parts[2] << 8) + parts[3]]
-
-    def add_with_carry(a, b):
-        result = a + b
-        return (result & 0xFFFF) + (result >> 16)
-
-    def calculate_checksum(data_words):
-        checksum = 0
-        for word in data_words:
-            checksum = add_with_carry(checksum, word)
-        return ~checksum & 0xFFFF
-
-    pseudo_header = (
-        ip_to_words(source_ip) + ip_to_words(dest_ip)
-        + [0x0011, len(udp_payload) + 8])
-
-    udp_header = [src_port, dest_port, len(udp_payload) + 8, 0]
-
-    payload_words = [
-        ((udp_payload[i] << 8) +
-         (udp_payload[i + 1] if i + 1 < len(udp_payload) else 0))
-        for i in range(0, len(udp_payload), 2)
-    ]
-
-    all_words = pseudo_header + udp_header + payload_words
-    return calculate_checksum(all_words)
-
-
-def connect_tap_device(tap_device):
-    """
-    Établit une connexion au périphérique TAP.
-
-    Reconnexion en boucle si elle échoue.
-    Retourne le socket connecté.
-    """
-    while rclpy.ok():
-        try:
-            inflog(f"Tentative de connexion à {tap_device}...")
-            s = socket.socket(
-                socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(0x0003))
-            s.bind((tap_device, 0))
-            inflog(f"Connexion réussie à {tap_device}.")
-            return s
-        except Exception as e:
-            errlog(
-                "Erreur lors de la connexion au périphérique"
-                + f"{tap_device}: {e}")
-
-            inflog("Nouvelle tentative dans 5 secondes...")
-            time.sleep(5)  # Attendre 5 secondes avant de réessayer
-    return None
-
-
-def tap_sender(message, num_node):
-    """Permet d'envoyer un message grace a un numéro de noeud."""
-    # Créer un éditeur pour publier les paquets sur un topic spécifique
-    topic_name = f'/tap{num_node}_packets'
-    pub = node.create_publisher(String, topic_name, 10)
-
-    try:
-        udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        udp_ip = f"10.0.{num_node}.1"
-        udp_port = 12000+num_node
-        null_term_msg = message + "\0"
-        packet = null_term_msg.encode("utf-8")
-        udp_socket.sendto(packet, (udp_ip, udp_port))
-        udp_socket.close()
-        inflog(f"Message envoyé à {udp_ip}:{udp_port} : {message}")
-        # Publier le paquet sous forme hexadécimale
-        msg = String()
-        msg.data = packet.hex()
-        pub.publish(msg)
-
-    except Exception as e:
-        errlog(f"Erreur lors de l'envoi du message : {e}")
-
-
-def tap_sender_control(message):
-    """Permet d'envoyer un message au noeud de controle."""
-    # Créer un éditeur pour publier les paquets sur un topic spécifique
-    topic_name = "/tap0_packets"
-    pub = node.create_publisher(String, topic_name, 10)
-
-    try:
-        udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        udp_ip = "10.0.0.2"
-        udp_port = 12000
-        null_term_msg = message + "\0"
-        packet = null_term_msg.encode("utf-8")
-        udp_socket.sendto(packet, (udp_ip, udp_port))
-        udp_socket.close()
-        inflog(f"Message envoyé à {udp_ip}:{udp_port} : {message}")
-        # Publier le paquet sous forme hexadécimale
-        msg = String()
-        msg.data = packet.hex()
-        pub.publish(msg)
-
-    except Exception as e:
-        errlog(f"Erreur lors de l'envoi du message : {e}")
+        destroy_node()
 
 
 def control_node_listener(socket_tap0):
@@ -270,63 +133,6 @@ def control_node_listener(socket_tap0):
         except Exception as e:
             errlog(f"Erreur inattendue lors du traitement du paquet : {e}")
             stop_simulation()
-
-# Partie CARLA
-
-
-def init_carla():
-    """Initialise la connexion à Carla."""
-    global vehicles
-
-    client.set_timeout(20.0)
-    # client.load_world("Town01")
-    # Pour changer la carte
-    world = client.get_world()
-    settings = world.get_settings()
-    # settings.no_rendering_mode = True
-    # Pour desactiver l'utilisation du gpu
-    settings.synchronous_mode = False
-    world.apply_settings(settings)
-
-    weather = world.get_weather()
-    # weather.sun_altitude_angle = 45.0
-    # angle du soleil => pour changer l'heure
-    world.set_weather(weather)
-
-    # Générer des waypoints pour s'assurer que la carte est prête
-    map = world.get_map()
-    waypoints = map.generate_waypoints(2.0)
-    if not waypoints:
-        errlog("Aucun waypoint trouvé sur la carte.")
-    else:
-        inflog(f"{len(waypoints)} waypoints générés.")
-
-    # Créer les véhicules
-    for _ in range(NB_NODE):
-        vehicle = None
-        while vehicle is None:
-            vehicle = spawn_vehicle(world)
-        vehicles.append(vehicle)
-    return world
-
-
-def spawn_vehicle(world):
-    """Crée et initialise un véhicule dans le simulateur Carla."""
-    # Obtenir la bibliothèque de blueprints
-    blueprint_library = world.get_blueprint_library()
-    vehicle_bp = random.choice(blueprint_library.filter('vehicle.*'))
-
-    # Choisir un point d'apparition aléatoire
-    spawn_points = world.get_map().get_spawn_points()
-    if not spawn_points:
-        errlog("Aucun point d'apparition disponible.")
-        return None
-    spawn_point = random.choice(spawn_points)
-
-    # Essayer de créer le véhicule
-    vehicle = world.try_spawn_actor(vehicle_bp, spawn_point)
-
-    return vehicle
 
 
 def launch_simulation(sockets, control_socket):
@@ -413,88 +219,6 @@ def stop_simulation():
     inflog("Interruption reseau avec NS3")
     rclpy.shutdown()
     sys.exit()
-
-
-def get_position(vehicle):
-    """Recupère la position d'un vehicule carla."""
-    try:
-        transform = vehicle.get_transform()
-        location = transform.location
-        location_string = f"{location.x} {location.y} {location.z}"
-        return location_string
-    except Exception as e:
-        raise e
-
-
-def get_speed(vehicle):
-    """Recupère la vitesse d'un vehicule carla."""
-    try:
-        velocity = vehicle.get_velocity()
-        velocity_string = f"{velocity.x} {velocity.y} {velocity.z}"
-        return velocity_string
-    except Exception as e:
-        raise e
-
-
-def get_all_position():
-    """Recupère les positions de tous les vehicules carla."""
-    try:
-        output = " "
-        index_vehicle = 1
-        for vehicle in vehicles:
-            output += f" {index_vehicle} {get_position(vehicle)}"
-            if index_vehicle < NB_NODE:
-                output += " "
-                index_vehicle += 1
-        return output
-    except Exception as e:
-        raise e
-
-
-def get_all_speed():
-    """Recupère les vitesses de tous les vehicules carla."""
-    try:
-        output = " "
-        index_vehicle = 1
-        for vehicle in vehicles:
-            output += f" {index_vehicle} {get_speed(vehicle)}"
-            if index_vehicle < NB_NODE:
-                output += " "
-                index_vehicle += 1
-        return output
-    except Exception as e:
-        raise e
-
-
-def get_all_mobility():
-    """Recupère les positions et vitesses de tous les vehicules carla."""
-    try:
-        output = " "
-        index_vehicle = 1
-        for vehicle in vehicles:
-            output += (f"{index_vehicle} {get_position(vehicle)} "
-                       + f"{get_speed(vehicle)}")
-            if index_vehicle < NB_NODE:
-                output += " "
-                index_vehicle += 1
-        return output
-    except Exception as e:
-        raise e
-
-
-def stop_vehicules():
-    """Recupère les positions et met leur vitesse à 0 pour les vehicules."""
-    try:
-        output = " "
-        index_vehicle = 1
-        for vehicle in vehicles:
-            output += (f"{index_vehicle} {get_position(vehicle)} 0.0 0.0 0.0")
-            if index_vehicle < NB_NODE:
-                output += " "
-                index_vehicle += 1
-        return output
-    except Exception as e:
-        raise e
 
 #  Threads
 
