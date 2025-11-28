@@ -2,15 +2,7 @@
 #ifndef ROSVEHICULE_HELPER_H
 #define ROSVEHICULE_HELPER_H
 
-#include <stdint.h>
 #include "ns3/rosvehicule.h"
-#include "ns3/application-container.h"
-#include "ns3/node-container.h"
-#include "ns3/object-factory.h"
-#include "ns3/ipv4-address.h"
-#include "ns3/ipv6-address.h"
-#include "ns3/uinteger.h"
-#include "ns3/names.h"
 
 namespace ns3 {
 
@@ -21,7 +13,6 @@ namespace ns3 {
       ROSVehiculeHelper ();
 
       void SetAttribute (std::string name, const AttributeValue &value);
-      //void SetAttribute (std::string name, AddressValue adress);
 
       ApplicationContainer Install (Ptr<Node> node) const;
 

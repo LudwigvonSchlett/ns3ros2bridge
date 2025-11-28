@@ -9,10 +9,9 @@ import threading
 import rclpy
 
 from carla_ros2_ns3.const import MTU, NB_NODE
-from carla_ros2_ns3.lib.carla_sim import (
-    client,
+from carla_ros2_ns3.lib.mock_sim import (
     vehicles,
-    init_carla,
+    init_mock,
     get_all_mobility,
     get_all_position,
     get_position,
@@ -110,7 +109,7 @@ def control_node_listener(socket_tap0):
                     netAnim_file = msg_split[1]
                     inflog(f"ns3 Simulation saved on file {netAnim_file}")
                     inflog("Initializing carla")
-                    init_carla()
+                    init_mock()
                     positions = get_all_position()
                     tap_sender_control(f"create_node {positions}")
 
@@ -140,15 +139,6 @@ def launch_simulation(sockets, control_socket):
     global position_listener_thread
     global comunication_nodes_thread
     global listen_tap_devices_thread
-
-    traffic_manager = client.get_trafficmanager(8001)
-    traffic_manager.set_synchronous_mode(False)
-    # Désactiver le mode synchrone du Traffic Manager
-    traffic_manager.set_global_distance_to_leading_vehicle(2.0)
-    # Distance minimale
-
-    for vehicle in vehicles:
-        vehicle.set_autopilot(True, 8001)
 
     interval = 1
 

@@ -10,7 +10,7 @@ namespace ns3
   NS_LOG_COMPONENT_DEFINE("ROSVehSync");
   NS_OBJECT_ENSURE_REGISTERED(ROSVehSync);
 
-  TypeId ROSVehSync::GetTypeId (void)
+  TypeId ROSVehSync::GetTypeId ()
   {
     static TypeId tid = TypeId ("ns3::ROSVehSync")
     .SetParent<Application> ()
@@ -77,20 +77,20 @@ namespace ns3
   {
     NS_LOG_FUNCTION(this);
     NS_LOG_INFO("Destructeur RosvehSync");
-    controlSocket = 0;
+    controlSocket = nullptr;
   }
 
-  void ROSVehSync::DoDispose (void)
+  void ROSVehSync::DoDispose ()
   {
     NS_LOG_FUNCTION(this);
     NS_LOG_INFO("DoDispose RosvehSync");
-    m_socket_from_rtmaps = 0;
+    m_socket_from_rtmaps = nullptr;
     m_socketList.clear ();//vider le conteneur de socket
     Application::DoDispose ();
   }
 
   //Fonction qui lance l'appliction
-  void ROSVehSync::StartApplication (void)
+  void ROSVehSync::StartApplication ()
   {
     NS_LOG_FUNCTION(this);
     NS_LOG_INFO("Starting ROSVehSync");
@@ -105,7 +105,7 @@ namespace ns3
 
     Ptr<ConstantPositionMobilityModel> mobility = node->GetObject<ConstantPositionMobilityModel>();
 	  mobility->SetPosition(Vector(0.0, 0.0, 0.0));
-    controlSocket = 0;
+    controlSocket = nullptr;
 
     // Initialize socket
     controlSocket = Socket::CreateSocket(GetNode (), controlSocket_tid);
@@ -167,7 +167,7 @@ namespace ns3
     }
   }
 
-  void ROSVehSync::CreateVehicle (int i, double x, double y, double z, double xs, double ys, double zs)
+  void ROSVehSync::CreateVehicle (int i, double x, double y, double z, double xs, double ys, double zs) const
   {
     Ptr<Node> nodei = NodeContainer::GetGlobal().Get(i);
 
@@ -179,16 +179,11 @@ namespace ns3
     string tap_neti_string = "10.0."+nodeNumberString+".0";
 
     //Nom du tap device
-    string test_tap ="tap";
-    string nom_tap = test_tap+nodeNumberString;
+    string nom_tap = "tap"+nodeNumberString;
 
     //Port:
     uint16_t portveh = 12000+i;
     bool modePi = false;
-
-    //IP WAVE
-    string Adresse_Ip_Wave = "11.0.0."+nodeNumberString;
-    string wave_mask = "255.255.255.255";
 
     std::string tap_mask_string ("255.255.255.0"); //On lui assigne également un masque
 
@@ -278,10 +273,10 @@ namespace ns3
 
     // Check installation
     Ptr<Ipv4> ipv4check = nodei->GetObject<Ipv4>();
-	  for (uint32_t j = 0; j < ipv4check->GetNInterfaces(); ++j)
+    for (uint32_t j = 0; j < ipv4check->GetNInterfaces(); ++j)
     {
-    	NS_LOG_INFO("Node " << i << " Interface " << j  << " IP: " << ipv4check->GetAddress(j, 0).GetLocal());
-	  }
+      NS_LOG_INFO("Node " << i << " Interface " << j  << " IP: " << ipv4check->GetAddress(j, 0).GetLocal());
+    }
 
     //Mettre en place les paramètres de ROS
     ROSVehiculeHelper rosVehiculeHelper;
@@ -295,8 +290,6 @@ namespace ns3
 
     ApplicationContainer ROSVehSyncApps1 = rosVehiculeHelper.Install (nodei);
 
-    ROSVehSyncApps1.Start(Seconds(1.0));
-    ROSVehSyncApps1.Stop(simInfo.duration);
   }
 
   std::vector<std::string> ROSVehSync::SplitCharPointerController(const char* input)
@@ -334,41 +327,42 @@ namespace ns3
       if (!instructions.empty())
       {
         const std::string& command = instructions[0];
+        Ptr<Packet> responsePacket;
         if(command == "hello_ROS2")
         {
-    	    std::string message = "hello_NS3";
-		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+          std::string message = "hello_NS3";
+		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           NS_LOG_INFO("Received hello_ROS2 => responding hello_NS3");
-    	    socket->Send (packet);
+    	    socket->Send (responsePacket);
         }
         else if (command == "request_animfile")
         {
           std::string message = "file " + simInfo.filename;
-		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           NS_LOG_INFO("Received request_animfile => responding " << message);
-    	    socket->Send (packet);
+    	    socket->Send (responsePacket);
         }
         else if (command == "request_duration")
         { 
           Time::Unit unit = Time::Unit::S;
           std::string message = "duration " + std::to_string(simInfo.duration.ToInteger(unit));
-		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           NS_LOG_INFO("Received request_duration => responding " << message);
-    	    socket->Send (packet);
+    	    socket->Send (responsePacket);
         }
         else if (command == "request_time")
         { 
           Time::Unit unit = Time::Unit::S;
           std::string message = "time " + std::to_string(Simulator::Now().ToInteger(unit));
-		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           NS_LOG_INFO("Received request_time => responding " << message);
-    	    socket->Send (packet);
+    	    socket->Send (responsePacket);
         }
         else if (command == "create_node")
         {
           //NS_LOG_INFO("Create node command");
           unsigned long n = 1;
-          int nodeNumber = 1;
+          int nodeNumber;
           double x = 0.0, y = 0.0, z = 0.0, xs = 0.0, ys = 0.0, zs = 0.0;
           while(n <= instructions.size()-4)
           {
@@ -388,68 +382,9 @@ namespace ns3
           NS_LOG_UNCOND("Global total of vehicules is " << total);
 
     	    std::string message = "create_success";
-		      Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-    	    socket->Send (packet);
-        }
-        else if (command == "assert_total")
-        {
-          //NS_LOG_INFO("Assert total command");
-
-          int total = NodeContainer::GetGlobal().GetN()-1;
-            NS_LOG_INFO("Total is " << total);
-
-          std::ostringstream msgStream;
-          msgStream << "total " << total;
-          std::string message = msgStream.str ();
-          Ptr<Packet> packet = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-          socket->Send (packet);
-        }
-
-        else if (command == "set_position")
-        {
-          //NS_LOG_INFO("Set position command");
-		      unsigned long n = 1;
-          NodeContainer Globalnode;
-    	    Globalnode = NodeContainer::GetGlobal();
-          double x = 0.0, y = 0.0, z = 0.0;
-          while(n <= instructions.size()-4)
-          {
-            Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
-            ++n;
-            std::istringstream(instructions[n]) >> x; // 2) x
-            ++n;
-      		  std::istringstream(instructions[n]) >> y; // 3) y
-            ++n;
-    	  	  std::istringstream(instructions[n]) >> z; // 4) z
-
-        	  const Vector NODE_I_POSITION(x, y, z);
-        	  mobilityi->SetPosition(NODE_I_POSITION);
-
-            ++n;
-          }
-        }
-        else if (command == "set_speed")
-        {
-          //NS_LOG_INFO("Set speed command");
-		      unsigned long n = 1;
-          NodeContainer Globalnode;
-    	    Globalnode = NodeContainer::GetGlobal();
-          double xs = 0.0, ys = 0.0, zs = 0.0;
-          while(n <= instructions.size()-4)
-          {
-        	  Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
-            ++n;
-            std::istringstream(instructions[n]) >> xs; // 2) xs
-            ++n;
-      		  std::istringstream(instructions[n]) >> ys; // 3) ys
-            ++n;
-      		  std::istringstream(instructions[n]) >> zs; // 4) zs
-
-        	  const Vector NODE_I_SPEED(xs, ys, zs);
-        	  mobilityi->SetPosition(NODE_I_SPEED);
-
-            ++n;
-          }
+		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+          NS_LOG_INFO("Received create_node => responding " << message);
+    	    socket->Send (responsePacket);
         }
         else if (command == "set_mobility")
         {
