@@ -8,10 +8,21 @@ import threading
 
 import rclpy
 
-from carla_ros2_ns3.const import MTU, NB_NODE
+from carla_ros2_ns3.const import (
+    MTU,
+    NB_NODE,
+    vehicles,
+    number_message_sent,
+    number_message_received,
+    simulation_duration,
+    stop_state,
+    error_state,
+    comunication_nodes_thread,
+    position_listener_thread,
+    listen_tap_devices_thread
+)
 from carla_ros2_ns3.lib.carla_sim import (
     client,
-    vehicles,
     init_carla,
     get_all_mobility,
     get_all_position,
@@ -33,19 +44,6 @@ from carla_ros2_ns3.lib.ros import (
 )
 
 
-# Variables de simulation
-number_message_sent = 0  # Pour les messages s'envoyant via tap1,2,3,...
-number_message_received = 0  # Pour les messages s'envoyant via tap1,2,3,...
-netAnim_file = ""
-simulation_duration = 0
-# Thread et essentiels pour la sychronisation
-position_listener_thread = None
-comunication_nodes_thread = None
-listen_tap_devices_thread = None
-stop_state = False
-error_state = False
-
-
 def main():
     """Initialise le noeud principal et lance le programme."""
     rclpy.init(args=sys.argv)
@@ -65,7 +63,6 @@ def main():
 
 def control_node_listener(socket_tap0):
     """Permet d'ecouter ce que recoit tap0, noeud de controle."""
-    global netAnim_file
     global simulation_duration
 
     while rclpy.ok():

@@ -238,8 +238,8 @@ namespace ns3
     YansWifiChannelHelper waveChannel = YansWifiChannelHelper::Default();
     YansWavePhyHelper wavePhy = YansWavePhyHelper::Default();
     wavePhy.SetChannel(sharedChannel);
-    wavePhy.Set("TxPowerStart", DoubleValue(200.0));  // in dBm
-	  wavePhy.Set("TxPowerEnd", DoubleValue(200.0));  // in dBm
+    wavePhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
+	  wavePhy.Set("TxPowerEnd", DoubleValue(20.0));  // in dBm
     NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
   	Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
 
