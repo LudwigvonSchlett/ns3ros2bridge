@@ -12,8 +12,8 @@ def init_mock():
     for _ in range(NB_NODE):
         vehicle = None
         while vehicle is None:
-            x = random.randint(-100, 100)
-            y = random.randint(-100, 100)
+            x = random.randint(-50, 50)
+            y = random.randint(-50, 50)
             z = 0
             vx = 0
             vy = 0
