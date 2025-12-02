@@ -8,10 +8,11 @@ import threading
 
 import rclpy
 
-from carla_ros2_ns3.const import MTU, NB_NODE
+from carla_ros2_ns3.const import MTU, NB_NODE, vehicles
 from carla_ros2_ns3.lib.mock_sim import (
-    vehicles,
-    init_mock,
+    init_mock
+)
+from carla_ros2_ns3.lib.carla_sim import (
     get_all_mobility,
     get_all_position,
     get_position,
@@ -184,14 +185,6 @@ def stop_simulation():
     if len(vehicles) > 0:
         inflog("Stoping vehicules in ns3")
         tap_sender_control(f"set_mobility {stop_vehicules()}")
-
-    # Détruire les véhicules pour nettoyer la simulation
-    for vehicle in vehicles:
-        if vehicle.is_alive:
-            vid = vehicle.id
-            vehicle.set_autopilot(False, 8001)
-            vehicle.destroy()
-            inflog(f"Véhicule {vid} détruit.")
 
     inflog("Simulation terminée.")
     if number_message_sent != 0:

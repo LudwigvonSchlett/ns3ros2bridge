@@ -3,18 +3,39 @@
 class Vehicule:
     """A basic mock for carla Vehicule."""
 
-    def __init__(self, x, y, z, vx, vy, vz):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.vx = vx
-        self.vy = vy
-        self.vz = vz
+    def __init__(self, transform, velocity):
+        self.transform = transform
+        self.velocity = velocity
 
-    def get_location(self):
-        """Return a mock vehicule location."""
-        return self.x, self.y, self.z
+    def get_transform(self):
+        """Return a mock vehicule transform."""
+        return self.transform
 
     def get_velocity(self):
         """Return a mock vehicule velocity."""
-        return self.vx, self.vy, self.vz
+        return self.velocity
+
+
+class Transform:
+    """A basic mock for carla Transform."""
+
+    def __init__(self, location):
+        self.location = location
+
+
+class Location:
+    """A basic mock for carla Location."""
+
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z
+
+
+class Velocity:
+    """A basic mock for carla Location."""
+
+    def __init__(self, x, y, z):
+        self.x = x
+        self.y = y
+        self.z = z

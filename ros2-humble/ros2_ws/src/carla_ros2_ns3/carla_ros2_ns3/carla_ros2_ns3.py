@@ -8,10 +8,9 @@ import threading
 
 import rclpy
 
-from carla_ros2_ns3.const import MTU, NB_NODE
+from carla_ros2_ns3.const import MTU, NB_NODE, vehicles
 from carla_ros2_ns3.lib.carla_sim import (
     client,
-    vehicles,
     init_carla,
     get_all_mobility,
     get_all_position,

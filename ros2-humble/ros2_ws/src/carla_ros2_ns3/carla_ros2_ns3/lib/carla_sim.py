@@ -4,7 +4,7 @@ import random
 
 import carla
 
-from carla_ros2_ns3.const import NB_NODE
+from carla_ros2_ns3.const import NB_NODE, vehicles
 from carla_ros2_ns3.lib.ros import (
     inflog,
     errlog
@@ -14,7 +14,6 @@ from carla_ros2_ns3.lib.ros import (
 
 # Variables
 client = carla.Client('localhost', 2000)  # connexion a Carla
-vehicles = []
 
 
 def init_carla():
