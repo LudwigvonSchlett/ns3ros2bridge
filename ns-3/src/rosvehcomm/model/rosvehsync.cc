@@ -374,7 +374,7 @@ namespace ns3
             ++n;
             std::istringstream(instructions[n]) >> z; // 4) z
 
-            CreateVehicle(nodeNumber, x, y, z, xs, ys, zs);
+            //CreateVehicle(nodeNumber, x, y, z, xs, ys, zs);
             ++n;
           }
           //NS_LOG_UNCOND("On récupère le total");
