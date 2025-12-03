@@ -89,6 +89,181 @@ initControlNode ()
 
 }
 
+void
+initVehicules ()
+{
+  //  NodeContainer Container_veh;
+  //  Container_veh.Create(nb_vehicule);
+
+  //Je déclare les variables ci-dessous pour les réutiliser dans ma boulce For par la suite
+  AddressValue remoteAddress1(InetSocketAddress());
+  AddressValue sinkLocalAddress1(InetSocketAddress());
+
+  AddressValue remoteAddress2(InetSocketAddress());
+  AddressValue sinkLocalAddress2(InetSocketAddress());
+
+  //Cette boucle FOR permet la mise en place des tap/FdNetdevice de nos noeuds véhicules
+//  for(int i=1;i<=nb_vehicule;i++)
+//  {
+//    string nodeNumberString = to_string(i);
+//
+//    NS_LOG_UNCOND("Création du noeud "+nodeNumberString);
+//
+//    //IP:
+//    string tap_neti_string = "10.0."+nodeNumberString+".0";
+//
+//    //Nom du tap device
+//    string test_tap ="tap";
+//    string nom_tap = test_tap+nodeNumberString;
+//
+//    //Port:
+//    uint16_t port = 12000+i;
+//    bool modePi = false;
+//
+//    //IP WAVE
+//    string Adresse_Ip_Wave = "11.0.0."+nodeNumberString;
+//    string wave_mask = "255.255.255.255";
+//
+//    //Récupération du noeud dans le ContainerNode
+//    Container_veh.Get(i-1);
+//    Ipv4Address remoteIpi (ip_ROS.c_str ());//On lui assigne une adresse IP
+//    std::string tap_mask_string ("255.255.255.0"); //On lui assigne également un masque
+//
+//    //On convertit les adresses/Masque de sous réseau en chaîne de caractère
+//    Ipv4Address tap_neti (tap_neti_string.c_str());
+//    Ipv4Mask tap_maski (tap_mask_string.c_str());
+//
+//    //On assigne les bonnes adresses 10.0.i.1 -> IP noeud véhicule i
+//    Ipv4AddressHelper addressVehiclesHelper;
+//    addressVehiclesHelper.SetBase (tap_neti, tap_maski);
+//    Ipv4Address IP_node_veh = addressVehiclesHelper.NewAddress (); // Will give 10.0.i.1
+//
+//    //IP noeud tap device 10.0.i.2
+//    Ipv4Address IP_tap_i = addressVehiclesHelper.NewAddress (); // Will give 10.0.i.2
+//
+//    //Mise en place FdNetDevice device
+//    TapFdNetDeviceHelper helperi;
+//    helperi.SetDeviceName (nom_tap);//on lui attribut le nom tapi
+//    helperi.SetModePi (modePi);//On sélectionne le modePi ------------------
+//    helperi.SetTapIpv4Address (IP_tap_i);//doit contenir le noeud de control
+//    helperi.SetTapIpv4Mask (tap_maski);//et un masque de sous réseau.
+//
+//
+//    NetDeviceContainer netDeviceContaineri = helperi.Install (Container_veh.Get(i-1));//On créer un device container et on lui attribut notre tap device
+//    Ptr<NetDevice> netDevicei = netDeviceContaineri.Get (0);//Pas utile vu qu'on a un seul noeud
+//
+//    internetStackHelper.Install (Container_veh.Get(i-1));
+//
+//    Ptr<Ipv4> ipv4_i = Container_veh.Get(i-1)->GetObject<Ipv4> (); // Second occurence of Ipv4 object
+//    uint32_t interfacei = ipv4_i->AddInterface (netDevicei);
+//    Ipv4InterfaceAddress addressi = Ipv4InterfaceAddress (IP_node_veh, tap_maski);
+//    ipv4_i->AddAddress (interfacei, addressi);
+//    ipv4_i->SetMetric (interfacei, 1);
+//    ipv4_i->SetUp (interfacei);
+//
+//    //Mise en place du routage
+//    Ipv4StaticRoutingHelper ipv4RoutingHelperi;
+//    Ptr<Ipv4StaticRouting> staticRoutingi = ipv4RoutingHelperi.GetStaticRouting (ipv4_i);
+//    staticRoutingi->SetDefaultRoute (IP_tap_i, interfacei);
+//
+//    AddressValue remoteAddressi(InetSocketAddress (remoteIpi, port));
+//    AddressValue sinkLocalAddressi(InetSocketAddress (tap_neti, port));
+//
+//    //Mettre en place les paramètres de ROS
+//    ROSVehicule1Helper rosVehicule1Helper;
+//    rosVehicule1Helper.SetAttribute ("RemoteRTMaps",remoteAddressi);
+//    rosVehicule1Helper.SetAttribute ("Local", sinkLocalAddressi );
+//    rosVehicule1Helper.SetAttribute ("VehicleNumber", IntegerValue(i) );
+//    //Ajout adresse destination dans le node 1 ex :  tap 1 -> wave
+//
+//    ApplicationContainer ROSVehSyncApps1 = rosVehicule1Helper.Install (Container_veh.Get(i-1));
+//
+//    ROSVehSyncApps1.Start(Seconds(1.0));
+//    ROSVehSyncApps1.Stop(simulationTime);
+//  }
+  
+  std::string protocol_name("ns3::UdpSocketFactory");
+
+  //----------------------WAVE APPLICATION----------------------------------
+  //Mise en place de l'interface wifi 80211p dans notre noeud véhicule
+
+  // On crée un objet de type WifiPhyHelper (couche physique et canal)
+  YansWifiPhyHelper wifiPhy;
+  // On crée un canal avec un modele de propag par defaut (Methode YansWifiChannelHelper dans src/wifi/helper/yans-wifi-helper)
+  YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
+  // On positionne le canal dans le wifiPhy
+  wifiPhy.SetChannel (wifiChannel.Create ());
+
+  //Dénifition des différents paramètre du wifi 80211p
+  NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
+  Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
+
+  //La ligne qui nous permet de désactiver tout Les LOGS de WAVE :
+  //wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
+
+  //Station Manager on l'implémente de cette façon
+  wifi80211p.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
+                                        "DataMode",StringValue (phyMode),
+                                        "ControlMode",StringValue (phyMode));
+
+  //On applique les paramètre à notre Node container
+//  NetDeviceContainer devices_wifi = wifi80211p.Install (wifiPhy, wifi80211pMac, Container_veh);
+//  //On autorise les PCAP -> acitver la sortie réseau
+//  wifiPhy.EnablePcap ("vehcomm-example_flo", Container_veh);//A developper.
+//
+//  NS_LOG_INFO("Assignation d'une adresse IP au wave");
+//  Ipv4AddressHelper ipv4_wifi;
+//  ipv4_wifi.SetBase("11.0.0.0","255.255.255.0","0.0.0.1");
+//  NS_LOG_INFO("TEST ASSIGNATION D'ADRESSE IP ");
+//  Ipv4InterfaceContainer i_wifi = ipv4_wifi.Assign(devices_wifi);
+
+
+  //On affiche le nombre de véhicule que contient le container.
+  //NS_LOG_UNCOND("Le nombre de véhicule que contient le container est : "<<Container_veh.GetN());
+
+  //Section concernant la vérification des adresses IP des différents noeuds GetAdresse(1,0) pour connaître l'interface TAP et GetAdresse(2,0) pour l'interface wave
+
+  //----------------------VERIF ADRESSE WAVE DU GLOBAL ----------------------------
+  //On vérifie toute les adresses qui sont assigné
+//  NS_LOG_UNCOND("-------------------TEST DU GLOBAL-------------------------");
+//  NodeContainer Globalnode;
+//
+//  Globalnode = NodeContainer::GetGlobal();
+//  NS_LOG_UNCOND("Le noeud global contient : "<<Globalnode.GetN()<<" noeuds");
+//
+//  NS_LOG_UNCOND("Adresse du tap device 1 du premier objet:");
+//  Ptr<Node> TEST_global = Globalnode.Get(0);
+//  Ptr<Ipv4> ipv4_test_global = TEST_global->GetObject<Ipv4> ();
+//  Ipv4InterfaceAddress iaddr1 = ipv4_test_global->GetAddress(2,0);
+//  Ipv4Address ipAddr_global1 = iaddr1.GetLocal ();
+//  NS_LOG_UNCOND("L'adresse IP du noeud qui envoie est : "<<ipAddr_global1); //On affiche les adresses
+
+//  NS_LOG_UNCOND("Adresse 2 du premier objet du container global");
+//  Ptr<Node> TEST_global1 = Globalnode.Get(1);
+//  Ptr<Ipv4> ipv4_test_global1 = TEST_global1->GetObject<Ipv4> ();
+//  Ipv4InterfaceAddress iaddr12 = ipv4_test_global1->GetAddress(2,0);
+//  Ipv4Address ipAddr_global12 = iaddr12.GetLocal ();
+//  NS_LOG_UNCOND("L'adresse IP du noeud qui envoie est : "<<ipAddr_global12); //On affiche les adresses
+//  //----------------------FIN VÉRIF ADRESSE DU GLOBAL NODE--------------------
+//
+//  NS_LOG_UNCOND("Adresse 3 du premier objet du container global");
+//  Ptr<Node> TEST_global2 = Globalnode.Get(2);
+//  Ptr<Ipv4> ipv4_test_global2 = TEST_global2->GetObject<Ipv4> ();
+//  Ipv4InterfaceAddress iaddr13 = ipv4_test_global2->GetAddress(1,0);
+//  Ipv4Address ipAddr_global13 = iaddr13.GetLocal ();
+//  NS_LOG_UNCOND("L'adresse IP du noeud qui envoie est : "<<ipAddr_global13); //On affiche les adresses
+//
+//  //Mise en place Mobilité sur les différents noeuds
+//  MobilityHelper mobile;
+//  mobile.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
+//  mobile.Install(Container_veh);
+//
+//  //On cherche à réaliser le routage entre toutes les interfaces Waves et les interfaces FdNetDevice
+//  NS_LOG_UNCOND("-----MISE EN PLACE DE LA TABLE DE ROUTAGE-------");
+//  Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
+//  NS_LOG_UNCOND("-----FIN DE LA MISE EN PLACE-------");
+}
+
 int
 main (int argc, char *argv[])
 {
