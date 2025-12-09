@@ -181,7 +181,8 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
     NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
   	Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
 
-    std::string phyMode ("OfdmRate6MbpsBW10MHz");
+    wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
+
     wifi80211p.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
                                     "DataMode",StringValue (phyMode),
                                     "ControlMode",StringValue (phyMode));
@@ -190,8 +191,8 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
     Ptr<NetDevice> waveDevice = devices_wifi.Get(0);
 
     // Log the assigned IP address
-    //Ptr<Ipv4> ipv4 = nodei->GetObject<Ipv4>();
-    uint32_t interfaceIndex = ipv4_i->AddInterface(waveDevice);
+    Ptr<Ipv4> ipv4 = nodei->GetObject<Ipv4>();
+    uint32_t interfaceIndex = ipv4->AddInterface(waveDevice);
 
     //uint16_t portwave = 14000 + i;
     uint16_t portwave = 14000;
@@ -201,13 +202,13 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
     AddressValue waveLocalAddressi(InetSocketAddress (wave_neti, portwave));
 
 	  Ipv4InterfaceAddress ifaceAddress = Ipv4InterfaceAddress(wave_neti, Ipv4Mask("255.255.255.0"));
-	  ipv4_i->AddAddress(interfaceIndex, ifaceAddress);
-    ipv4_i->SetUp(interfaceIndex);
+	  ipv4->AddAddress(interfaceIndex, ifaceAddress);
+    ipv4->SetUp(interfaceIndex);
 
     // Positions and speeds
-    //Ptr<ConstantVelocityMobilityModel> mobilityi = nodei->GetObject<ConstantVelocityMobilityModel>();
-    //mobilityi->SetPosition (Vector(0,0,0));
-    //mobilityi->SetVelocity (Vector(0,0,0));
+    Ptr<ConstantVelocityMobilityModel> mobilityi = nodei->GetObject<ConstantVelocityMobilityModel>();
+    mobilityi->SetPosition (Vector(0,0,0));
+    mobilityi->SetVelocity (Vector(0,0,0));
 
     // Check installation
     Ptr<Ipv4> ipv4check = nodei->GetObject<Ipv4>();
@@ -264,38 +265,23 @@ main (int argc, char *argv[])
   NS_LOG_INFO("Initialisation du noeud de contrôle");
   initControlNode(ip_ROS);
 
-  const uint32_t maxNodes = 5;
-  initVehicules(maxNodes, ip_ROS);
-
-  /*
-  //----------------------WAVE APPLICATION----------------------------------
-  //Mise en place de l'interface wifi 80211p
-
-  //Dénifition des différents paramètre du wifi 80211p
-  Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
-
-  //La ligne qui nous permet de désactiver tout Les LOGS de WAVE :
-  //wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
-
-  //Station Manager on l'implémente de cette façon
-  wifi80211p.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
-                                        "DataMode",StringValue (phyMode),
-                                        "ControlMode",StringValue (phyMode));
-
   // NetAnim does not support creating nodes at run-time
   // We have to create nodes and then update them according to ROS
-  const uint32_t maxNodes = 5;
+  const uint32_t maxNodes = 2;
 
+  NS_LOG_INFO("Initialisation des noeuds vehicules");
+  //initVehicules(maxNodes, ip_ROS);
+
+  
   // Create a container for the nodes
   NodeContainer nodes;
   nodes.Create(maxNodes); // Predefine nodes
   
-
   // Set up mobility
   MobilityHelper mobility;
   mobility.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
   mobility.Install(nodes);
-  */
+  
 
   auto now = std::time(nullptr);
   std::tm localTime = *std::localtime(&now);

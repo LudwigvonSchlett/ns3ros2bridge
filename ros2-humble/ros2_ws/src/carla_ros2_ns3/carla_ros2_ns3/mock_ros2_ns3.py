@@ -105,8 +105,8 @@ def control_node_listener(socket_tap0):
 
                 elif response_command == "file":
 
-                    netAnim_file = msg_split[1]
-                    inflog(f"ns3 Simulation saved on file {netAnim_file}")
+                    anim_file = msg_split[1]
+                    inflog(f"ns3 Simulation saved on file {anim_file}")
                     inflog("Initializing carla")
                     init_mock()
                     positions = get_all_position()

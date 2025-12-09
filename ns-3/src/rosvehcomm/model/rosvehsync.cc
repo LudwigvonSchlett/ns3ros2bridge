@@ -235,7 +235,6 @@ namespace ns3
     * and a propagation loss based on a log distance model with a reference loss of 46.6777 dB
     * at reference distance of 1m.
     */
-    YansWifiChannelHelper waveChannel = YansWifiChannelHelper::Default();
     YansWavePhyHelper wavePhy = YansWavePhyHelper::Default();
     wavePhy.SetChannel(sharedChannel);
     wavePhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
@@ -247,6 +246,8 @@ namespace ns3
     wifi80211p.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
                                     "DataMode",StringValue (phyMode),
                                     "ControlMode",StringValue (phyMode));
+
+    wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
 
     NetDeviceContainer devices_wifi = wifi80211p.Install(wavePhy, wifi80211pMac, nodei);
     Ptr<NetDevice> waveDevice = devices_wifi.Get(0);
@@ -374,7 +375,8 @@ namespace ns3
             ++n;
             std::istringstream(instructions[n]) >> z; // 4) z
 
-            //CreateVehicle(nodeNumber, x, y, z, xs, ys, zs);
+            //
+            CreateVehicle(nodeNumber, x, y, z, xs, ys, zs);
             ++n;
           }
           //NS_LOG_UNCOND("On récupère le total");

@@ -13,7 +13,8 @@ from carla_ros2_ns3.lib.ros import (
 # Partie CARLA
 
 # Variables
-client = carla.Client('localhost', 2000)  # connexion a Carla
+# client = carla.Client('localhost', 2000)  # connexion a Carla
+client = carla.Client('192.168.56.1', 2000)  # VM
 
 
 def init_carla():
@@ -25,7 +26,7 @@ def init_carla():
     # Pour changer la carte
     world = client.get_world()
     settings = world.get_settings()
-    # settings.no_rendering_mode = True
+    settings.no_rendering_mode = True
     # Pour desactiver l'utilisation du gpu
     settings.synchronous_mode = False
     world.apply_settings(settings)
@@ -79,7 +80,10 @@ def get_position(vehicle):
         location_string = f"{location.x} {location.y} {location.z}"
         return location_string
     except Exception as e:
-        raise e
+        print(e)
+        errlog("Location will be wrong")
+        location_string = "0 0 0"
+        return location_string
 
 
 def get_speed(vehicle):
@@ -89,7 +93,10 @@ def get_speed(vehicle):
         velocity_string = f"{velocity.x} {velocity.y} {velocity.z}"
         return velocity_string
     except Exception as e:
-        raise e
+        print(e)
+        errlog("Velocity will be wrong")
+        velocity_string = "0 0 0"
+        return velocity_string
 
 
 def get_all_position():
@@ -104,7 +111,7 @@ def get_all_position():
                 index_vehicle += 1
         return output
     except Exception as e:
-        raise e
+        print(e)
 
 
 def get_all_speed():
@@ -119,7 +126,7 @@ def get_all_speed():
                 index_vehicle += 1
         return output
     except Exception as e:
-        raise e
+        print(e)
 
 
 def get_all_mobility():
@@ -135,7 +142,7 @@ def get_all_mobility():
                 index_vehicle += 1
         return output
     except Exception as e:
-        raise e
+        print(e)
 
 
 def stop_vehicules():
@@ -150,4 +157,4 @@ def stop_vehicules():
                 index_vehicle += 1
         return output
     except Exception as e:
-        raise e
+        print(e)
