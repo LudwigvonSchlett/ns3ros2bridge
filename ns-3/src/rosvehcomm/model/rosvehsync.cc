@@ -207,10 +207,7 @@ namespace ns3
     helperi.SetTapIpv4Mask (tap_maski);//et un masque de sous réseau.
 
     NetDeviceContainer netDeviceContaineri = helperi.Install (nodei);//On créer un device container et on lui attribut notre tap device
-    Ptr<NetDevice> netDevicei = netDeviceContaineri.Get (0);//Pas utile vu qu'on a un seul noeud
-
-    InternetStackHelper internetStackHelper;
-    internetStackHelper.Install (nodei);
+    Ptr<NetDevice> netDevicei = nodei->GetDevice(1);
 
     Ptr<Ipv4> ipv4_i = nodei->GetObject<Ipv4> ();
     uint32_t interfacei = ipv4_i->AddInterface (netDevicei);
@@ -247,13 +244,12 @@ namespace ns3
                                     "DataMode",StringValue (phyMode),
                                     "ControlMode",StringValue (phyMode));
 
-    wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
+    //wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
 
     NetDeviceContainer devices_wifi = wifi80211p.Install(wavePhy, wifi80211pMac, nodei);
-    Ptr<NetDevice> waveDevice = devices_wifi.Get(0);
-
+    Ptr<NetDevice> waveDevice = nodei->GetDevice(2);
+    
     // Log the assigned IP address
-    //Ptr<Ipv4> ipv4 = nodei->GetObject<Ipv4>();
     uint32_t interfaceIndex = ipv4_i->AddInterface(waveDevice);
 
     //uint16_t portwave = 14000 + i;

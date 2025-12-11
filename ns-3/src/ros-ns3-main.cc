@@ -99,10 +99,11 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
   mobility.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
   mobility.Install(Container_veh);
 
+  InternetStackHelper internetStackHelper;
+  internetStackHelper.Install (Container_veh);
+
   YansWifiChannelHelper waveChannel = YansWifiChannelHelper::Default();
 	Ptr<YansWifiChannel> sharedChannel = waveChannel.Create();
-
-
 
   //Cette boucle FOR permet la mise en place des tap/FdNetdevice de nos noeuds véhicules
   for(int i=1;i<=nb_vehicule;i++)
@@ -147,9 +148,6 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
     NetDeviceContainer netDeviceContaineri = helperi.Install (nodei);//On créer un device container et on lui attribut notre tap device
     Ptr<NetDevice> netDevicei = netDeviceContaineri.Get (0);//Pas utile vu qu'on a un seul noeud
 
-    InternetStackHelper internetStackHelper;
-    internetStackHelper.Install (nodei);
-
     Ptr<Ipv4> ipv4_i = nodei->GetObject<Ipv4> ();
     uint32_t interfacei = ipv4_i->AddInterface (netDevicei);
     Ipv4InterfaceAddress addressi = Ipv4InterfaceAddress (IP_node_veh, tap_maski);
@@ -173,7 +171,7 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
     * and a propagation loss based on a log distance model with a reference loss of 46.6777 dB
     * at reference distance of 1m.
     */
-    YansWifiChannelHelper waveChannel = YansWifiChannelHelper::Default();
+
     YansWavePhyHelper wavePhy = YansWavePhyHelper::Default();
     wavePhy.SetChannel(sharedChannel);
     wavePhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
@@ -191,8 +189,7 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
     Ptr<NetDevice> waveDevice = devices_wifi.Get(0);
 
     // Log the assigned IP address
-    Ptr<Ipv4> ipv4 = nodei->GetObject<Ipv4>();
-    uint32_t interfaceIndex = ipv4->AddInterface(waveDevice);
+    uint32_t interfaceIndex = ipv4_i->AddInterface(waveDevice);
 
     //uint16_t portwave = 14000 + i;
     uint16_t portwave = 14000;
@@ -202,8 +199,8 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
     AddressValue waveLocalAddressi(InetSocketAddress (wave_neti, portwave));
 
 	  Ipv4InterfaceAddress ifaceAddress = Ipv4InterfaceAddress(wave_neti, Ipv4Mask("255.255.255.0"));
-	  ipv4->AddAddress(interfaceIndex, ifaceAddress);
-    ipv4->SetUp(interfaceIndex);
+	  ipv4_i->AddAddress(interfaceIndex, ifaceAddress);
+    ipv4_i->SetUp(interfaceIndex);
 
     // Positions and speeds
     Ptr<ConstantVelocityMobilityModel> mobilityi = nodei->GetObject<ConstantVelocityMobilityModel>();
@@ -234,7 +231,8 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
 int
 main (int argc, char *argv[])
 {
-  std::string phyMode ("OfdmRate6MbpsBW10MHz");// A voir --------------
+  
+  std::string phyMode ("OfdmRate6MbpsBW10MHz");
 
   /*** Options ***/
 
@@ -267,7 +265,7 @@ main (int argc, char *argv[])
 
   // NetAnim does not support creating nodes at run-time
   // We have to create nodes and then update them according to ROS
-  const uint32_t maxNodes = 2;
+  const uint32_t maxNodes = 5;
 
   NS_LOG_INFO("Initialisation des noeuds vehicules");
   //initVehicules(maxNodes, ip_ROS);
@@ -281,7 +279,10 @@ main (int argc, char *argv[])
   MobilityHelper mobility;
   mobility.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
   mobility.Install(nodes);
-  
+
+  // Set up internet stack
+  InternetStackHelper internetStackHelper;
+  internetStackHelper.Install(nodes);
 
   auto now = std::time(nullptr);
   std::tm localTime = *std::localtime(&now);
