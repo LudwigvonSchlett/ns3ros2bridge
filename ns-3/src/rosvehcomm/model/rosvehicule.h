@@ -37,31 +37,6 @@ namespace ns3 {
       static std::vector<std::string> SplitCharPointer(const char* input);
       void HandleReadTapi (Ptr<Socket> socket);
       void HandleReadWavei (Ptr<Socket> socket);
-      void HandleAccepti (Ptr<Socket> socket, const Address& from);
-      void HandlePeerClosei (Ptr<Socket> socket);
-      void HandlePeerErrori (Ptr<Socket> socket);
-
-      EventId m_sendEvent_rtmaps1; //!< Event to send the next packet
-      int m_nombre_vehicule1;
-
-      Ptr<Packet> choice_dest; // for making choice to send data
-
-      Ptr<Socket> socket_send_RT;
-
-      struct AddressHash1
-      {
-        size_t operator() (const Address &x) const
-        {
-          NS_ABORT_IF (!InetSocketAddress::IsMatchingType (x));
-          InetSocketAddress a = InetSocketAddress::ConvertFrom (x);
-          return std::hash<uint32_t>()(a.GetIpv4 ().Get ());
-        }
-      };
- 
-      std::unordered_map<Address, Ptr<Packet>, AddressHash1> m_buffer1;
- 
-      // In the case of TCP, each socket accept returns a new socket, so the
-      // listening socket is stored separately from the accepted sockets
 
       // ATTRIBUTES
 
@@ -69,22 +44,18 @@ namespace ns3 {
       Ptr<Socket>     tapSocketi;
       TypeId          m_tapSocket_tidi;
       Address         tap_ipi;
-      uint16_t portTapi; // socket port
-      Address ros_ipi;
+      uint16_t        portTapi; // socket port
+      Address         ros_ipi;
 
       Ptr<Socket>     waveSocketi;
       TypeId          m_waveSocket_tidi;
-      uint16_t portWavei; // socket port
+      uint16_t        portWavei; // socket port
       Address         wave_ipi;
 
-      std::list<Ptr<Socket> > m_socketList1;
-      Address        m_adressewave;
-      int         		vehicle_number;
-      uint64_t        m_totalRx1;
+      int         		  vehicle_number;
+      uint64_t          m_totalRx1;
 
-      Address         copy_pkt;
       bool            m_enableSeqTsSizeHeader1 {false};
-      Ptr<Socket>    m_socket_wave;
 
       TracedCallback<Ptr<const Packet>, const Address &> m_rxTrace1;
       TracedCallback<Ptr<const Packet>, const Address &, const Address &> m_rxTraceWithAddresses1;

@@ -51,11 +51,6 @@ namespace ns3
                      TypeIdValue (UdpSocketFactory::GetTypeId ()),
                      MakeTypeIdAccessor (&ROSVehicule::m_waveSocket_tidi),
                      MakeTypeIdChecker ())
-    .AddAttribute ("Adresse",
-                     " Address of the wave interface",
-                     AddressValue (),
-                     MakeAddressAccessor (&ROSVehicule::m_adressewave),
-                     MakeAddressChecker ())
     /*.AddAttribute ("Interval",
                      "The time to wait between packets",
                      TimeValue (Seconds (1.0)),
@@ -93,7 +88,6 @@ namespace ns3
     NS_LOG_INFO("Constructeur Rosvehicule");
     tapSocketi = nullptr;
     m_totalRx1 = 0;
-    m_sendEvent_rtmaps1 = EventId ();//obtenir l'id de l'evènement.
   }
 
   // Destructor
@@ -109,7 +103,6 @@ namespace ns3
     NS_LOG_FUNCTION(this);
     NS_LOG_INFO("DoDispose Rosvehicule "  << vehicle_number);
     tapSocketi = nullptr;
-    m_socketList1.clear ();//vider le conteneur de socket 
     Application::DoDispose ();
   }
 
@@ -119,62 +112,18 @@ namespace ns3
     NS_LOG_INFO("Starting RosVehicle " << vehicle_number);
 
     // Get node
-    Ptr<Node> nodei = NodeContainer::GetGlobal().Get(vehicle_number);
+    Ptr<Node> nodei = GetNode();
 
     tapSocketi = Socket::CreateSocket(nodei, m_tapSocket_tidi);
     tapSocketi->SetAllowBroadcast (true);//autoriser la communication broadcast
     tapSocketi->Connect(ros_ipi);
-
     tapSocketi->Bind(tap_ipi);
-
-    if (addressUtils::IsMulticast (tap_ipi))
-    {
-      Ptr<UdpSocket> udpSocket = DynamicCast<UdpSocket> (tapSocketi);
-      if (udpSocket)
-      {
-        // equivalent to setsockopt (MCAST_JOIN_GROUP)
-        udpSocket->MulticastJoinGroup (0, tap_ipi);
-      }
-      else
-      {
-        NS_FATAL_ERROR ("Error: joining multicast on a non-UDP socket");
-      }
-    }
-
     tapSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadTapi, this));
-    tapSocketi->SetAcceptCallback (
-      MakeNullCallback<bool, Ptr<Socket>, const Address &> (),
-      MakeCallback (&ROSVehicule::HandleAccepti, this));
-    tapSocketi->SetCloseCallbacks (
-      MakeCallback (&ROSVehicule::HandlePeerClosei, this),
-      MakeCallback (&ROSVehicule::HandlePeerErrori, this));
 
     waveSocketi = Socket::CreateSocket(nodei, m_tapSocket_tidi);
     waveSocketi->SetAllowBroadcast(true);
     waveSocketi->Bind(wave_ipi);
-
-    if (addressUtils::IsMulticast (wave_ipi))
-    {
-      Ptr<UdpSocket> udpSocket = DynamicCast<UdpSocket> (waveSocketi);
-      if (udpSocket)
-      {
-      	// equivalent to setsockopt (MCAST_JOIN_GROUP)
-      	udpSocket->MulticastJoinGroup (0, wave_ipi);
-      }
-      else
-      {
-      	NS_FATAL_ERROR ("Error: joining multicast on a non-UDP socket");
-      }
-    }
-
     waveSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadWavei, this));
-    waveSocketi->SetAcceptCallback (
-      MakeNullCallback<bool, Ptr<Socket>, const Address &> (),
-      MakeCallback (&ROSVehicule::HandleAccepti, this));
-    waveSocketi->SetCloseCallbacks (
-      MakeCallback (&ROSVehicule::HandlePeerClosei, this),
-      MakeCallback (&ROSVehicule::HandlePeerErrori, this));
-    waveSocketi->SetAllowBroadcast(true);
   }
 
 
@@ -182,13 +131,6 @@ namespace ns3
     NS_LOG_UNCOND("TEST STOP APPLI ");
     NS_LOG_FUNCTION (this);
     NS_LOG_INFO("Stopping Rosvehicule "  << vehicle_number);
-    while(!m_socketList1.empty ())
-    {//these are accepted sockets, close them
-      NS_LOG_INFO("Wait for socket");
-      Ptr<Socket> acceptedSocket = m_socketList1.front ();
-      m_socketList1.pop_front ();
-      acceptedSocket->Close ();
-    }
     if (tapSocketi)
     {
       tapSocketi->Close ();
@@ -265,21 +207,5 @@ namespace ns3
     }
   }
 
-  void ROSVehicule::HandlePeerClosei (Ptr<Socket> socket)
-  {
-    NS_LOG_FUNCTION (this << socket);
-  }
-
-  void ROSVehicule::HandlePeerErrori (Ptr<Socket> socket)
-  {
-    NS_LOG_FUNCTION (this << socket);
-  }
-
-  void ROSVehicule::HandleAccepti (Ptr<Socket> socket, const Address& from)
-  {
-    NS_LOG_FUNCTION (this << socket << from);
-    socket->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadTapi, this));
-    m_socketList1.push_back (socket);
-  }
 
 }
