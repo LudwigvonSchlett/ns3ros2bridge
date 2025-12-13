@@ -69,7 +69,6 @@ def control_node_listener(socket_tap0):
         try:
 
             packet = socket_tap0.recv(MTU)
-            inflog("tap0 received a packet")
 
             # Récupérer l'adresse IP de destination du paquet
             dest_ip = packet[30:34]
@@ -79,11 +78,9 @@ def control_node_listener(socket_tap0):
 
             # Vérifiez si le paquet est destiné
             # à votre propre adresse TAP pour l'ignorer
-            if dest_ip_str == '10.0.0.2':
-                inflog(
-                    f"Message destiné à {dest_ip_str} (envoi propre) ignoré.")
 
-            elif check_message(packet):
+            if check_message(packet) and dest_ip_str != '10.0.0.2':
+                inflog("tap0 received a packet from control node")
                 print_udp(packet)
                 message = (packet[42:].decode()).rstrip("\n")
                 inflog(f"Received packet (decoded): {message}")
@@ -225,7 +222,6 @@ def listen_control_tap(control_socket):
                 stop_simulation()
 
             packet = control_socket.recv(MTU)
-            inflog("tap0 received a packet")
 
             # Récupérer l'adresse IP de destination du paquet
             dest_ip = packet[30:34]
@@ -235,11 +231,9 @@ def listen_control_tap(control_socket):
 
             # Vérifiez si le paquet est destiné
             # à votre propre adresse TAP pour l'ignorer
-            if dest_ip_str == '10.0.0.2':
-                inflog(
-                    f"Message destiné à {dest_ip_str} (envoi propre) ignoré.")
 
-            elif check_message(packet):
+            if check_message(packet) and dest_ip_str != '10.0.0.2':
+                inflog("tap0 received a packet from control node")
                 message = (packet[42:].decode()).rstrip("\n")
                 inflog(f"Received packet (decoded): {message}")
                 msg_split = message.split(" ")
@@ -284,13 +278,13 @@ def listen_tap_devices(tap_sockets):
                 device_name = sock.getsockname()[0]  # Nom du device lié
                 if check_message(data):
                     message = (data[42:].decode()).rstrip("\n")
-                    if (message.split(" ")[0]
-                       == device_name.replace("tap", "")):
+                    splits = message.split(" ")
+                    if splits[0] == device_name.replace("tap", ""):
                         # compte uniquement si l'on est la cible
 
                         number_message_received += 1
                         # A faire: traier ce qu'on recoit sur tap1,2,3,...
-                        inflog(f"Données reçues sur {device_name}")
+                        inflog(f"{device_name} received a packet from tap{splits[1]}")
 
         except Exception as e:
             errlog(f"Erreur lors de l'écoute des tap devices: {e}")
