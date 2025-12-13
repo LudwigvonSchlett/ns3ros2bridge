@@ -227,21 +227,15 @@ namespace ns3
 
       std::vector<std::string> instructions = SplitCharPointer(contenu);
 
-      if (!instructions.empty())
-      {
-        // Broadcast address (all nodes in the network)
-        for(uint32_t i = 1; i < NodeContainer::GetGlobal().GetN(); i++)
-        {
-          if ((int) i == vehicle_number)
-          {
-              continue; // Skip our own
-          }
-          std::ostringstream ipWave;
-		      ipWave << "11.0.0." << i;
-    	    Ipv4Address singleAddress = Ipv4Address(ipWave.str().c_str());
-          InetSocketAddress remoteAddr(singleAddress, portWavei);
-      	  waveSocketi->SendTo(packet, 0, remoteAddr);
-        }
+      // unicast basique
+      if (!instructions.empty()) {
+
+        std::ostringstream ipWave;
+        ipWave << "11.0.0." << instructions[0];
+        Ipv4Address singleAddress = Ipv4Address(ipWave.str().c_str());
+        InetSocketAddress remoteAddr(singleAddress, portWavei);
+        waveSocketi->SendTo(packet, 0, remoteAddr);
+
       }
     }
   }

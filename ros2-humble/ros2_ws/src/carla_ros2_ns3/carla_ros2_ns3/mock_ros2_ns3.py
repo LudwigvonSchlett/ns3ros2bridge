@@ -187,16 +187,12 @@ def stop_simulation():
     inflog("Simulation terminée.")
     if number_message_sent != 0:
         pdr = (number_message_received/number_message_sent)*100
-        pdr_division = pdr/(NB_NODE-1)
     else:
         pdr = 0
-        pdr_division = 0
 
     inflog(f"Nombre de paquet envoyés: {number_message_sent}")
     inflog(f"Nombre de paquet recu: {number_message_received}")
     inflog(f"Taux de livraison des paquets: PDR = {pdr}%")
-    inflog("Taux de livraison des paquets en prenant en compte"
-           + f"un broadcast: PDR = {pdr_division}%")
     inflog("Interruption reseau avec NS3")
     rclpy.shutdown()
     sys.exit()
@@ -325,8 +321,11 @@ def comunication_node(interval):
             sys.exit()
         try:
             num_node = random.randint(1, NB_NODE)
+            dest_node = num_node
+            while dest_node == num_node:
+                dest_node = random.randint(1, NB_NODE)
             position = get_position(vehicles[num_node-1])
-            tap_sender(f"{num_node} position {position}", num_node)
+            tap_sender(f"{dest_node} {num_node} position {position}", num_node)
             number_message_sent += 1
             time.sleep(interval)
         except Exception as e:
