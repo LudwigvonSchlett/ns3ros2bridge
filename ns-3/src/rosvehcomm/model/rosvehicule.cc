@@ -114,15 +114,22 @@ namespace ns3
     // Get node
     Ptr<Node> nodei = GetNode();
 
+    Ipv4Address tapIp = InetSocketAddress::ConvertFrom(tap_ipi).GetIpv4();  // extract Ipv4Address
+    InetSocketAddress tapAddr(tapIp, portTapi);
+
     tapSocketi = Socket::CreateSocket(nodei, m_tapSocket_tidi);
     tapSocketi->SetAllowBroadcast (true);//autoriser la communication broadcast
     tapSocketi->Connect(ros_ipi);
-    tapSocketi->Bind(tap_ipi);
+    tapSocketi->Bind(tapAddr);
     tapSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadTapi, this));
+
+
+    Ipv4Address waveIp = InetSocketAddress::ConvertFrom(wave_ipi).GetIpv4();  // extract Ipv4Address
+    InetSocketAddress waveAddr(waveIp, portWavei);
 
     waveSocketi = Socket::CreateSocket(nodei, m_tapSocket_tidi);
     waveSocketi->SetAllowBroadcast(true);
-    waveSocketi->Bind(wave_ipi);
+    waveSocketi->Bind(waveAddr);
     waveSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadWavei, this));
   }
 
