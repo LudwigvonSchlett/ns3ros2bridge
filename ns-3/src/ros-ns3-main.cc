@@ -256,18 +256,18 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
   * at reference distance of 1m.
   */
 
-  YansWavePhyHelper wavePhy = YansWavePhyHelper::Default();
-  wavePhy.SetChannel(sharedChannel);
-  wavePhy.Set("TxPowerStart", DoubleValue(200.0));  // in dBm
-  wavePhy.Set("TxPowerEnd", DoubleValue(200.0));  // in dBm
-  NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
-  Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
+    YansWavePhyHelper wavePhy = YansWavePhyHelper::Default();
+    wavePhy.SetChannel(sharedChannel);
+    wavePhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
+	  wavePhy.Set("TxPowerEnd", DoubleValue(20.0));  // in dBm
+    NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
+  	Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
 
-  //wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
+    wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
 
-  wifi80211p.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
-                                  "DataMode",StringValue (phyMode),
-                                  "ControlMode",StringValue (phyMode));
+    wifi80211p.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
+                                    "DataMode",StringValue (phyMode),
+                                    "ControlMode",StringValue (phyMode));
 
   wavePhy.EnablePcap("wave-simple-80211p", nodes);
 
