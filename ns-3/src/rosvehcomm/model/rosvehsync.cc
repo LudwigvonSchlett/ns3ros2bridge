@@ -239,6 +239,12 @@ namespace ns3
       NS_LOG_INFO("Node " << i << " Interface " << j  << " IP: " << ipv4check->GetAddress(j, 0).GetLocal());
     }
 
+    for (uint32_t j = 0; j < nodei->GetNDevices(); ++j)
+    {
+      Ptr<NetDevice> dev = nodei->GetDevice(j);
+      std::cout << "Device " << j << ": " << dev->GetInstanceTypeId().GetName() << std::endl;
+    }
+
     //Mettre en place les paramètres de ROS
     ROSVehiculeHelper rosVehiculeHelper;
     rosVehiculeHelper.SetAttribute ("RemoteROS",remoteAddressi);
