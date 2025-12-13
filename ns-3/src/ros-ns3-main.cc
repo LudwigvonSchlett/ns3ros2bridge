@@ -263,7 +263,7 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
     NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
   	Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
 
-    wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
+  //wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
 
     wifi80211p.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
                                     "DataMode",StringValue (phyMode),
