@@ -20,6 +20,13 @@ NS_LOG_COMPONENT_DEFINE("ROS2NS3Main");
 void
 initControlNode (std::string ip_ROS)
 {
+
+  Ptr<Node> controlNode = CreateObject<Node> ();
+
+  // Add a default internet stack to the node (ARP, IPv4, ICMP, UDP and TCP).
+  InternetStackHelper internetStackHelper;
+  internetStackHelper.Install (controlNode);
+
   //Noeud de contrôle <=> tap0
   std::string tapName ("tap0");
 
@@ -47,13 +54,8 @@ initControlNode (std::string ip_ROS)
   tapHelper.SetTapIpv4Address (controlNodeIp);//ip du noeud de controle = 10.0.0.1
   tapHelper.SetTapIpv4Mask (controlMask);//255.255.255.0
 
-  Ptr<Node> controlNode = CreateObject<Node> ();
   NetDeviceContainer netDeviceContainer = tapHelper.Install (controlNode);
   Ptr<NetDevice> netDevice = netDeviceContainer.Get (0);
-
-  // Add a default internet stack to the node (ARP, IPv4, ICMP, UDP and TCP).
-  InternetStackHelper internetStackHelper;
-  internetStackHelper.Install (controlNode);
 
   // Interface
   Ptr<Ipv4> ipv4 = controlNode->GetObject<Ipv4> ();
@@ -228,6 +230,85 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
   }
 }
 
+void
+initVehiculesOld (int nb_vehicule, std::string ip_ROS)
+{
+
+  // Create a container for the nodes
+  NodeContainer nodes;
+  nodes.Create(nb_vehicule); // Predefine nodes
+
+  // Set up mobility
+  MobilityHelper mobility;
+  mobility.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
+  mobility.Install(nodes);
+
+  // Set up internet stack
+  InternetStackHelper internetStackHelper;
+  internetStackHelper.Install(nodes);
+
+  for(int i=1; i<=nb_vehicule; i++) {
+
+    Ptr<Node> nodei = NodeContainer::GetGlobal().Get(i);
+
+    string nodeNumberString = to_string(i);
+
+    NS_LOG_UNCOND("Creating node "+nodeNumberString);
+
+    //IP:
+    string tap_neti_string = "10.0."+nodeNumberString+".0";
+
+    //Nom du tap device
+    string nom_tap = "tap"+nodeNumberString;
+
+    //Port:
+    uint16_t portveh = 12000+i;
+    bool modePi = false;
+
+    std::string tap_mask_string ("255.255.255.0"); //On lui assigne également un masque
+
+    //On convertit les adresses/Masque de sous réseau en chaîne de caractère
+    Ipv4Address tap_neti (tap_neti_string.c_str());
+    Ipv4Mask tap_maski (tap_mask_string.c_str());
+
+    //On assigne les bonnes adresses 10.0.i.1 -> IP noeud véhicule i
+    Ipv4AddressHelper addressVehiclesHelper;
+    addressVehiclesHelper.SetBase (tap_neti, tap_maski);
+    Ipv4Address IP_node_veh = addressVehiclesHelper.NewAddress (); // Will give 10.0.i.1
+
+    //IP noeud tap device 10.0.i.2
+    Ipv4Address IP_tap_i = addressVehiclesHelper.NewAddress (); // Will give 10.0.i.2
+
+    // Mise en place FdNetDevice device
+    TapFdNetDeviceHelper helperi;
+    helperi.SetDeviceName (nom_tap);//on lui attribut le nom tapi
+    helperi.SetModePi (modePi);//On sélectionne le modePi ------------------
+    helperi.SetTapIpv4Address (IP_tap_i);//doit contenir le noeud de control
+    helperi.SetTapIpv4Mask (tap_maski);//et un masque de sous réseau.
+
+    NetDeviceContainer netDeviceContaineri = helperi.Install (nodei);//On créer un device container et on lui attribut notre tap device
+    Ptr<NetDevice> netDevicei = netDeviceContaineri.Get (0);//Pas utile vu qu'on a un seul noeud
+
+    Ptr<Ipv4> ipv4_i = nodei->GetObject<Ipv4> ();
+    uint32_t interfacei = ipv4_i->AddInterface (netDevicei);
+    Ipv4InterfaceAddress addressi = Ipv4InterfaceAddress (IP_node_veh, tap_maski);
+    ipv4_i->AddAddress (interfacei, addressi);
+    ipv4_i->SetMetric (interfacei, 1);
+    ipv4_i->SetUp (interfacei);
+
+    // Routing
+    Ipv4StaticRoutingHelper ipv4RoutingHelperi;
+    Ptr<Ipv4StaticRouting> staticRoutingi = ipv4RoutingHelperi.GetStaticRouting (ipv4_i);
+    staticRoutingi->SetDefaultRoute (IP_tap_i, interfacei);
+
+    Ipv4Address ros_ipv4 = (ip_ROS.c_str ());
+    AddressValue remoteAddressi(InetSocketAddress (ros_ipv4, portveh));
+    AddressValue sinkLocalAddressi(InetSocketAddress (tap_neti, portveh));
+
+  }
+
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -270,19 +351,7 @@ main (int argc, char *argv[])
   NS_LOG_INFO("Initialisation des noeuds vehicules");
   //initVehicules(maxNodes, ip_ROS);
 
-  
-  // Create a container for the nodes
-  NodeContainer nodes;
-  nodes.Create(maxNodes); // Predefine nodes
-  
-  // Set up mobility
-  MobilityHelper mobility;
-  mobility.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
-  mobility.Install(nodes);
-
-  // Set up internet stack
-  InternetStackHelper internetStackHelper;
-  internetStackHelper.Install(nodes);
+  initVehiculesOld(maxNodes, ip_ROS);
 
   auto now = std::time(nullptr);
   std::tm localTime = *std::localtime(&now);

@@ -176,50 +176,13 @@ namespace ns3
     NS_LOG_UNCOND("Creating node "+nodeNumberString);
 
     //IP:
-    string tap_neti_string = "10.0."+nodeNumberString+".0";
-
+    string tap_neti_string = "10.0."+nodeNumberString+".1";
     //Nom du tap device
     string nom_tap = "tap"+nodeNumberString;
-
     //Port:
     uint16_t portveh = 12000+i;
-    bool modePi = false;
-
-    std::string tap_mask_string ("255.255.255.0"); //On lui assigne également un masque
-
     //On convertit les adresses/Masque de sous réseau en chaîne de caractère
     Ipv4Address tap_neti (tap_neti_string.c_str());
-    Ipv4Mask tap_maski (tap_mask_string.c_str());
-
-    //On assigne les bonnes adresses 10.0.i.1 -> IP noeud véhicule i
-    Ipv4AddressHelper addressVehiclesHelper;
-    addressVehiclesHelper.SetBase (tap_neti, tap_maski);
-    Ipv4Address IP_node_veh = addressVehiclesHelper.NewAddress (); // Will give 10.0.i.1
-
-    //IP noeud tap device 10.0.i.2
-    Ipv4Address IP_tap_i = addressVehiclesHelper.NewAddress (); // Will give 10.0.i.2
-
-    // Mise en place FdNetDevice device
-    TapFdNetDeviceHelper helperi;
-    helperi.SetDeviceName (nom_tap);//on lui attribut le nom tapi
-    helperi.SetModePi (modePi);//On sélectionne le modePi ------------------
-    helperi.SetTapIpv4Address (IP_tap_i);//doit contenir le noeud de control
-    helperi.SetTapIpv4Mask (tap_maski);//et un masque de sous réseau.
-
-    NetDeviceContainer netDeviceContaineri = helperi.Install (nodei);//On créer un device container et on lui attribut notre tap device
-    Ptr<NetDevice> netDevicei = nodei->GetDevice(1);
-
-    Ptr<Ipv4> ipv4_i = nodei->GetObject<Ipv4> ();
-    uint32_t interfacei = ipv4_i->AddInterface (netDevicei);
-    Ipv4InterfaceAddress addressi = Ipv4InterfaceAddress (IP_node_veh, tap_maski);
-    ipv4_i->AddAddress (interfacei, addressi);
-    ipv4_i->SetMetric (interfacei, 1);
-    ipv4_i->SetUp (interfacei);
-
-    // Routing
-    Ipv4StaticRoutingHelper ipv4RoutingHelperi;
-    Ptr<Ipv4StaticRouting> staticRoutingi = ipv4RoutingHelperi.GetStaticRouting (ipv4_i);
-    staticRoutingi->SetDefaultRoute (IP_tap_i, interfacei);
 
     Ipv4Address ros_ipv4 = InetSocketAddress::ConvertFrom(ros_ip).GetIpv4();
     AddressValue remoteAddressi(InetSocketAddress (ros_ipv4, portveh));
@@ -250,6 +213,7 @@ namespace ns3
     Ptr<NetDevice> waveDevice = nodei->GetDevice(2);
     
     // Log the assigned IP address
+    Ptr<Ipv4> ipv4_i = nodei->GetObject<Ipv4> ();
     uint32_t interfaceIndex = ipv4_i->AddInterface(waveDevice);
 
     //uint16_t portwave = 14000 + i;
