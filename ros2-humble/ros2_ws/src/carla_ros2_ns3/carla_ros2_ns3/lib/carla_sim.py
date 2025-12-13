@@ -4,7 +4,7 @@ import random
 
 import carla
 
-from carla_ros2_ns3.const import NB_NODE, vehicles
+from carla_ros2_ns3.const import NB_NODE, vehicles, mode
 from carla_ros2_ns3.lib.ros import (
     inflog,
     errlog
@@ -13,20 +13,33 @@ from carla_ros2_ns3.lib.ros import (
 # Partie CARLA
 
 # Variables
-# client = carla.Client('localhost', 2000)  # connexion a Carla
-client = carla.Client('192.168.56.1', 2000)  # VM
+if mode == "gpu":
+    host = "localhost"
+    no_rendering = False
+elif mode == "cpu":
+    host = "localhost"
+    no_rendering = True
+elif mode == "vm":
+    host = "192.168.56.1"
+    no_rendering = True
+else:
+    host = "localhost"
+    no_rendering = False
+
+client = carla.Client(host, 2000)  # connexion a Carla
 
 
 def init_carla():
     """Initialise la connexion à Carla."""
     global vehicles
 
+    client = carla.Client(host, 2000)  # connexion a Carla
     client.set_timeout(20.0)
     # client.load_world("Town01")
     # Pour changer la carte
     world = client.get_world()
     settings = world.get_settings()
-    settings.no_rendering_mode = True
+    settings.no_rendering_mode = no_rendering
     # Pour desactiver l'utilisation du gpu
     settings.synchronous_mode = False
     world.apply_settings(settings)

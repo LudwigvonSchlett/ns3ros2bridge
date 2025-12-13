@@ -269,9 +269,8 @@ def listen_tap_devices(tap_sockets):
                 if check_message(data):
                     message = (data[42:].decode()).rstrip("\n")
                     if (message.split(" ")[0]
-                       != device_name.replace("tap", "")):
-                        # exclu le message si l'envoyeur
-                        # est le meme que le recepteur
+                       == device_name.replace("tap", "")):
+                        # compte uniquement si l'on est la cible
 
                         number_message_received += 1
                         # A faire: traier ce qu'on recoit sur tap1,2,3,...
