@@ -69,7 +69,6 @@ def control_node_listener(socket_tap0):
         try:
 
             packet = socket_tap0.recv(MTU)
-            inflog("tap0 received a packet")
 
             # Récupérer l'adresse IP de destination du paquet
             dest_ip = packet[30:34]
@@ -79,11 +78,9 @@ def control_node_listener(socket_tap0):
 
             # Vérifiez si le paquet est destiné
             # à votre propre adresse TAP pour l'ignorer
-            if dest_ip_str == '10.0.0.2':
-                inflog(
-                    f"Message destiné à {dest_ip_str} (envoi propre) ignoré.")
 
-            elif check_message(packet):
+            if check_message(packet) and dest_ip_str != '10.0.0.2':
+                inflog("tap0 received a packet from control node")
                 print_udp(packet)
                 message = (packet[42:].decode()).rstrip("\n")
                 inflog(f"Received packet (decoded): {message}")
@@ -203,16 +200,12 @@ def stop_simulation():
     inflog("Simulation terminée.")
     if number_message_sent != 0:
         pdr = (number_message_received/number_message_sent)*100
-        pdr_division = pdr/(NB_NODE-1)
     else:
         pdr = 0
-        pdr_division = 0
 
     inflog(f"Nombre de paquet envoyés: {number_message_sent}")
     inflog(f"Nombre de paquet recu: {number_message_received}")
     inflog(f"Taux de livraison des paquets: PDR = {pdr}%")
-    inflog("Taux de livraison des paquets en prenant en compte"
-           + f"un broadcast: PDR = {pdr_division}%")
     inflog("Interruption reseau avec NS3")
     rclpy.shutdown()
     sys.exit()
@@ -229,7 +222,6 @@ def listen_control_tap(control_socket):
                 stop_simulation()
 
             packet = control_socket.recv(MTU)
-            inflog("tap0 received a packet")
 
             # Récupérer l'adresse IP de destination du paquet
             dest_ip = packet[30:34]
@@ -239,11 +231,9 @@ def listen_control_tap(control_socket):
 
             # Vérifiez si le paquet est destiné
             # à votre propre adresse TAP pour l'ignorer
-            if dest_ip_str == '10.0.0.2':
-                inflog(
-                    f"Message destiné à {dest_ip_str} (envoi propre) ignoré.")
 
-            elif check_message(packet):
+            if check_message(packet) and dest_ip_str != '10.0.0.2':
+                inflog("tap0 received a packet from control node")
                 message = (packet[42:].decode()).rstrip("\n")
                 inflog(f"Received packet (decoded): {message}")
                 msg_split = message.split(" ")
@@ -288,14 +278,13 @@ def listen_tap_devices(tap_sockets):
                 device_name = sock.getsockname()[0]  # Nom du device lié
                 if check_message(data):
                     message = (data[42:].decode()).rstrip("\n")
-                    if (message.split(" ")[0]
-                       != device_name.replace("tap", "")):
-                        # exclu le message si l'envoyeur
-                        # est le meme que le recepteur
+                    splits = message.split(" ")
+                    if splits[0] == device_name.replace("tap", ""):
+                        # compte uniquement si l'on est la cible
 
                         number_message_received += 1
                         # A faire: traier ce qu'on recoit sur tap1,2,3,...
-                        inflog(f"Données reçues sur {device_name}")
+                        inflog(f"{device_name} received a packet from tap{splits[1]}")
 
         except Exception as e:
             errlog(f"Erreur lors de l'écoute des tap devices: {e}")
@@ -341,8 +330,11 @@ def comunication_node(interval):
             sys.exit()
         try:
             num_node = random.randint(1, NB_NODE)
+            dest_node = num_node
+            while dest_node == num_node:
+                dest_node = random.randint(1, NB_NODE)
             position = get_position(vehicles[num_node-1])
-            tap_sender(f"{num_node} position {position}", num_node)
+            tap_sender(f"{dest_node} {num_node} position {position}", num_node)
             number_message_sent += 1
             time.sleep(interval)
         except Exception as e:
