@@ -226,7 +226,7 @@ main (int argc, char *argv[])
 
   /*** Paramètres de la simulation ***/
   NS_LOG_INFO("Setting up parameters");
-  Time simulationTime (Seconds(180));
+  Time simulationTime (Seconds(60));
 
   /*** Mise en place du noeud de contrôle ***/
   // Peu importe l'adresse ROS peut voir tout ce qui se passe sur le TAP
@@ -258,7 +258,6 @@ main (int argc, char *argv[])
 
   NS_LOG_INFO("Starting simulation of " << simulationTime.GetSeconds() << " seconds");
   Simulator::Stop (simulationTime);
-  //Simulator::Stop (ns3::Seconds (60));
   Simulator::Run ();
   Simulator::Destroy ();
 
