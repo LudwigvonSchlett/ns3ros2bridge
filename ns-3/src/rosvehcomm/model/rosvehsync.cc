@@ -175,6 +175,7 @@ namespace ns3
 
     NS_LOG_UNCOND("Creating node "+nodeNumberString);
 
+    //TAP
     //IP:
     string tap_neti_string = "10.0."+nodeNumberString+".1";
     //Nom du tap device
@@ -210,13 +211,13 @@ namespace ns3
     //wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
 
     NetDeviceContainer devices_wifi = wifi80211p.Install(wavePhy, wifi80211pMac, nodei);
+    wavePhy.EnablePcap("wave-80211p-carla-ros2", devices_wifi);
     Ptr<NetDevice> waveDevice = nodei->GetDevice(2);
     
     // Log the assigned IP address
     Ptr<Ipv4> ipv4_i = nodei->GetObject<Ipv4> ();
     uint32_t interfaceIndex = ipv4_i->AddInterface(waveDevice);
 
-    //uint16_t portwave = 14000 + i;
     uint16_t portwave = 14000;
     std::ostringstream ipWave;
 	  ipWave << "11.0.0." << i;
