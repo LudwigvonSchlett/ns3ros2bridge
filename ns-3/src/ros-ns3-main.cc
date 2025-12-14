@@ -231,7 +231,7 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
 }
 
 void
-initVehiculesOld (int nb_vehicule, std::string ip_ROS)
+initVehiculesOld (int nb_vehicule)
 {
 
   // Create a container for the nodes
@@ -346,7 +346,7 @@ main (int argc, char *argv[])
   NS_LOG_INFO("Initialisation des noeuds vehicules");
   //initVehicules(maxNodes, ip_ROS);
 
-  initVehiculesOld(maxNodes, ip_ROS);
+  initVehiculesOld(maxNodes);
 
   auto now = std::time(nullptr);
   std::tm localTime = *std::localtime(&now);
