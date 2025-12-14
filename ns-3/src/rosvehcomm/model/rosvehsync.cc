@@ -175,7 +175,7 @@ namespace ns3
 
     NS_LOG_UNCOND("Creating node "+nodeNumberString);
 
-    // TAP
+    //TAP
     //IP:
     string tap_neti_string = "10.0."+nodeNumberString+".1";
     //Nom du tap device

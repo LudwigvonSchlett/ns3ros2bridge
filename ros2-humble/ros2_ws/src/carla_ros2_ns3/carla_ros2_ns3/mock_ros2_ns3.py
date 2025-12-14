@@ -269,6 +269,7 @@ def listen_tap_devices(tap_sockets):
                         number_message_received += 1
                         # A faire: traier ce qu'on recoit sur tap1,2,3,...
                         inflog(f"{device_name} received a packet from tap{splits[1]}")
+                        inflog(f"Received packet (decoded): {message}")
 
         except Exception as e:
             errlog(f"Erreur lors de l'écoute des tap devices: {e}")
@@ -303,8 +304,8 @@ def comunication_node(interval):
     """
     Génère du traffic réseau dans ns3.
 
-    Envoie sur un tap (pris aléatoirement pour les tests) la position
-    d'un véhicule pour que cette information soit transmise par Wave dans NS3
+    Envoie sur tous les tap la position du véhicule avec une destination
+    aléatoire pour que cette information soit transmise par Wave dans NS3
     """
     global error_state
     global number_message_sent
@@ -313,13 +314,14 @@ def comunication_node(interval):
             inflog("Exiting comunication_node")
             sys.exit()
         try:
-            num_node = random.randint(1, NB_NODE)
-            dest_node = num_node
-            while dest_node == num_node:
-                dest_node = random.randint(1, NB_NODE)
-            position = get_position(vehicles[num_node-1])
-            tap_sender(f"{dest_node} {num_node} position {position}", num_node)
-            number_message_sent += 1
+
+            for node in range(1, NB_NODE+1):
+                dest_node = node
+                while dest_node == node:
+                    dest_node = random.randint(1, NB_NODE)
+                position = get_position(vehicles[node-1])
+                tap_sender(f"{dest_node} {node} position {position}", node)
+                number_message_sent += 1
             time.sleep(interval)
         except Exception as e:
             errlog("Erreur lors de la récupération/"
