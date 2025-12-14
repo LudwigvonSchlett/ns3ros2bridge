@@ -200,6 +200,7 @@ namespace ns3
     wavePhy.SetChannel(sharedChannel);
     wavePhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
 	  wavePhy.Set("TxPowerEnd", DoubleValue(20.0));  // in dBm
+    wavePhy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11);
     NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
   	Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
 
