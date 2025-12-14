@@ -190,43 +190,15 @@ namespace ns3
     AddressValue sinkLocalAddressi(InetSocketAddress (tap_neti, portveh));
 
     // WAVE
-    /* Documentantion for YansWifiChannelHelper::Default()
-	  * Create a channel helper in a default working state. By default, we create
-    * a channel model with a propagation delay equal to a constant, the speed of light,
-    * and a propagation loss based on a log distance model with a reference loss of 46.6777 dB
-    * at reference distance of 1m.
-    */
-    YansWavePhyHelper wavePhy = YansWavePhyHelper::Default();
-    wavePhy.SetChannel(sharedChannel);
-    wavePhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
-	  wavePhy.Set("TxPowerEnd", DoubleValue(20.0));  // in dBm
-    NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
-  	Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
-
-    std::string phyMode ("OfdmRate6MbpsBW10MHz");
-    wifi80211p.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
-                                    "DataMode",StringValue (phyMode),
-                                    "ControlMode",StringValue (phyMode));
-
-    //wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
-
-    NetDeviceContainer devices_wifi = wifi80211p.Install(wavePhy, wifi80211pMac, nodei);
-    wavePhy.EnablePcap("wave-80211p-carla-ros2", devices_wifi);
     Ptr<NetDevice> waveDevice = nodei->GetDevice(2);
-    
     // Log the assigned IP address
     Ptr<Ipv4> ipv4_i = nodei->GetObject<Ipv4> ();
-    uint32_t interfaceIndex = ipv4_i->AddInterface(waveDevice);
 
     uint16_t portwave = 14000;
     std::ostringstream ipWave;
 	  ipWave << "11.0.0." << i;
     Ipv4Address wave_neti = Ipv4Address(ipWave.str().c_str());
     AddressValue waveLocalAddressi(InetSocketAddress (wave_neti, portwave));
-
-	  Ipv4InterfaceAddress ifaceAddress = Ipv4InterfaceAddress(wave_neti, Ipv4Mask("255.255.255.0"));
-	  ipv4_i->AddAddress(interfaceIndex, ifaceAddress);
-    ipv4_i->SetUp(interfaceIndex);
 
     // Positions and speeds
     Ptr<ConstantVelocityMobilityModel> mobilityi = nodei->GetObject<ConstantVelocityMobilityModel>();

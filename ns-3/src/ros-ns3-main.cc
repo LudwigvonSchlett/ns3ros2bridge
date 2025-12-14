@@ -89,149 +89,91 @@ initControlNode (std::string ip_ROS)
 
 }
 
-void
-initVehicules (int nb_vehicule, std::string ip_ROS)
+std::vector<std::string> SplitCharPointer(const char* input)
 {
-  std::string phyMode ("OfdmRate6MbpsBW10MHz");// A voir --------------
+  std::vector<std::string> result;
+  std::istringstream stream(input);
+  std::string word;
 
-  NodeContainer Container_veh;
-  Container_veh.Create(nb_vehicule);
-
-  MobilityHelper mobility;
-  mobility.SetMobilityModel("ns3::ConstantVelocityMobilityModel");
-  mobility.Install(Container_veh);
-
-  InternetStackHelper internetStackHelper;
-  internetStackHelper.Install (Container_veh);
-
-  YansWifiChannelHelper waveChannel = YansWifiChannelHelper::Default();
-	Ptr<YansWifiChannel> sharedChannel = waveChannel.Create();
-
-  //Cette boucle FOR permet la mise en place des tap/FdNetdevice de nos noeuds véhicules
-  for(int i=1;i<=nb_vehicule;i++)
+  while (stream >> word)
   {
-    Ptr<Node> nodei = NodeContainer::GetGlobal().Get(i);
+    result.push_back(word);
+  }
 
-    string nodeNumberString = to_string(i);
+  return result;
+}
 
-    NS_LOG_UNCOND("Creating node "+nodeNumberString);
+void HandleReadTapi (Ptr<Socket> socket, Ptr<Socket> waveSocketi)
+{
+  //NS_LOG_FUNCTION (this << socket);//affichage info de cette fonction
 
-    //IP:
-    string tap_neti_string = "10.0."+nodeNumberString+".0";
+  Ptr<Packet> packet;
+  Address from;
 
-    //Nom du tap device
-    string nom_tap = "tap"+nodeNumberString;
+  Ptr<Node> node = socket->GetNode();
+  uint32_t vehicle_number = node->GetId();
 
-    //Port:
-    uint16_t portveh = 12000+i;
-    bool modePi = false;
+  while ((packet = socket->RecvFrom(from)))
+  {
+    uint8_t *buffer = new uint8_t[packet->GetSize ()];
+    packet->CopyData(buffer, packet->GetSize ());
 
-    std::string tap_mask_string ("255.255.255.0"); //On lui assigne également un masque
+    char* contenu = (char *) buffer;
+    NS_LOG_INFO("VEHICLE TAP "<< vehicle_number <<" has received " << contenu);
 
-    //On convertit les adresses/Masque de sous réseau en chaîne de caractère
-    Ipv4Address tap_neti (tap_neti_string.c_str());
-    Ipv4Mask tap_maski (tap_mask_string.c_str());
+    std::vector<std::string> instructions = SplitCharPointer(contenu);
 
-    //On assigne les bonnes adresses 10.0.i.1 -> IP noeud véhicule i
-    Ipv4AddressHelper addressVehiclesHelper;
-    addressVehiclesHelper.SetBase (tap_neti, tap_maski);
-    Ipv4Address IP_node_veh = addressVehiclesHelper.NewAddress (); // Will give 10.0.i.1
-
-    //IP noeud tap device 10.0.i.2
-    Ipv4Address IP_tap_i = addressVehiclesHelper.NewAddress (); // Will give 10.0.i.2
-
-    // Mise en place FdNetDevice device
-    TapFdNetDeviceHelper helperi;
-    helperi.SetDeviceName (nom_tap);//on lui attribut le nom tapi
-    helperi.SetModePi (modePi);//On sélectionne le modePi ------------------
-    helperi.SetTapIpv4Address (IP_tap_i);//doit contenir le noeud de control
-    helperi.SetTapIpv4Mask (tap_maski);//et un masque de sous réseau.
-
-    NetDeviceContainer netDeviceContaineri = helperi.Install (nodei);//On créer un device container et on lui attribut notre tap device
-    Ptr<NetDevice> netDevicei = netDeviceContaineri.Get (0);//Pas utile vu qu'on a un seul noeud
-
-    Ptr<Ipv4> ipv4_i = nodei->GetObject<Ipv4> ();
-    uint32_t interfacei = ipv4_i->AddInterface (netDevicei);
-    Ipv4InterfaceAddress addressi = Ipv4InterfaceAddress (IP_node_veh, tap_maski);
-    ipv4_i->AddAddress (interfacei, addressi);
-    ipv4_i->SetMetric (interfacei, 1);
-    ipv4_i->SetUp (interfacei);
-
-    // Routing
-    Ipv4StaticRoutingHelper ipv4RoutingHelperi;
-    Ptr<Ipv4StaticRouting> staticRoutingi = ipv4RoutingHelperi.GetStaticRouting (ipv4_i);
-    staticRoutingi->SetDefaultRoute (IP_tap_i, interfacei);
-
-    Ipv4Address ros_ipv4 = (ip_ROS.c_str ());
-    AddressValue remoteAddressi(InetSocketAddress (ros_ipv4, portveh));
-    AddressValue sinkLocalAddressi(InetSocketAddress (tap_neti, portveh));
-
-    // WAVE
-    /* Documentantion for YansWifiChannelHelper::Default()
-	  * Create a channel helper in a default working state. By default, we create
-    * a channel model with a propagation delay equal to a constant, the speed of light,
-    * and a propagation loss based on a log distance model with a reference loss of 46.6777 dB
-    * at reference distance of 1m.
-    */
-
-    YansWavePhyHelper wavePhy = YansWavePhyHelper::Default();
-    wavePhy.SetChannel(sharedChannel);
-    wavePhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
-	  wavePhy.Set("TxPowerEnd", DoubleValue(20.0));  // in dBm
-    NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
-  	Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
-
-    wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
-
-    wifi80211p.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
-                                    "DataMode",StringValue (phyMode),
-                                    "ControlMode",StringValue (phyMode));
-
-    NetDeviceContainer devices_wifi = wifi80211p.Install(wavePhy, wifi80211pMac, nodei);
-    Ptr<NetDevice> waveDevice = devices_wifi.Get(0);
-
-    // Log the assigned IP address
-    uint32_t interfaceIndex = ipv4_i->AddInterface(waveDevice);
-
-    //uint16_t portwave = 14000 + i;
-    uint16_t portwave = 14000;
-    std::ostringstream ipWave;
-	  ipWave << "11.0.0." << i;
-    Ipv4Address wave_neti = Ipv4Address(ipWave.str().c_str());
-    AddressValue waveLocalAddressi(InetSocketAddress (wave_neti, portwave));
-
-	  Ipv4InterfaceAddress ifaceAddress = Ipv4InterfaceAddress(wave_neti, Ipv4Mask("255.255.255.0"));
-	  ipv4_i->AddAddress(interfaceIndex, ifaceAddress);
-    ipv4_i->SetUp(interfaceIndex);
-
-    // Positions and speeds
-    Ptr<ConstantVelocityMobilityModel> mobilityi = nodei->GetObject<ConstantVelocityMobilityModel>();
-    mobilityi->SetPosition (Vector(0,0,0));
-    mobilityi->SetVelocity (Vector(0,0,0));
-
-    // Check installation
-    Ptr<Ipv4> ipv4check = nodei->GetObject<Ipv4>();
-    for (uint32_t j = 0; j < ipv4check->GetNInterfaces(); ++j)
+    // unicast basique
+    if (!instructions.empty())
     {
-      NS_LOG_INFO("Node " << i << " Interface " << j  << " IP: " << ipv4check->GetAddress(j, 0).GetLocal());
+      std::ostringstream ipWave;
+      ipWave << "11.0.0." << instructions[0];
+      Ipv4Address singleAddress = Ipv4Address(ipWave.str().c_str());
+      uint32_t portWavei = 14000;
+      InetSocketAddress remoteAddr(singleAddress, portWavei);
+
+      Ptr<Packet> pktCopy = packet->Copy();
+      waveSocketi->SendTo(pktCopy, 0, remoteAddr);
+
+      delete[] buffer;
     }
+  }
+}
 
-    //Mettre en place les paramètres de ROS
-    ROSVehiculeHelper rosVehiculeHelper;
-    rosVehiculeHelper.SetAttribute ("RemoteROS",remoteAddressi);
-    rosVehiculeHelper.SetAttribute ("LocalTap", sinkLocalAddressi);
-    rosVehiculeHelper.SetAttribute ("LocalWave", waveLocalAddressi);
-    rosVehiculeHelper.SetAttribute ("VehicleNumber", IntegerValue(i));
-    rosVehiculeHelper.SetAttribute ("PortTap", UintegerValue(portveh));
-    rosVehiculeHelper.SetAttribute ("PortWave", UintegerValue(portwave));
-    //Ajout adresse destination dans le node 1 ex :  tap 1 -> wave
+void HandleReadWavei (Ptr<Socket> socket, Ptr<Socket> tapSocketi)
+{
+  //NS_LOG_FUNCTION (this << socket);//affichage info de cette fonction
 
-    ApplicationContainer ROSVehSyncApps1 = rosVehiculeHelper.Install (nodei);
+  Ptr<Packet> packet;
+  Address from;
+
+  Ptr<Node> node = socket->GetNode();
+  uint32_t vehicle_number = node->GetId();
+
+  while ((packet = socket->RecvFrom(from)))
+  {
+    uint8_t *buffer = new uint8_t[packet->GetSize ()];
+    packet->CopyData(buffer, packet->GetSize ());
+
+    char* contenu = (char *) buffer;
+    NS_LOG_INFO("VEHICLE WAVE " << vehicle_number << " has received " << contenu);
+
+    std::vector<std::string> instructions = SplitCharPointer(contenu);
+
+    if (!instructions.empty())
+    {
+      NS_LOG_INFO("Sending packet received from wave to tap " << vehicle_number);
+
+      Ptr<Packet> pktCopy = packet->Copy();
+      tapSocketi->Send(pktCopy);
+
+      delete[] buffer;
+    }
   }
 }
 
 void
-initVehiculesOld (int nb_vehicule)
+initVehicules (int nb_vehicule)
 {
 
   // Create a container for the nodes
@@ -261,7 +203,6 @@ initVehiculesOld (int nb_vehicule)
     //Nom du tap device
     string nom_tap = "tap"+nodeNumberString;
 
-    //Port:
     bool modePi = false;
 
     std::string tap_mask_string ("255.255.255.0"); //On lui assigne également un masque
@@ -302,6 +243,94 @@ initVehiculesOld (int nb_vehicule)
 
   }
 
+  std::string phyMode ("OfdmRate6MbpsBW10MHz");// A voir --------------
+
+  YansWifiChannelHelper waveChannel = YansWifiChannelHelper::Default();
+  Ptr<YansWifiChannel> sharedChannel = waveChannel.Create();
+
+  /* Documentantion for YansWifiChannelHelper::Default()
+  * Create a channel helper in a default working state. By default, we create
+  * a channel model with a propagation delay equal to a constant, the speed of light,
+  * and a propagation loss based on a log distance model with a reference loss of 46.6777 dB
+  * at reference distance of 1m.
+  */
+
+  YansWavePhyHelper wavePhy = YansWavePhyHelper::Default();
+  wavePhy.SetChannel(sharedChannel);
+  wavePhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
+  wavePhy.Set("TxPowerEnd", DoubleValue(20.0));  // in dBm
+  wavePhy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11);
+  NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
+  Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
+
+  //wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
+
+    wifi80211p.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
+                                    "DataMode",StringValue (phyMode),
+                                    "ControlMode",StringValue (phyMode));
+
+  wavePhy.EnablePcap("wave-simple-80211p", nodes);
+
+  NetDeviceContainer devices_wifi = wifi80211p.Install(wavePhy, wifi80211pMac, nodes);
+  Ipv4AddressHelper ipv4;
+  ipv4.SetBase("11.0.0.0", "255.255.255.0");
+  Ipv4InterfaceContainer ipv4_802p = ipv4.Assign(devices_wifi);
+
+  /*
+  for(int i=1; i<=nb_vehicule; i++) {
+
+    Ptr<Node> nodei = NodeContainer::GetGlobal().Get(i);
+
+    TypeIdValue socket_tid = UdpSocketFactory::GetTypeId ();
+
+    // tap
+    uint16_t porttap = 12000+i;
+    std::ostringstream ipTap;
+    ipTap << "10.0." << i << ".1" ;
+    Ipv4Address tapIp = Ipv4Address(ipTap.str().c_str());
+    InetSocketAddress tapAddr(tapIp, porttap);
+
+    std::string ros_ip = "10.255.255.4";
+    Ipv4Address rosIp = Ipv4Address(ros_ip.c_str());
+    InetSocketAddress rosAddr(rosIp);
+
+    Ptr<Socket> tapSocketi = Socket::CreateSocket(nodei, socket_tid.Get());
+    tapSocketi->Connect(rosAddr);
+    tapSocketi->Bind(tapAddr);
+
+    // wave
+    uint16_t portwave = 14000;
+    std::ostringstream ipWave;
+    ipWave << "11.0.0." << i;
+    Ipv4Address waveIp = Ipv4Address(ipWave.str().c_str());
+    InetSocketAddress waveAddr(waveIp, portwave);
+
+    Ptr<Socket> waveSocketi = Socket::CreateSocket(nodei, socket_tid.Get());
+    waveSocketi->SetAllowBroadcast(true);
+    waveSocketi->Bind(waveAddr);
+
+    //callbacks
+    Callback<void, Ptr<Socket>> cbTap =
+    Callback<void, Ptr<Socket>>(
+        [waveSocketi](Ptr<Socket> socket) {
+            HandleReadTapi(socket, waveSocketi);
+        }
+    );
+
+    tapSocketi->SetRecvCallback(cbTap);
+
+
+    Callback<void, Ptr<Socket>> cbWave =
+    Callback<void, Ptr<Socket>>(
+        [tapSocketi](Ptr<Socket> socket) {
+            HandleReadWavei(socket, tapSocketi);
+        }
+    );
+
+    waveSocketi->SetRecvCallback(cbWave);
+
+  }
+  */
 }
 
 int
@@ -341,12 +370,10 @@ main (int argc, char *argv[])
 
   // NetAnim does not support creating nodes at run-time
   // We have to create nodes and then update them according to ROS
-  const uint32_t maxNodes = 5;
+  const uint32_t maxNodes = 2;
 
   NS_LOG_INFO("Initialisation des noeuds vehicules");
-  //initVehicules(maxNodes, ip_ROS);
-
-  initVehiculesOld(maxNodes);
+  initVehicules(maxNodes);
 
   auto now = std::time(nullptr);
   std::tm localTime = *std::localtime(&now);

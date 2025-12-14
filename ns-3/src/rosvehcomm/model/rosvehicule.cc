@@ -127,7 +127,7 @@ namespace ns3
     Ipv4Address waveIp = InetSocketAddress::ConvertFrom(wave_ipi).GetIpv4();  // extract Ipv4Address
     InetSocketAddress waveAddr(waveIp, portWavei);
 
-    waveSocketi = Socket::CreateSocket(nodei, m_tapSocket_tidi);
+    waveSocketi = Socket::CreateSocket(nodei, m_waveSocket_tidi);
     waveSocketi->SetAllowBroadcast(true);
     waveSocketi->Bind(waveAddr);
     waveSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadWavei, this));
