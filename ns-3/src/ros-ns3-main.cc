@@ -262,7 +262,6 @@ initVehiculesOld (int nb_vehicule, std::string ip_ROS)
     string nom_tap = "tap"+nodeNumberString;
 
     //Port:
-    uint16_t portveh = 12000+i;
     bool modePi = false;
 
     std::string tap_mask_string ("255.255.255.0"); //On lui assigne également un masque
@@ -300,10 +299,6 @@ initVehiculesOld (int nb_vehicule, std::string ip_ROS)
     Ipv4StaticRoutingHelper ipv4RoutingHelperi;
     Ptr<Ipv4StaticRouting> staticRoutingi = ipv4RoutingHelperi.GetStaticRouting (ipv4_i);
     staticRoutingi->SetDefaultRoute (IP_tap_i, interfacei);
-
-    Ipv4Address ros_ipv4 = (ip_ROS.c_str ());
-    AddressValue remoteAddressi(InetSocketAddress (ros_ipv4, portveh));
-    AddressValue sinkLocalAddressi(InetSocketAddress (tap_neti, portveh));
 
   }
 
