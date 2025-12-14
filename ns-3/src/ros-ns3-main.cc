@@ -89,6 +89,89 @@ initControlNode (std::string ip_ROS)
 
 }
 
+std::vector<std::string> SplitCharPointer(const char* input)
+{
+  std::vector<std::string> result;
+  std::istringstream stream(input);
+  std::string word;
+
+  while (stream >> word)
+  {
+    result.push_back(word);
+  }
+
+  return result;
+}
+
+void HandleReadTapi (Ptr<Socket> socket, Ptr<Socket> waveSocketi)
+{
+  //NS_LOG_FUNCTION (this << socket);//affichage info de cette fonction
+
+  Ptr<Packet> packet;
+  Address from;
+
+  Ptr<Node> node = socket->GetNode();
+  uint32_t vehicle_number = node->GetId();
+
+  while ((packet = socket->RecvFrom(from)))
+  {
+    uint8_t *buffer = new uint8_t[packet->GetSize ()];
+    packet->CopyData(buffer, packet->GetSize ());
+
+    char* contenu = (char *) buffer;
+    NS_LOG_INFO("VEHICLE TAP "<< vehicle_number <<" has received " << contenu);
+
+    std::vector<std::string> instructions = SplitCharPointer(contenu);
+
+    // unicast basique
+    if (!instructions.empty())
+    {
+      std::ostringstream ipWave;
+      ipWave << "11.0.0." << instructions[0];
+      Ipv4Address singleAddress = Ipv4Address(ipWave.str().c_str());
+      uint32_t portWavei = 14000;
+      InetSocketAddress remoteAddr(singleAddress, portWavei);
+
+      Ptr<Packet> pktCopy = packet->Copy();
+      waveSocketi->SendTo(pktCopy, 0, remoteAddr);
+
+      delete[] buffer;
+    }
+  }
+}
+
+void HandleReadWavei (Ptr<Socket> socket, Ptr<Socket> tapSocketi)
+{
+  //NS_LOG_FUNCTION (this << socket);//affichage info de cette fonction
+
+  Ptr<Packet> packet;
+  Address from;
+
+  Ptr<Node> node = socket->GetNode();
+  uint32_t vehicle_number = node->GetId();
+
+  while ((packet = socket->RecvFrom(from)))
+  {
+    uint8_t *buffer = new uint8_t[packet->GetSize ()];
+    packet->CopyData(buffer, packet->GetSize ());
+
+    char* contenu = (char *) buffer;
+    NS_LOG_INFO("VEHICLE WAVE " << vehicle_number << " has received " << contenu);
+
+    std::vector<std::string> instructions = SplitCharPointer(contenu);
+
+    if (!instructions.empty())
+    {
+      NS_LOG_INFO("Sending packet received from wave to tap " << vehicle_number);
+
+      Ptr<Packet> pktCopy = packet->Copy();
+      tapSocketi->Send(pktCopy);
+
+      delete[] buffer;
+    }
+  }
+}
+
 void
 initVehicules (int nb_vehicule, std::string ip_ROS)
 {
@@ -180,12 +263,12 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
 
   YansWavePhyHelper wavePhy = YansWavePhyHelper::Default();
   wavePhy.SetChannel(sharedChannel);
-  wavePhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
-  wavePhy.Set("TxPowerEnd", DoubleValue(20.0));  // in dBm
+  wavePhy.Set("TxPowerStart", DoubleValue(200.0));  // in dBm
+  wavePhy.Set("TxPowerEnd", DoubleValue(200.0));  // in dBm
   NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
   Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
 
-  wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
+  //wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
 
   wifi80211p.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
                                   "DataMode",StringValue (phyMode),
@@ -194,7 +277,62 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
   NetDeviceContainer devices_wifi = wifi80211p.Install(wavePhy, wifi80211pMac, nodes);
   Ipv4AddressHelper ipv4;
   ipv4.SetBase("11.0.0.0", "255.255.255.0");
-  Ipv4InterfaceContainer i = ipv4.Assign(devices_wifi);
+  Ipv4InterfaceContainer ipv4_802p = ipv4.Assign(devices_wifi);
+
+  for(int i=1; i<=nb_vehicule; i++) {
+
+    Ptr<Node> nodei = NodeContainer::GetGlobal().Get(i);
+
+    TypeIdValue socket_tid = UdpSocketFactory::GetTypeId ();
+
+    // tap
+    uint16_t porttap = 12000+i;
+    std::ostringstream ipTap;
+    ipTap << "10.0." << i << ".1" ;
+    Ipv4Address tapIp = Ipv4Address(ipTap.str().c_str());
+    InetSocketAddress tapAddr(tapIp, porttap);
+
+    std::string ros_ip = "10.255.255.4";
+    Ipv4Address rosIp = Ipv4Address(ros_ip.c_str());
+    InetSocketAddress rosAddr(rosIp);
+
+    Ptr<Socket> tapSocketi = Socket::CreateSocket(nodei, socket_tid.Get());
+    tapSocketi->Connect(rosAddr);
+    tapSocketi->Bind(tapAddr);
+
+    // wave
+    uint16_t portwave = 14000;
+    std::ostringstream ipWave;
+    ipWave << "11.0.0." << i;
+    Ipv4Address waveIp = Ipv4Address(ipWave.str().c_str());
+    InetSocketAddress waveAddr(waveIp, portwave);
+
+    Ptr<Socket> waveSocketi = Socket::CreateSocket(nodei, socket_tid.Get());
+    waveSocketi->SetAllowBroadcast(true);
+    waveSocketi->Bind(waveAddr);
+
+    //callbacks
+    Callback<void, Ptr<Socket>> cbTap =
+    Callback<void, Ptr<Socket>>(
+        [waveSocketi](Ptr<Socket> socket) {
+            HandleReadTapi(socket, waveSocketi);
+        }
+    );
+
+    tapSocketi->SetRecvCallback(cbTap);
+
+
+    Callback<void, Ptr<Socket>> cbWave =
+    Callback<void, Ptr<Socket>>(
+        [tapSocketi](Ptr<Socket> socket) {
+            HandleReadWavei(socket, tapSocketi);
+        }
+    );
+
+    waveSocketi->SetRecvCallback(cbWave);
+
+
+  }
 
 }
 
