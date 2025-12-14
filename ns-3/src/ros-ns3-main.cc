@@ -89,91 +89,8 @@ initControlNode (std::string ip_ROS)
 
 }
 
-std::vector<std::string> SplitCharPointer(const char* input)
-{
-  std::vector<std::string> result;
-  std::istringstream stream(input);
-  std::string word;
-
-  while (stream >> word)
-  {
-    result.push_back(word);
-  }
-
-  return result;
-}
-
-void HandleReadTapi (Ptr<Socket> socket, Ptr<Socket> waveSocketi)
-{
-  //NS_LOG_FUNCTION (this << socket);//affichage info de cette fonction
-
-  Ptr<Packet> packet;
-  Address from;
-
-  Ptr<Node> node = socket->GetNode();
-  uint32_t vehicle_number = node->GetId();
-
-  while ((packet = socket->RecvFrom(from)))
-  {
-    uint8_t *buffer = new uint8_t[packet->GetSize ()];
-    packet->CopyData(buffer, packet->GetSize ());
-
-    char* contenu = (char *) buffer;
-    NS_LOG_INFO("VEHICLE TAP "<< vehicle_number <<" has received " << contenu);
-
-    std::vector<std::string> instructions = SplitCharPointer(contenu);
-
-    // unicast basique
-    if (!instructions.empty())
-    {
-      std::ostringstream ipWave;
-      ipWave << "11.0.0." << instructions[0];
-      Ipv4Address singleAddress = Ipv4Address(ipWave.str().c_str());
-      uint32_t portWavei = 14000;
-      InetSocketAddress remoteAddr(singleAddress, portWavei);
-
-      Ptr<Packet> pktCopy = packet->Copy();
-      waveSocketi->SendTo(pktCopy, 0, remoteAddr);
-
-      delete[] buffer;
-    }
-  }
-}
-
-void HandleReadWavei (Ptr<Socket> socket, Ptr<Socket> tapSocketi)
-{
-  //NS_LOG_FUNCTION (this << socket);//affichage info de cette fonction
-
-  Ptr<Packet> packet;
-  Address from;
-
-  Ptr<Node> node = socket->GetNode();
-  uint32_t vehicle_number = node->GetId();
-
-  while ((packet = socket->RecvFrom(from)))
-  {
-    uint8_t *buffer = new uint8_t[packet->GetSize ()];
-    packet->CopyData(buffer, packet->GetSize ());
-
-    char* contenu = (char *) buffer;
-    NS_LOG_INFO("VEHICLE WAVE " << vehicle_number << " has received " << contenu);
-
-    std::vector<std::string> instructions = SplitCharPointer(contenu);
-
-    if (!instructions.empty())
-    {
-      NS_LOG_INFO("Sending packet received from wave to tap " << vehicle_number);
-
-      Ptr<Packet> pktCopy = packet->Copy();
-      tapSocketi->Send(pktCopy);
-
-      delete[] buffer;
-    }
-  }
-}
-
 void
-initVehicules (int nb_vehicule)
+initVehicules (int nb_vehicule, std::string ip_ROS)
 {
 
   // Create a container for the nodes
@@ -265,72 +182,73 @@ initVehicules (int nb_vehicule)
 
   //wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
 
-    wifi80211p.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
+  wifi80211p.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
                                     "DataMode",StringValue (phyMode),
                                     "ControlMode",StringValue (phyMode));
 
-  wavePhy.EnablePcap("wave-simple-80211p", nodes);
-
   NetDeviceContainer devices_wifi = wifi80211p.Install(wavePhy, wifi80211pMac, nodes);
+  wavePhy.EnablePcap("wave-simple-80211p", devices_wifi);
   Ipv4AddressHelper ipv4;
   ipv4.SetBase("11.0.0.0", "255.255.255.0");
   Ipv4InterfaceContainer ipv4_802p = ipv4.Assign(devices_wifi);
 
-  /*
   for(int i=1; i<=nb_vehicule; i++) {
 
     Ptr<Node> nodei = NodeContainer::GetGlobal().Get(i);
 
-    TypeIdValue socket_tid = UdpSocketFactory::GetTypeId ();
+    string nodeNumberString = to_string(i);
 
-    // tap
-    uint16_t porttap = 12000+i;
-    std::ostringstream ipTap;
-    ipTap << "10.0." << i << ".1" ;
-    Ipv4Address tapIp = Ipv4Address(ipTap.str().c_str());
-    InetSocketAddress tapAddr(tapIp, porttap);
+    NS_LOG_UNCOND("Creating node "+nodeNumberString);
+    //TAP
+    //IP:
+    string tap_neti_string = "10.0."+nodeNumberString+".1";
+    //Nom du tap device
+    string nom_tap = "tap"+nodeNumberString;
+    //Port:
+    uint16_t portveh = 12000+i;
+    //On convertit les adresses/Masque de sous réseau en chaîne de caractère
+    Ipv4Address tap_neti (tap_neti_string.c_str());
+    Ipv4Address ros_ipv4 (ip_ROS.c_str ());
 
-    std::string ros_ip = "10.255.255.4";
-    Ipv4Address rosIp = Ipv4Address(ros_ip.c_str());
-    InetSocketAddress rosAddr(rosIp);
+    AddressValue remoteAddressi(InetSocketAddress (ros_ipv4, portveh));
+    AddressValue sinkLocalAddressi(InetSocketAddress (tap_neti, portveh));
 
-    Ptr<Socket> tapSocketi = Socket::CreateSocket(nodei, socket_tid.Get());
-    tapSocketi->Connect(rosAddr);
-    tapSocketi->Bind(tapAddr);
+    // WAVE
+    Ptr<NetDevice> waveDevice = nodei->GetDevice(2);
+    // Log the assigned IP address
+    Ptr<Ipv4> ipv4_i = nodei->GetObject<Ipv4> ();
 
-    // wave
     uint16_t portwave = 14000;
     std::ostringstream ipWave;
-    ipWave << "11.0.0." << i;
-    Ipv4Address waveIp = Ipv4Address(ipWave.str().c_str());
-    InetSocketAddress waveAddr(waveIp, portwave);
+	  ipWave << "11.0.0." << i;
+    Ipv4Address wave_neti = Ipv4Address(ipWave.str().c_str());
+    AddressValue waveLocalAddressi(InetSocketAddress (wave_neti, portwave));
 
-    Ptr<Socket> waveSocketi = Socket::CreateSocket(nodei, socket_tid.Get());
-    waveSocketi->SetAllowBroadcast(true);
-    waveSocketi->Bind(waveAddr);
+    // Check installation
+    Ptr<Ipv4> ipv4check = nodei->GetObject<Ipv4>();
+    for (uint32_t j = 0; j < ipv4check->GetNInterfaces(); ++j)
+    {
+      NS_LOG_INFO("Node " << i << " Interface " << j  << " IP: " << ipv4check->GetAddress(j, 0).GetLocal());
+    }
 
-    //callbacks
-    Callback<void, Ptr<Socket>> cbTap =
-    Callback<void, Ptr<Socket>>(
-        [waveSocketi](Ptr<Socket> socket) {
-            HandleReadTapi(socket, waveSocketi);
-        }
-    );
+    for (uint32_t j = 0; j < nodei->GetNDevices(); ++j)
+    {
+      Ptr<NetDevice> dev = nodei->GetDevice(j);
+      std::cout << "Device " << j << ": " << dev->GetInstanceTypeId().GetName() << std::endl;
+    }
 
-    tapSocketi->SetRecvCallback(cbTap);
+    //Mettre en place les paramètres de ROS
+    ROSVehiculeHelper rosVehiculeHelper;
+    rosVehiculeHelper.SetAttribute ("RemoteROS",remoteAddressi);
+    rosVehiculeHelper.SetAttribute ("LocalTap", sinkLocalAddressi);
+    rosVehiculeHelper.SetAttribute ("LocalWave", waveLocalAddressi);
+    rosVehiculeHelper.SetAttribute ("VehicleNumber", IntegerValue(i));
+    rosVehiculeHelper.SetAttribute ("PortTap", UintegerValue(portveh));
+    rosVehiculeHelper.SetAttribute ("PortWave", UintegerValue(portwave));
+    //Ajout adresse destination dans le node 1 ex :  tap 1 -> wave
 
-
-    Callback<void, Ptr<Socket>> cbWave =
-    Callback<void, Ptr<Socket>>(
-        [tapSocketi](Ptr<Socket> socket) {
-            HandleReadWavei(socket, tapSocketi);
-        }
-    );
-
-    waveSocketi->SetRecvCallback(cbWave);
-
+    ApplicationContainer ROSVehSyncApps1 = rosVehiculeHelper.Install (nodei);
   }
-  */
 }
 
 int
@@ -370,10 +288,10 @@ main (int argc, char *argv[])
 
   // NetAnim does not support creating nodes at run-time
   // We have to create nodes and then update them according to ROS
-  const uint32_t maxNodes = 2;
+  const uint32_t maxNodes = 5;
 
   NS_LOG_INFO("Initialisation des noeuds vehicules");
-  initVehicules(maxNodes);
+  initVehicules(maxNodes, ip_ROS);
 
   auto now = std::time(nullptr);
   std::tm localTime = *std::localtime(&now);

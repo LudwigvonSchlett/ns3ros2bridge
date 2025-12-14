@@ -169,6 +169,7 @@ namespace ns3
 
   void ROSVehSync::CreateVehicle (int i, double x, double y, double z, double xs, double ys, double zs) const
   {
+    /*
     Ptr<Node> nodei = NodeContainer::GetGlobal().Get(i);
 
     string nodeNumberString = to_string(i);
@@ -229,7 +230,7 @@ namespace ns3
     //Ajout adresse destination dans le node 1 ex :  tap 1 -> wave
 
     ApplicationContainer ROSVehSyncApps1 = rosVehiculeHelper.Install (nodei);
-
+    */
   }
 
   std::vector<std::string> ROSVehSync::SplitCharPointerController(const char* input)

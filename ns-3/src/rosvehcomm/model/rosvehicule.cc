@@ -87,6 +87,7 @@ namespace ns3
     NS_LOG_FUNCTION(this);
     NS_LOG_INFO("Constructeur Rosvehicule");
     tapSocketi = nullptr;
+    waveSocketi = nullptr;
     m_totalRx1 = 0;
   }
 
@@ -103,6 +104,7 @@ namespace ns3
     NS_LOG_FUNCTION(this);
     NS_LOG_INFO("DoDispose Rosvehicule "  << vehicle_number);
     tapSocketi = nullptr;
+    waveSocketi = nullptr;
     Application::DoDispose ();
   }
 
@@ -119,8 +121,8 @@ namespace ns3
 
     tapSocketi = Socket::CreateSocket(nodei, m_tapSocket_tidi);
     tapSocketi->SetAllowBroadcast (true);//autoriser la communication broadcast
-    tapSocketi->Connect(ros_ipi);
     tapSocketi->Bind(tapAddr);
+    tapSocketi->Connect(ros_ipi);
     tapSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadTapi, this));
 
 
@@ -143,6 +145,11 @@ namespace ns3
       tapSocketi->Close ();
       tapSocketi->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
+    if (waveSocketi)
+    {
+      waveSocketi->Close ();
+      waveSocketi->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
+    }
   }
 
   std::vector<std::string> ROSVehicule::SplitCharPointer(const char* input)
@@ -159,9 +166,9 @@ namespace ns3
     return result;
   }
 
-  void ROSVehicule::HandleReadTapi (Ptr<Socket> socket)
+  void ROSVehicule::HandleReadTapi(Ptr<Socket> socket)
   {
-    NS_LOG_FUNCTION (this << socket);//affichage info de cette fonction
+    NS_LOG_FUNCTION(this << socket);
 
     Ptr<Packet> packet;
     Address from;
@@ -171,8 +178,9 @@ namespace ns3
       uint8_t *buffer = new uint8_t[packet->GetSize ()];
       packet->CopyData(buffer, packet->GetSize ());
 
-      char* contenu = (char *) buffer;
-      NS_LOG_INFO("VEHICLE TAP "<< vehicle_number <<" has received " << contenu);
+      char* contenu = reinterpret_cast<char*>(buffer);
+
+      NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " received: " << contenu);
 
       std::vector<std::string> instructions = SplitCharPointer(contenu);
 
@@ -183,16 +191,17 @@ namespace ns3
         ipWave << "11.0.0." << instructions[0];
         Ipv4Address singleAddress = Ipv4Address(ipWave.str().c_str());
         InetSocketAddress remoteAddr(singleAddress, portWavei);
-        waveSocketi->SendTo(packet, 0, remoteAddr);
+        Ptr<Packet> copy = packet->Copy();
+        waveSocketi->SendTo(copy, 0, remoteAddr);
 
       }
+      delete[] buffer;
     }
   }
 
   void ROSVehicule::HandleReadWavei (Ptr<Socket> socket)
   {
     NS_LOG_FUNCTION (this << socket);//affichage info de cette fonction
-
     Ptr<Packet> packet;
     Address from;
 
@@ -201,16 +210,19 @@ namespace ns3
       uint8_t *buffer = new uint8_t[packet->GetSize ()];
       packet->CopyData(buffer, packet->GetSize ());
 
-      char* contenu = (char *) buffer;
-      NS_LOG_INFO("VEHICLE WAVE " << vehicle_number << " has received " << contenu);
+      char* contenu = reinterpret_cast<char*>(buffer);
+
+      NS_LOG_INFO("VEHICLE WAVE " << vehicle_number
+                   << " has received " << contenu);
 
       std::vector<std::string> instructions = SplitCharPointer(contenu);
 
       if (!instructions.empty())
       {
-        NS_LOG_INFO("Sending packet received from wave to tap"<< vehicle_number);
-        tapSocketi->Send (packet);
+        Ptr<Packet> copy = packet->Copy();
+        tapSocketi->Send(copy);
       }
+      delete[] buffer;
     }
   }
 
