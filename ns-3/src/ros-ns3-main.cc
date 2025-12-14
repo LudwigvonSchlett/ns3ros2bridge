@@ -173,7 +173,7 @@ void HandleReadWavei (Ptr<Socket> socket, Ptr<Socket> tapSocketi)
 }
 
 void
-initVehicules (int nb_vehicule, std::string ip_ROS)
+initVehicules (int nb_vehicule)
 {
 
   // Create a container for the nodes
@@ -203,7 +203,6 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
     //Nom du tap device
     string nom_tap = "tap"+nodeNumberString;
 
-    //Port:
     bool modePi = false;
 
     std::string tap_mask_string ("255.255.255.0"); //On lui assigne également un masque
@@ -256,12 +255,13 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
   * at reference distance of 1m.
   */
 
-    YansWavePhyHelper wavePhy = YansWavePhyHelper::Default();
-    wavePhy.SetChannel(sharedChannel);
-    wavePhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
-	  wavePhy.Set("TxPowerEnd", DoubleValue(20.0));  // in dBm
-    NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
-  	Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
+  YansWavePhyHelper wavePhy = YansWavePhyHelper::Default();
+  wavePhy.SetChannel(sharedChannel);
+  wavePhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
+  wavePhy.Set("TxPowerEnd", DoubleValue(20.0));  // in dBm
+  wavePhy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11);
+  NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
+  Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
 
   //wifi80211p.EnableLogComponents ();      // Turn on all Wifi 802.11p logging
 
@@ -373,7 +373,7 @@ main (int argc, char *argv[])
   const uint32_t maxNodes = 2;
 
   NS_LOG_INFO("Initialisation des noeuds vehicules");
-  initVehicules(maxNodes, ip_ROS);
+  initVehicules(maxNodes);
 
   auto now = std::time(nullptr);
   std::tm localTime = *std::localtime(&now);
