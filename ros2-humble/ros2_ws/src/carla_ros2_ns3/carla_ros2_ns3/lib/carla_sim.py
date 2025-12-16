@@ -4,7 +4,7 @@ import random
 
 import carla
 
-from carla_ros2_ns3.const import NB_NODE, vehicles, mode
+import carla_ros2_ns3.const as cst
 from carla_ros2_ns3.lib.ros import (
     inflog,
     errlog
@@ -13,13 +13,13 @@ from carla_ros2_ns3.lib.ros import (
 # Partie CARLA
 
 # Variables
-if mode == "gpu":
+if cst.MODE == "gpu":
     host = "localhost"
     no_rendering = False
-elif mode == "cpu":
+elif cst.MODE == "cpu":
     host = "localhost"
     no_rendering = True
-elif mode == "vm":
+elif cst.MODE == "vm":
     host = "192.168.56.1"
     no_rendering = True
 else:
@@ -31,7 +31,6 @@ client = carla.Client(host, 2000)  # connexion a Carla
 
 def init_carla():
     """Initialise la connexion à Carla."""
-    global vehicles
 
     client = carla.Client(host, 2000)  # connexion a Carla
     client.set_timeout(20.0)
@@ -58,11 +57,11 @@ def init_carla():
         inflog(f"{len(waypoints)} waypoints générés.")
 
     # Créer les véhicules
-    for _ in range(NB_NODE):
+    for _ in range(cst.nb_nodes):
         vehicle = None
         while vehicle is None:
             vehicle = spawn_vehicle(world)
-        vehicles.append(vehicle)
+        cst.vehicles.append(vehicle)
     return world
 
 
@@ -117,9 +116,9 @@ def get_all_position():
     try:
         output = " "
         index_vehicle = 1
-        for vehicle in vehicles:
+        for vehicle in cst.vehicles:
             output += f" {index_vehicle} {get_position(vehicle)}"
-            if index_vehicle < NB_NODE:
+            if index_vehicle < cst.nb_nodes:
                 output += " "
                 index_vehicle += 1
         return output
@@ -132,9 +131,9 @@ def get_all_speed():
     try:
         output = " "
         index_vehicle = 1
-        for vehicle in vehicles:
+        for vehicle in cst.vehicles:
             output += f" {index_vehicle} {get_speed(vehicle)}"
-            if index_vehicle < NB_NODE:
+            if index_vehicle < cst.nb_nodes:
                 output += " "
                 index_vehicle += 1
         return output
@@ -147,10 +146,10 @@ def get_all_mobility():
     try:
         output = " "
         index_vehicle = 1
-        for vehicle in vehicles:
+        for vehicle in cst.vehicles:
             output += (f"{index_vehicle} {get_position(vehicle)} "
                        + f"{get_speed(vehicle)}")
-            if index_vehicle < NB_NODE:
+            if index_vehicle < cst.nb_nodes:
                 output += " "
                 index_vehicle += 1
         return output
@@ -163,9 +162,9 @@ def stop_vehicules():
     try:
         output = " "
         index_vehicle = 1
-        for vehicle in vehicles:
+        for vehicle in cst.vehicles:
             output += (f"{index_vehicle} {get_position(vehicle)} 0.0 0.0 0.0")
-            if index_vehicle < NB_NODE:
+            if index_vehicle < cst.nb_nodes:
                 output += " "
                 index_vehicle += 1
         return output

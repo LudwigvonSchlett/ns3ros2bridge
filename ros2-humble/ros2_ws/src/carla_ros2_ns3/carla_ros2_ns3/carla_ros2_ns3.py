@@ -8,13 +8,12 @@ import threading
 
 import rclpy
 
+import carla_ros2_ns3.const as cst
 from carla_ros2_ns3.const import (
     MTU,
-    NB_NODE,
     vehicles,
     number_message_sent,
     number_message_received,
-    simulation_duration,
     stop_state,
     error_state,
     comunication_nodes_thread,
@@ -63,7 +62,6 @@ def main():
 
 def control_node_listener(socket_tap0):
     """Permet d'ecouter ce que recoit tap0, noeud de controle."""
-    global simulation_duration
 
     while rclpy.ok():
         try:
@@ -94,8 +92,15 @@ def control_node_listener(socket_tap0):
 
                 elif response_command == "duration":
 
-                    simulation_duration = int(msg_split[1])
-                    inflog(f"ns3 Simulation duration is {simulation_duration}")
+                    cst.simulation_duration = int(msg_split[1])
+                    inflog(f"ns3 Simulation duration is {cst.simulation_duration}")
+                    inflog("Requesting NetAnim Node count")
+                    tap_sender_control("request_node")
+
+                elif response_command == "node":
+
+                    node_count = int(msg_split[1])
+                    inflog(f"ns3 Simulation Node count is {node_count}")
                     inflog("Requesting NetAnim animation file")
                     tap_sender_control("request_animfile")
 
@@ -111,7 +116,7 @@ def control_node_listener(socket_tap0):
                 elif response_command == "create_success":
 
                     sockets = []
-                    for num_node in range(1, NB_NODE+1):
+                    for num_node in range(1, cst.nb_nodes+1):
                         tap_socket = connect_tap_device(f"tap{num_node}")
                         sockets.append(tap_socket)
                     launch_simulation(sockets, socket_tap0)
@@ -244,7 +249,7 @@ def listen_control_tap(control_socket):
                     simulation_time = int(msg_split[1])
                     inflog(f"ns3 Simulation time is {simulation_time} seconds")
 
-                    if simulation_duration - simulation_time < 5:
+                    if cst.simulation_duration - simulation_time < 5:
                         inflog("Fin de la simulation")
                         stop_simulation()
 
@@ -331,10 +336,10 @@ def comunication_node(interval):
             sys.exit()
         try:
 
-            for node in range(1, NB_NODE+1):
+            for node in range(1, cst.nb_nodes+1):
                 dest_node = node
                 while dest_node == node:
-                    dest_node = random.randint(1, NB_NODE)
+                    dest_node = random.randint(1, cst.nb_nodes)
                 position = get_position(vehicles[node-1])
                 tap_sender(f"{dest_node} {node} position {position}", node)
                 number_message_sent += 1

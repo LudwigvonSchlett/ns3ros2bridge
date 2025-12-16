@@ -360,6 +360,7 @@ main (int argc, char *argv[])
   anim.EnablePacketMetadata(true);
 
   simInfo.filename = animFileName;
+  simInfo.nodeCount = maxNodes;
   simInfo.duration = simulationTime;
 
   NS_LOG_INFO("Starting simulation of " << simulationTime.GetSeconds() << " seconds");
