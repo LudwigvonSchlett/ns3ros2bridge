@@ -152,20 +152,6 @@ namespace ns3
     }
   }
 
-  std::vector<std::string> ROSVehicule::SplitCharPointer(const char* input)
-  {
-    std::vector<std::string> result;
-    std::istringstream stream(input);
-    std::string word;
-
-    while (stream >> word)
-    {
-        result.push_back(word);
-    }
-
-    return result;
-  }
-
   void ROSVehicule::HandleReadTapi(Ptr<Socket> socket)
   {
     NS_LOG_FUNCTION(this << socket);
@@ -182,49 +168,66 @@ namespace ns3
 
       NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " received: " << contenu);
 
-      std::vector<std::string> instructions = SplitCharPointer(contenu);
+      std::istringstream iss(contenu);
+
+      int dst, src;
+      std::string label;
+      int x, y, z;
+
+      iss >> dst >> src >> label >> x >> y >> z;
 
       // unicast basique
-      if (!instructions.empty()) {
+      if (dst != 0) {
 
         std::ostringstream ipWave;
-        ipWave << "11.0.0." << instructions[0];
+        ipWave << "11.0.0." << dst;
         Ipv4Address singleAddress = Ipv4Address(ipWave.str().c_str());
         InetSocketAddress remoteAddr(singleAddress, portWavei);
-        Ptr<Packet> copy = packet->Copy();
-        waveSocketi->SendTo(copy, 0, remoteAddr);
+
+        ROSHeader hdr(dst, src, x, y, z);
+
+        Ptr<Packet> p = Create<Packet>();
+        p->AddHeader(hdr);
+        waveSocketi->SendTo(p, 0, remoteAddr);
 
       }
       delete[] buffer;
     }
   }
 
-  void ROSVehicule::HandleReadWavei (Ptr<Socket> socket)
+void ROSVehicule::HandleReadWavei (Ptr<Socket> socket)
+{
+  NS_LOG_FUNCTION(this << socket);
+
+  Ptr<Packet> packet;
+  Address from;
+
+  while ((packet = socket->RecvFrom(from)))
   {
-    NS_LOG_FUNCTION (this << socket);//affichage info de cette fonction
-    Ptr<Packet> packet;
-    Address from;
+    ROSHeader hdr;
+    packet->RemoveHeader(hdr);
 
-    while ((packet = socket->RecvFrom(from)))
-    {
-      uint8_t *buffer = new uint8_t[packet->GetSize ()];
-      packet->CopyData(buffer, packet->GetSize ());
+    NS_LOG_INFO("VEHICLE WAVE " << vehicle_number
+                 << " received: " << hdr);
 
-      char* contenu = reinterpret_cast<char*>(buffer);
+    // Convert header back to a string for Python/TAP
+    std::ostringstream oss;
+    oss << int(hdr.GetDstId()) << " "
+        << int(hdr.GetSrcId()) << " position "
+        << hdr.GetX() << " "
+        << hdr.GetY() << " "
+        << hdr.GetZ();
 
-      NS_LOG_INFO("VEHICLE WAVE " << vehicle_number
-                   << " has received " << contenu);
+    std::string out = oss.str();
 
-      std::vector<std::string> instructions = SplitCharPointer(contenu);
+    Ptr<Packet> tapPacket = Create<Packet>(
+        reinterpret_cast<const uint8_t*>(out.c_str()),
+        out.size() + 1   // include '\0' for Python convenience
+    );
 
-      if (!instructions.empty())
-      {
-        Ptr<Packet> copy = packet->Copy();
-        tapSocketi->Send(copy);
-      }
-      delete[] buffer;
-    }
+    tapSocketi->Send(tapPacket);
   }
+}
 
 
 }

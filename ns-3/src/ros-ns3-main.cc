@@ -233,8 +233,7 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
 
     for (uint32_t j = 0; j < nodei->GetNDevices(); ++j)
     {
-      Ptr<NetDevice> dev = nodei->GetDevice(j);
-      std::cout << "Device " << j << ": " << dev->GetInstanceTypeId().GetName() << std::endl;
+      NS_LOG_INFO("Device " << j << ": " << nodei->GetDevice(j)->GetInstanceTypeId().GetName());
     }
 
     //Mettre en place les paramètres de ROS
@@ -267,6 +266,8 @@ main (int argc, char *argv[])
   LogComponentEnable ("ROS2NS3Main", LOG_LEVEL_INFO);
   LogComponentEnable ("ROSVehSync", LOG_LEVEL_INFO);
   LogComponentEnable ("ROSVehicule", LOG_LEVEL_INFO);
+  LogComponentEnable ("ROSHeader", LOG_LEVEL_INFO);
+
 
   NS_LOG_INFO("Starting program");
 
@@ -300,6 +301,8 @@ main (int argc, char *argv[])
   oss << std::put_time(&localTime, "%Y%m%d_%H%M");
 
   std::string animFileName = "Animation_" + oss.str() + ".xml";
+
+  PacketMetadata::Enable();
 
   AnimationInterface anim(animFileName);
   anim.EnablePacketMetadata(true);
