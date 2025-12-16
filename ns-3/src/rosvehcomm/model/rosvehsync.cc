@@ -217,6 +217,13 @@ namespace ns3
           NS_LOG_INFO("Received request_animfile => responding " << message);
     	    socket->Send (responsePacket);
         }
+        else if (command == "request_node")
+        {
+          std::string message = "node " + std::to_string(simInfo.nodeCount);
+		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+          NS_LOG_INFO("Received request_node => responding " << message);
+    	    socket->Send (responsePacket);
+        }
         else if (command == "request_duration")
         { 
           Time::Unit unit = Time::Unit::S;
