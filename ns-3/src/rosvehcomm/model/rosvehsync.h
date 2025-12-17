@@ -69,8 +69,6 @@ namespace ns3 {
       virtual void StartApplication (void);
       virtual void StopApplication (void);
 
-      void CreateVehicle (int i, double x, double y, double z, double xs, double ys, double zs) const;
-
       Ptr<Socket> m_socket_from_rtmaps; //!< IPv4 Socket
 
       EventId m_sendEvent_rtmaps; //!< Event to send the next packet

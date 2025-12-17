@@ -1,11 +1,13 @@
 build_lib(
 	LIBNAME rosvehcomm
 	SOURCE_FILES
+		model/rosheader.cc
 		model/rosvehicule.cc
 		model/rosvehsync.cc
     	helper/rosvehsync-helper.cc
 		helper/rosvehicule-helper.cc
     HEADER_FILES
+		model/rosheader.h
     	model/rosvehicule.h
 		model/rosvehsync.h
     	helper/rosvehsync-helper.h
