@@ -101,14 +101,14 @@ def control_node_listener(socket_tap0):
 
                 elif response_command == "file":
 
-                    netAnim_file = msg_split[1]
-                    inflog(f"ns3 Simulation saved on file {netAnim_file}")
+                    netanim_file = msg_split[1]
+                    inflog(f"ns3 Simulation saved on file {netanim_file}")
                     inflog("Initializing carla")
                     init_carla()
-                    positions = get_all_position()
-                    tap_sender_control(f"create_node {positions}")
+                    mobility = get_all_mobility()
+                    tap_sender_control(f"init_node {mobility}")
 
-                elif response_command == "create_success":
+                elif response_command == "init_success":
 
                     sockets = []
                     for num_node in range(1, NB_NODE+1):

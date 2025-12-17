@@ -167,72 +167,6 @@ namespace ns3
     }
   }
 
-  void ROSVehSync::CreateVehicle (int i, double x, double y, double z, double xs, double ys, double zs) const
-  {
-    /*
-    Ptr<Node> nodei = NodeContainer::GetGlobal().Get(i);
-
-    string nodeNumberString = to_string(i);
-
-    NS_LOG_UNCOND("Creating node "+nodeNumberString);
-
-    //TAP
-    //IP:
-    string tap_neti_string = "10.0."+nodeNumberString+".1";
-    //Nom du tap device
-    string nom_tap = "tap"+nodeNumberString;
-    //Port:
-    uint16_t portveh = 12000+i;
-    //On convertit les adresses/Masque de sous réseau en chaîne de caractère
-    Ipv4Address tap_neti (tap_neti_string.c_str());
-
-    Ipv4Address ros_ipv4 = InetSocketAddress::ConvertFrom(ros_ip).GetIpv4();
-    AddressValue remoteAddressi(InetSocketAddress (ros_ipv4, portveh));
-    AddressValue sinkLocalAddressi(InetSocketAddress (tap_neti, portveh));
-
-    // WAVE
-    Ptr<NetDevice> waveDevice = nodei->GetDevice(2);
-    // Log the assigned IP address
-    Ptr<Ipv4> ipv4_i = nodei->GetObject<Ipv4> ();
-
-    uint16_t portwave = 14000;
-    std::ostringstream ipWave;
-	  ipWave << "11.0.0." << i;
-    Ipv4Address wave_neti = Ipv4Address(ipWave.str().c_str());
-    AddressValue waveLocalAddressi(InetSocketAddress (wave_neti, portwave));
-
-    // Positions and speeds
-    Ptr<ConstantVelocityMobilityModel> mobilityi = nodei->GetObject<ConstantVelocityMobilityModel>();
-    mobilityi->SetPosition (Vector(x,y,z));
-    mobilityi->SetVelocity (Vector(xs,ys,zs));
-
-    // Check installation
-    Ptr<Ipv4> ipv4check = nodei->GetObject<Ipv4>();
-    for (uint32_t j = 0; j < ipv4check->GetNInterfaces(); ++j)
-    {
-      NS_LOG_INFO("Node " << i << " Interface " << j  << " IP: " << ipv4check->GetAddress(j, 0).GetLocal());
-    }
-
-    for (uint32_t j = 0; j < nodei->GetNDevices(); ++j)
-    {
-      Ptr<NetDevice> dev = nodei->GetDevice(j);
-      std::cout << "Device " << j << ": " << dev->GetInstanceTypeId().GetName() << std::endl;
-    }
-
-    //Mettre en place les paramètres de ROS
-    ROSVehiculeHelper rosVehiculeHelper;
-    rosVehiculeHelper.SetAttribute ("RemoteROS",remoteAddressi);
-    rosVehiculeHelper.SetAttribute ("LocalTap", sinkLocalAddressi);
-    rosVehiculeHelper.SetAttribute ("LocalWave", waveLocalAddressi);
-    rosVehiculeHelper.SetAttribute ("VehicleNumber", IntegerValue(i));
-    rosVehiculeHelper.SetAttribute ("PortTap", UintegerValue(portveh));
-    rosVehiculeHelper.SetAttribute ("PortWave", UintegerValue(portwave));
-    //Ajout adresse destination dans le node 1 ex :  tap 1 -> wave
-
-    ApplicationContainer ROSVehSyncApps1 = rosVehiculeHelper.Install (nodei);
-    */
-  }
-
   std::vector<std::string> ROSVehSync::SplitCharPointerController(const char* input)
   {
     std::vector<std::string> result;
@@ -299,33 +233,42 @@ namespace ns3
           NS_LOG_INFO("Received request_time => responding " << message);
     	    socket->Send (responsePacket);
         }
-        else if (command == "create_node")
+        else if (command == "init_node")
         {
-          //NS_LOG_INFO("Create node command");
+          NS_LOG_INFO("init_node command");
           unsigned long n = 1;
-          int nodeNumber;
+          NodeContainer Globalnode;
+    	    Globalnode = NodeContainer::GetGlobal();
           double x = 0.0, y = 0.0, z = 0.0, xs = 0.0, ys = 0.0, zs = 0.0;
-          while(n <= instructions.size()-4)
+          while(n <= instructions.size()-7)
           {
-            nodeNumber = std::stoi(instructions[n]);
+        	  Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
             ++n;
-            std::istringstream(instructions[n]) >> x; // 2) x
+            std::istringstream(instructions[n]) >> x; // 2) xs
             ++n;
-            std::istringstream(instructions[n]) >> y; // 3) y
+      		  std::istringstream(instructions[n]) >> y; // 3) ys
             ++n;
-            std::istringstream(instructions[n]) >> z; // 4) z
+      		  std::istringstream(instructions[n]) >> z; // 4) zs
+            ++n;
+            std::istringstream(instructions[n]) >> xs; // 5) xs
+            ++n;
+      		  std::istringstream(instructions[n]) >> ys; // 6) ys
+            ++n;
+      		  std::istringstream(instructions[n]) >> zs; // 7) zs
 
-            //
-            CreateVehicle(nodeNumber, x, y, z, xs, ys, zs);
+            const Vector NODE_I_POSITION(x, y, z);
+        	  const Vector NODE_I_SPEED(xs, ys, zs);
+            mobilityi->SetPosition(NODE_I_POSITION);
+        	  mobilityi->SetVelocity(NODE_I_SPEED);
+
             ++n;
           }
-          //NS_LOG_UNCOND("On récupère le total");
           int total = (NodeContainer::GetGlobal().GetN())-1;
           NS_LOG_UNCOND("Global total of vehicules is " << total);
 
-    	    std::string message = "create_success";
+    	    std::string message = "init_success";
 		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-          NS_LOG_INFO("Received create_node => responding " << message);
+          NS_LOG_INFO("Received init_node => responding " << message);
     	    socket->Send (responsePacket);
         }
         else if (command == "set_mobility")
