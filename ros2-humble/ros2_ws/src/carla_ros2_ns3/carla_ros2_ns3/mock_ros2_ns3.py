@@ -52,7 +52,6 @@ def main():
 
 def control_node_listener(socket_tap0):
     """Permet d'ecouter ce que recoit tap0, noeud de controle."""
-
     while rclpy.ok():
         try:
 
@@ -126,7 +125,6 @@ def control_node_listener(socket_tap0):
 
 def launch_simulation(sockets, control_socket):
     """Lance la simulation."""
-
     interval = 1
 
     # Lancer l'écoute périodique des positions dans un thread
@@ -150,7 +148,6 @@ def launch_simulation(sockets, control_socket):
 
 def stop_simulation():
     """Arrete la simulation."""
-
     inflog("Stopping all threads")
     cst.stop_state = True
 

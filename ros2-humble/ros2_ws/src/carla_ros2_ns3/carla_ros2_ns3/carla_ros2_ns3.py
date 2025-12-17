@@ -51,7 +51,6 @@ def main():
 
 def control_node_listener(socket_tap0):
     """Permet d'ecouter ce que recoit tap0, noeud de controle."""
-
     while rclpy.ok():
         try:
 
@@ -88,8 +87,8 @@ def control_node_listener(socket_tap0):
 
                 elif response_command == "node":
 
-                    node_count = int(msg_split[1])
-                    inflog(f"ns3 Simulation Node count is {node_count}")
+                    cst.nb_nodes = int(msg_split[1])
+                    inflog(f"ns3 Simulation Node count is {cst.nb_nodes}")
                     inflog("Requesting NetAnim animation file")
                     tap_sender_control("request_animfile")
 
@@ -125,7 +124,6 @@ def control_node_listener(socket_tap0):
 
 def launch_simulation(sockets, control_socket):
     """Lance la simulation."""
-
     traffic_manager = client.get_trafficmanager(8001)
     traffic_manager.set_synchronous_mode(False)
     # Désactiver le mode synchrone du Traffic Manager
@@ -158,7 +156,6 @@ def launch_simulation(sockets, control_socket):
 
 def stop_simulation():
     """Arrete la simulation."""
-
     inflog("Stopping all threads")
     cst.stop_state = True
 

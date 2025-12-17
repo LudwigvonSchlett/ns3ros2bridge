@@ -31,11 +31,9 @@ client = carla.Client(host, 2000)  # connexion a Carla
 
 def init_carla():
     """Initialise la connexion à Carla."""
-
-    client = carla.Client(host, 2000)  # connexion a Carla
     client.set_timeout(20.0)
-    client.load_world("Town03")
-    # Pour changer la carte
+    if cst.MODE != "vm":
+        client.load_world("Town03")  # Pour changer la carte
     world = client.get_world()
     settings = world.get_settings()
     settings.no_rendering_mode = no_rendering
@@ -55,20 +53,21 @@ def init_carla():
         errlog("Aucun waypoint trouvé sur la carte.")
     else:
         inflog(f"{len(waypoints)} waypoints générés.")
-        
+
     blueprints = world.get_blueprint_library().filter('vehicle.audi.tt')
     blueprints = sorted(blueprints, key=lambda bp: bp.id)
 
     spawn_points = world.get_map().get_spawn_points()
     number_of_spawn_points = len(spawn_points)
-    
+
     if cst.nb_nodes < number_of_spawn_points:
-                random.shuffle(spawn_points)
+        random.shuffle(spawn_points)
     elif cst.nb_nodes > number_of_spawn_points:
         errlog(f"{cst.nb_nodes} noeuds mais {number_of_spawn_points} spawns")
         cst.nb_nodes = number_of_spawn_points
 
     # Créer les véhicules
+    inflog(f"Creating {cst.nb_nodes} vehicules")
     for _ in range(cst.nb_nodes):
         vehicle = None
         while vehicle is None:
@@ -81,7 +80,7 @@ def spawn_vehicle(world, blueprints, spawn_points):
     """Crée et initialise un véhicule dans le simulateur Carla."""
     # Obtenir la bibliothèque de blueprints
     blueprint = random.choice(blueprints)
-    
+
     if blueprint.has_attribute('color'):
         color = random.choice(blueprint.get_attribute('color').recommended_values)
         blueprint.set_attribute('color', color)
