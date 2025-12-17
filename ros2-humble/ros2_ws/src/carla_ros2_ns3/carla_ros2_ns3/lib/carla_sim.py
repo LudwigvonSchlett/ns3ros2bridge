@@ -14,19 +14,19 @@ from carla_ros2_ns3.lib.ros import (
 
 # Variables
 if cst.MODE == "gpu":
-    host = "localhost"
-    no_rendering = False
+    HOST = "localhost"
+    RENDERING = False
 elif cst.MODE == "cpu":
-    host = "localhost"
-    no_rendering = True
+    HOST = "localhost"
+    RENDERING = True
 elif cst.MODE == "vm":
-    host = "192.168.56.1"
-    no_rendering = True
+    HOST = "192.168.56.1"
+    RENDERING = True
 else:
-    host = "localhost"
-    no_rendering = False
+    HOST = "localhost"
+    RENDERING = False
 
-client = carla.Client(host, 2000)  # connexion a Carla
+client = carla.Client(HOST, 2000)  # connexion a Carla
 
 
 def init_carla():
@@ -36,7 +36,7 @@ def init_carla():
         client.load_world("Town03")  # Pour changer la carte
     world = client.get_world()
     settings = world.get_settings()
-    settings.no_rendering_mode = no_rendering
+    settings.no_rendering_mode = RENDERING
     # Pour desactiver l'utilisation du gpu
     settings.synchronous_mode = False
     world.apply_settings(settings)

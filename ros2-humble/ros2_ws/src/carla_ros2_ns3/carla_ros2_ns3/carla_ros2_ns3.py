@@ -13,7 +13,6 @@ from carla_ros2_ns3.lib.carla_sim import (
     client,
     init_carla,
     get_all_mobility,
-    get_all_position,
     get_position,
     stop_vehicules
 )
@@ -260,16 +259,16 @@ def listen_tap_devices(tap_sockets):
             readable, _, _ = select.select(tap_sockets, [], [], 1.0)
             for sock in readable:
                 data, _ = sock.recvfrom(65535)  # Taille max d'un paquet
-                device_name = sock.getsockname()[0]  # Nom du device lié
+                tap = sock.getsockname()[0]  # Nom du device lié
                 if check_message(data):
                     message = (data[42:].decode()).rstrip("\n")
                     splits = message.split(" ")
-                    if splits[0] == device_name.replace("tap", ""):
+                    if splits[0] == tap.replace("tap", ""):
                         # compte uniquement si l'on est la cible
 
                         cst.number_message_received += 1
                         # A faire: traier ce qu'on recoit sur tap1,2,3,...
-                        inflog(f"{device_name} received a packet from tap{splits[1]}")
+                        inflog(f"{tap} received a packet from tap{splits[1]}")
                         inflog(f"Received packet (decoded): {message}")
 
         except Exception as e:
