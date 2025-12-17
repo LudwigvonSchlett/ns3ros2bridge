@@ -161,21 +161,27 @@ namespace ns3
 
     while ((packet = socket->RecvFrom(from)))
     {
-      uint8_t *buffer = new uint8_t[packet->GetSize ()];
-      packet->CopyData(buffer, packet->GetSize ());
+      
+      uint32_t size = packet->GetSize();
+      std::vector<uint8_t> buffer(size);
+      packet->CopyData(buffer.data(), size);
 
-      char* contenu = reinterpret_cast<char*>(buffer);
+      char* contenu = reinterpret_cast<char*>(buffer.data());
 
       NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " received: " << contenu);
 
       std::istringstream iss(contenu);
 
       int dst, src;
-      std::string label;
-      int x, y, z;
+      std::string rest;
 
-      iss >> dst >> src >> label >> x >> y >> z;
+      iss >> dst >> src;
+      std::getline(iss, rest);
 
+      if (!rest.empty() && rest[0] == ' '){
+        rest.erase(0, 1);
+      }
+        
       // unicast basique
       if (dst != 0) {
 
@@ -184,14 +190,18 @@ namespace ns3
         Ipv4Address singleAddress = Ipv4Address(ipWave.str().c_str());
         InetSocketAddress remoteAddr(singleAddress, portWavei);
 
-        ROSHeader hdr(dst, src, x, y, z);
+        ROSHeader hdr(dst, src);
 
-        Ptr<Packet> p = Create<Packet>();
+        Ptr<Packet> p = Create<Packet>(
+          reinterpret_cast<const uint8_t*>(rest.c_str()),
+          rest.size() + 1   // keep '\0'
+        );
+
         p->AddHeader(hdr);
+
         waveSocketi->SendTo(p, 0, remoteAddr);
 
       }
-      delete[] buffer;
     }
   }
 
@@ -207,22 +217,25 @@ void ROSVehicule::HandleReadWavei (Ptr<Socket> socket)
     ROSHeader hdr;
     packet->RemoveHeader(hdr);
 
-    NS_LOG_INFO("VEHICLE WAVE " << vehicle_number
-                 << " received: " << hdr);
+    uint32_t size = packet->GetSize();
+    std::vector<uint8_t> buffer(size);
+    packet->CopyData(buffer.data(), size);
 
-    // Convert header back to a string for Python/TAP
+    std::string rest(reinterpret_cast<char*>(buffer.data()));
+
+    NS_LOG_INFO("VEHICLE WAVE " << vehicle_number
+                 << " received: " << hdr << " payload: " << rest);
+
     std::ostringstream oss;
     oss << int(hdr.GetDstId()) << " "
-        << int(hdr.GetSrcId()) << " position "
-        << hdr.GetX() << " "
-        << hdr.GetY() << " "
-        << hdr.GetZ();
+        << int(hdr.GetSrcId()) << " "
+        << rest;
 
     std::string out = oss.str();
 
     Ptr<Packet> tapPacket = Create<Packet>(
         reinterpret_cast<const uint8_t*>(out.c_str()),
-        out.size() + 1   // include '\0' for Python convenience
+        out.size()  // keep '\0'
     );
 
     tapSocketi->Send(tapPacket);
