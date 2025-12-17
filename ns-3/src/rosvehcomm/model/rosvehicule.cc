@@ -235,7 +235,7 @@ void ROSVehicule::HandleReadWavei (Ptr<Socket> socket)
 
     Ptr<Packet> tapPacket = Create<Packet>(
         reinterpret_cast<const uint8_t*>(out.c_str()),
-        out.size()  // keep '\0'
+        out.size() + 1 // keep '\0'
     );
 
     tapSocketi->Send(tapPacket);
