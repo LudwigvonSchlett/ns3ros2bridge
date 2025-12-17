@@ -34,7 +34,7 @@ def init_carla():
 
     client = carla.Client(host, 2000)  # connexion a Carla
     client.set_timeout(20.0)
-    # client.load_world("Town01")
+    client.load_world("Town03")
     # Pour changer la carte
     world = client.get_world()
     settings = world.get_settings()
@@ -55,31 +55,48 @@ def init_carla():
         errlog("Aucun waypoint trouvé sur la carte.")
     else:
         inflog(f"{len(waypoints)} waypoints générés.")
+        
+    blueprints = world.get_blueprint_library().filter('vehicle.audi.tt')
+    blueprints = sorted(blueprints, key=lambda bp: bp.id)
+
+    spawn_points = world.get_map().get_spawn_points()
+    number_of_spawn_points = len(spawn_points)
+    
+    if cst.nb_nodes < number_of_spawn_points:
+                random.shuffle(spawn_points)
+    elif cst.nb_nodes > number_of_spawn_points:
+        errlog(f"{cst.nb_nodes} noeuds mais {number_of_spawn_points} spawns")
+        cst.nb_nodes = number_of_spawn_points
 
     # Créer les véhicules
     for _ in range(cst.nb_nodes):
         vehicle = None
         while vehicle is None:
-            vehicle = spawn_vehicle(world)
+            vehicle = spawn_vehicle(world, blueprints, spawn_points)
         cst.vehicles.append(vehicle)
     return world
 
 
-def spawn_vehicle(world):
+def spawn_vehicle(world, blueprints, spawn_points):
     """Crée et initialise un véhicule dans le simulateur Carla."""
     # Obtenir la bibliothèque de blueprints
-    blueprint_library = world.get_blueprint_library()
-    vehicle_bp = random.choice(blueprint_library.filter('vehicle.*'))
+    blueprint = random.choice(blueprints)
+    
+    if blueprint.has_attribute('color'):
+        color = random.choice(blueprint.get_attribute('color').recommended_values)
+        blueprint.set_attribute('color', color)
+    if blueprint.has_attribute('driver_id'):
+        driver_id = random.choice(blueprint.get_attribute('driver_id').recommended_values)
+        blueprint.set_attribute('driver_id', driver_id)
 
     # Choisir un point d'apparition aléatoire
-    spawn_points = world.get_map().get_spawn_points()
     if not spawn_points:
         errlog("Aucun point d'apparition disponible.")
         return None
     spawn_point = random.choice(spawn_points)
 
     # Essayer de créer le véhicule
-    vehicle = world.try_spawn_actor(vehicle_bp, spawn_point)
+    vehicle = world.try_spawn_actor(blueprint, spawn_point)
 
     return vehicle
 
