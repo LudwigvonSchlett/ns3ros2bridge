@@ -4,7 +4,7 @@ import random
 
 import carla
 
-from carla_ros2_ns3.const import NB_NODE, vehicles, mode
+import carla_ros2_ns3.const as cst
 from carla_ros2_ns3.lib.ros import (
     inflog,
     errlog
@@ -13,33 +13,30 @@ from carla_ros2_ns3.lib.ros import (
 # Partie CARLA
 
 # Variables
-if mode == "gpu":
-    host = "localhost"
-    no_rendering = False
-elif mode == "cpu":
-    host = "localhost"
-    no_rendering = True
-elif mode == "vm":
-    host = "192.168.56.1"
-    no_rendering = True
+if cst.MODE == "gpu":
+    HOST = "localhost"
+    RENDERING = False
+elif cst.MODE == "cpu":
+    HOST = "localhost"
+    RENDERING = True
+elif cst.MODE == "vm":
+    HOST = "192.168.56.1"
+    RENDERING = True
 else:
-    host = "localhost"
-    no_rendering = False
+    HOST = "localhost"
+    RENDERING = False
 
-client = carla.Client(host, 2000)  # connexion a Carla
+client = carla.Client(HOST, 2000)  # connexion a Carla
 
 
 def init_carla():
     """Initialise la connexion à Carla."""
-    global vehicles
-
-    client = carla.Client(host, 2000)  # connexion a Carla
     client.set_timeout(20.0)
-    # client.load_world("Town01")
-    # Pour changer la carte
+    if cst.MODE != "vm":
+        client.load_world("Town03")  # Pour changer la carte
     world = client.get_world()
     settings = world.get_settings()
-    settings.no_rendering_mode = no_rendering
+    settings.no_rendering_mode = RENDERING
     # Pour desactiver l'utilisation du gpu
     settings.synchronous_mode = False
     world.apply_settings(settings)
@@ -57,30 +54,48 @@ def init_carla():
     else:
         inflog(f"{len(waypoints)} waypoints générés.")
 
+    blueprints = world.get_blueprint_library().filter('vehicle.audi.tt')
+    blueprints = sorted(blueprints, key=lambda bp: bp.id)
+
+    spawn_points = world.get_map().get_spawn_points()
+    number_of_spawn_points = len(spawn_points)
+
+    if cst.nb_nodes < number_of_spawn_points:
+        random.shuffle(spawn_points)
+    elif cst.nb_nodes > number_of_spawn_points:
+        errlog(f"{cst.nb_nodes} noeuds mais {number_of_spawn_points} spawns")
+        cst.nb_nodes = number_of_spawn_points
+
     # Créer les véhicules
-    for _ in range(NB_NODE):
+    inflog(f"Creating {cst.nb_nodes} vehicules")
+    for _ in range(cst.nb_nodes):
         vehicle = None
         while vehicle is None:
-            vehicle = spawn_vehicle(world)
-        vehicles.append(vehicle)
+            vehicle = spawn_vehicle(world, blueprints, spawn_points)
+        cst.vehicles.append(vehicle)
     return world
 
 
-def spawn_vehicle(world):
+def spawn_vehicle(world, blueprints, spawn_points):
     """Crée et initialise un véhicule dans le simulateur Carla."""
     # Obtenir la bibliothèque de blueprints
-    blueprint_library = world.get_blueprint_library()
-    vehicle_bp = random.choice(blueprint_library.filter('vehicle.*'))
+    blueprint = random.choice(blueprints)
+
+    if blueprint.has_attribute('color'):
+        color = random.choice(blueprint.get_attribute('color').recommended_values)
+        blueprint.set_attribute('color', color)
+    if blueprint.has_attribute('driver_id'):
+        driver_id = random.choice(blueprint.get_attribute('driver_id').recommended_values)
+        blueprint.set_attribute('driver_id', driver_id)
 
     # Choisir un point d'apparition aléatoire
-    spawn_points = world.get_map().get_spawn_points()
     if not spawn_points:
         errlog("Aucun point d'apparition disponible.")
         return None
     spawn_point = random.choice(spawn_points)
 
     # Essayer de créer le véhicule
-    vehicle = world.try_spawn_actor(vehicle_bp, spawn_point)
+    vehicle = world.try_spawn_actor(blueprint, spawn_point)
 
     return vehicle
 
@@ -117,9 +132,9 @@ def get_all_position():
     try:
         output = " "
         index_vehicle = 1
-        for vehicle in vehicles:
+        for vehicle in cst.vehicles:
             output += f" {index_vehicle} {get_position(vehicle)}"
-            if index_vehicle < NB_NODE:
+            if index_vehicle < cst.nb_nodes:
                 output += " "
                 index_vehicle += 1
         return output
@@ -132,9 +147,9 @@ def get_all_speed():
     try:
         output = " "
         index_vehicle = 1
-        for vehicle in vehicles:
+        for vehicle in cst.vehicles:
             output += f" {index_vehicle} {get_speed(vehicle)}"
-            if index_vehicle < NB_NODE:
+            if index_vehicle < cst.nb_nodes:
                 output += " "
                 index_vehicle += 1
         return output
@@ -147,10 +162,10 @@ def get_all_mobility():
     try:
         output = " "
         index_vehicle = 1
-        for vehicle in vehicles:
+        for vehicle in cst.vehicles:
             output += (f"{index_vehicle} {get_position(vehicle)} "
                        + f"{get_speed(vehicle)}")
-            if index_vehicle < NB_NODE:
+            if index_vehicle < cst.nb_nodes:
                 output += " "
                 index_vehicle += 1
         return output
@@ -163,9 +178,9 @@ def stop_vehicules():
     try:
         output = " "
         index_vehicle = 1
-        for vehicle in vehicles:
+        for vehicle in cst.vehicles:
             output += (f"{index_vehicle} {get_position(vehicle)} 0.0 0.0 0.0")
-            if index_vehicle < NB_NODE:
+            if index_vehicle < cst.nb_nodes:
                 output += " "
                 index_vehicle += 1
         return output

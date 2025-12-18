@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
 # Constantes
-NB_NODE = 5   # nombre de nodes et donc de voitures dans la simulation
 MTU = 15000   # Maximum Transmission Unit pour Ethernet frame
-mode = "gpu"  # gpu cpu vm
+MODE = "gpu"  # gpu cpu vm
 
 # Varibles
 # Variables de simulation
+nb_nodes = 0   # nombre de nodes et donc de voitures dans la simulation
 number_message_sent = 0  # Pour les messages s'envoyant via tap1,2,3,...
 number_message_received = 0  # Pour les messages s'envoyant via tap1,2,3,...
 simulation_duration = 0
