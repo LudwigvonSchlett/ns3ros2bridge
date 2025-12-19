@@ -43,7 +43,7 @@ def init_carla():
                 world = client.get_world()
 
         settings = world.get_settings()
-        settings.no_rendering_mode = RENDERING # Pour activer/désactiver l'utilisation du gpu
+        settings.no_rendering_mode = RENDERING  # Pour activer/désactiver l'utilisation du gpu
 
         settings.synchronous_mode = False
         world.apply_settings(settings)
@@ -84,7 +84,7 @@ def init_carla():
                 vehicle = spawn_vehicle(world, blueprints, spawn_points)
             cst.vehicles.append(vehicle)
 
-        inflog(f"Initializing traffic manager")
+        inflog("Initializing traffic manager")
         traffic_manager = client.get_trafficmanager(8001)
         traffic_manager.set_synchronous_mode(False)
         # Désactiver le mode synchrone du Traffic Manager

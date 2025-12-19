@@ -10,7 +10,6 @@ import rclpy
 
 import carla_ros2_ns3.const as cst
 from carla_ros2_ns3.lib.carla_sim import (
-    client,
     init_carla,
     get_all_mobility,
     get_position,
