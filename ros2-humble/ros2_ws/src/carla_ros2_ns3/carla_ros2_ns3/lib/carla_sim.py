@@ -30,7 +30,7 @@ def init_carla():
     """Initialise la connexion à Carla."""
     try:
         client.set_timeout(30.0)
-        world = client.load_world_if_different('Town02_Opt', False, carla.MapLayer.All)  # Pour changer la carte
+        world = client.load_world_if_different('Town02_Opt', False, carla.MapLayer.All)
         if world is None:
             world = client.get_world()
 
