@@ -10,7 +10,6 @@ import rclpy
 
 import carla_ros2_ns3.const as cst
 from carla_ros2_ns3.lib.carla_sim import (
-    client,
     init_carla,
     get_all_mobility,
     get_position,
@@ -102,10 +101,12 @@ def control_node_listener(socket_tap0):
 
                 elif response_command == "init_success":
 
+                    inflog("Initializing connexion to tap devices")
                     sockets = []
                     for num_node in range(1, cst.nb_nodes+1):
                         tap_socket = connect_tap_device(f"tap{num_node}")
                         sockets.append(tap_socket)
+                    inflog("Launching simulation")
                     launch_simulation(sockets, socket_tap0)
 
                 else:
@@ -123,14 +124,12 @@ def control_node_listener(socket_tap0):
 
 def launch_simulation(sockets, control_socket):
     """Lance la simulation."""
-    traffic_manager = client.get_trafficmanager(8001)
-    traffic_manager.set_synchronous_mode(False)
-    # Désactiver le mode synchrone du Traffic Manager
-    traffic_manager.set_global_distance_to_leading_vehicle(2.0)
-    # Distance minimale
-
-    for vehicle in cst.vehicles:
-        vehicle.set_autopilot(True, 8001)
+    try:
+        for vehicle in cst.vehicles:
+            vehicle.set_autopilot(True, 8001)
+    except Exception as e:
+        errlog("Exception starting vehicles")
+        raise e
 
     interval = 1
 

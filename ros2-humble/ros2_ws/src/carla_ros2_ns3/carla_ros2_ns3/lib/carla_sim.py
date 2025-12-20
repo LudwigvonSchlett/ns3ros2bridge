@@ -13,16 +13,13 @@ from carla_ros2_ns3.lib.ros import (
 # Partie CARLA
 
 # Variables
-if cst.MODE == "gpu":
-    HOST = "localhost"
-    RENDERING = False
-elif cst.MODE == "cpu":
+if cst.MODE == "cpu":
     HOST = "localhost"
     RENDERING = True
 elif cst.MODE == "vm":
     HOST = "192.168.56.1"
     RENDERING = True
-else:
+else:  # gpu
     HOST = "localhost"
     RENDERING = False
 
@@ -31,49 +28,64 @@ client = carla.Client(HOST, 2000)  # connexion a Carla
 
 def init_carla():
     """Initialise la connexion à Carla."""
-    client.set_timeout(20.0)
-    if cst.MODE != "vm":
-        client.load_world("Town03")  # Pour changer la carte
-    world = client.get_world()
-    settings = world.get_settings()
-    settings.no_rendering_mode = RENDERING
-    # Pour desactiver l'utilisation du gpu
-    settings.synchronous_mode = False
-    world.apply_settings(settings)
+    try:
+        client.set_timeout(30.0)
+        world = client.load_world_if_different('Town02_Opt', False, carla.MapLayer.All)
+        if world is None:
+            world = client.get_world()
 
-    weather = world.get_weather()
-    # weather.sun_altitude_angle = 45.0
-    # angle du soleil => pour changer l'heure
-    world.set_weather(weather)
+        settings = world.get_settings()
+        settings.no_rendering_mode = RENDERING  # Pour activer/désactiver l'utilisation du gpu
 
-    # Générer des waypoints pour s'assurer que la carte est prête
-    map = world.get_map()
-    waypoints = map.generate_waypoints(2.0)
-    if not waypoints:
-        errlog("Aucun waypoint trouvé sur la carte.")
-    else:
-        inflog(f"{len(waypoints)} waypoints générés.")
+        settings.synchronous_mode = False
+        world.apply_settings(settings)
 
-    blueprints = world.get_blueprint_library().filter('vehicle.audi.tt')
-    blueprints = sorted(blueprints, key=lambda bp: bp.id)
+        # Mise en place de la météo
+        weather = world.get_weather()
+        weather.precipitation = 0.0
+        weather.precipitation_deposits = 0.0
+        weather.cloudiness = 0.0
+        weather.sun_altitude_angle = 90.0  # angle du soleil => pour changer l'heure
+        world.set_weather(weather)
 
-    spawn_points = world.get_map().get_spawn_points()
-    number_of_spawn_points = len(spawn_points)
+        map = world.get_map()
+        # Générer des waypoints pour s'assurer que la carte est prête
+        # waypoints = map.generate_waypoints(4.0)
+        # if not waypoints:
+        #     errlog("Aucun waypoint trouvé sur la carte.")
+        # else:
+        #     inflog(f"{len(waypoints)} waypoints générés.")
 
-    if cst.nb_nodes < number_of_spawn_points:
-        random.shuffle(spawn_points)
-    elif cst.nb_nodes > number_of_spawn_points:
-        errlog(f"{cst.nb_nodes} noeuds mais {number_of_spawn_points} spawns")
-        cst.nb_nodes = number_of_spawn_points
+        blueprints = world.get_blueprint_library().filter('vehicle.audi.tt')
+        blueprints = sorted(blueprints, key=lambda bp: bp.id)
 
-    # Créer les véhicules
-    inflog(f"Creating {cst.nb_nodes} vehicules")
-    for _ in range(cst.nb_nodes):
-        vehicle = None
-        while vehicle is None:
-            vehicle = spawn_vehicle(world, blueprints, spawn_points)
-        cst.vehicles.append(vehicle)
-    return world
+        spawn_points = map.get_spawn_points()
+        number_of_spawn_points = len(spawn_points)
+
+        if cst.nb_nodes < number_of_spawn_points:
+            random.shuffle(spawn_points)
+        elif cst.nb_nodes > number_of_spawn_points:
+            errlog(f"{cst.nb_nodes} noeuds mais {number_of_spawn_points} spawns")
+            cst.nb_nodes = number_of_spawn_points
+
+        # Créer les véhicules
+        inflog(f"Creating {cst.nb_nodes} vehicules")
+        for _ in range(cst.nb_nodes):
+            vehicle = None
+            while vehicle is None:
+                vehicle = spawn_vehicle(world, blueprints, spawn_points)
+            cst.vehicles.append(vehicle)
+
+        inflog("Initializing traffic manager")
+        traffic_manager = client.get_trafficmanager(8001)
+        traffic_manager.set_synchronous_mode(False)
+        # Désactiver le mode synchrone du Traffic Manager
+        traffic_manager.set_global_distance_to_leading_vehicle(2.0)
+        # Distance minimale
+
+    except Exception as e:
+        errlog("Exception initializing carla")
+        raise e
 
 
 def spawn_vehicle(world, blueprints, spawn_points):
