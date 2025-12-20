@@ -13,16 +13,13 @@ from carla_ros2_ns3.lib.ros import (
 # Partie CARLA
 
 # Variables
-if cst.MODE == "gpu":
-    HOST = "localhost"
-    RENDERING = False
-elif cst.MODE == "cpu":
+if cst.MODE == "cpu":
     HOST = "localhost"
     RENDERING = True
 elif cst.MODE == "vm":
     HOST = "192.168.56.1"
     RENDERING = True
-else:
+else:  # gpu or gpu_weak
     HOST = "localhost"
     RENDERING = False
 
@@ -38,7 +35,7 @@ def init_carla():
             if world is None:
                 world = client.get_world()
         else:
-            world = client.load_world_if_different('Town01', False)  # Pour changer la carte
+            world = client.load_world_if_different('Town01_Opt', False)  # Pour changer la carte
             if world is None:
                 world = client.get_world()
 

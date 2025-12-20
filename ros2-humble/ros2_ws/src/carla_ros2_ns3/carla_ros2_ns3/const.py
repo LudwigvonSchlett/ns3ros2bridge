@@ -2,7 +2,7 @@
 
 # Constantes
 MTU = 15000   # Maximum Transmission Unit pour Ethernet frame
-MODE = "gpu"  # gpu cpu vm
+MODE = "gpu"  # gpu gpu_weak cpu vm
 
 # Varibles
 # Variables de simulation
