@@ -64,7 +64,7 @@ sudo ./dependencies.bsh
 ./install.bsh
 sudo python3 -m pip install -r requirements.txt 
 ```
-
+- [ ] Remplacer /carla-0.9.15/carla/CarlaUE4/Config/DefaultEngine.ini
 - [ ] Lancer carla
 
 ```

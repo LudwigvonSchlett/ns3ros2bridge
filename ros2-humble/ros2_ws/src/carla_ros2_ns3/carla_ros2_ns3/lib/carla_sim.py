@@ -19,7 +19,7 @@ if cst.MODE == "cpu":
 elif cst.MODE == "vm":
     HOST = "192.168.56.1"
     RENDERING = True
-else:  # gpu or gpu_weak
+else:  # gpu
     HOST = "localhost"
     RENDERING = False
 
@@ -30,14 +30,9 @@ def init_carla():
     """Initialise la connexion à Carla."""
     try:
         client.set_timeout(30.0)
-        if cst.MODE != "gpu":
-            world = client.load_world_if_different('Town01_Opt', False, carla.MapLayer.NONE)
-            if world is None:
-                world = client.get_world()
-        else:
-            world = client.load_world_if_different('Town01_Opt', False)  # Pour changer la carte
-            if world is None:
-                world = client.get_world()
+        world = client.load_world_if_different('Town02_Opt', False, carla.MapLayer.All)  # Pour changer la carte
+        if world is None:
+            world = client.get_world()
 
         settings = world.get_settings()
         settings.no_rendering_mode = RENDERING  # Pour activer/désactiver l'utilisation du gpu
