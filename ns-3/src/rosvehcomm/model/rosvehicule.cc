@@ -156,6 +156,7 @@ namespace ns3
   {
     NS_LOG_FUNCTION(this << socket);
 
+    Ptr<ConstantVelocityMobilityModel> mobility = GetNode()->GetObject<ConstantVelocityMobilityModel>();
     Ptr<Packet> packet;
     Address from;
 
@@ -179,6 +180,7 @@ namespace ns3
       uint32_t parse = 0;
       int src = 0;
       int dst = 0;
+      const uint8_t* data = buffer.data();
 
       while (parse < size) {
 
@@ -187,20 +189,29 @@ namespace ns3
         uint8_t length = buffer[parse];
         parse++;
 
-        if (type == 1) {
+        if ((type == 1) && (length == 1)) {
           src = buffer[parse];
         }
-        else if (type == 2) {
+        else if ((type == 2) && (length == 1)) {
           dst = buffer[parse];
         }
-        /*
-        else if (type == 3) {
-
+        else if ((type == 3) && (length == 12)) {
+          float x, y, z;
+          std::memcpy(&x, data + parse, sizeof(float));
+          std::memcpy(&y, data + parse + 4, sizeof(float));
+          std::memcpy(&z, data + parse + 8, sizeof(float));
+          const Vector NODE_POSITION(x, y, z);
+          mobility->SetPosition(NODE_POSITION);
         }
-        else if (type == 4) {
-
+        else if ((type == 4) && (length == 12)) {
+          float vx, vy, vz;
+          std::memcpy(&vx, data + parse, sizeof(float));
+          std::memcpy(&vy, data + parse + 4, sizeof(float));
+          std::memcpy(&vz, data + parse + 8, sizeof(float));
+          const Vector NODE_SPEED(vx, vy, vz);
+          mobility->SetVelocity(NODE_SPEED);
         }
-        */
+
         parse+=length;
       }
 
