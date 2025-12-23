@@ -14,7 +14,6 @@ from carla_ros2_ns3.lib.mock_sim import (
 )
 from carla_ros2_ns3.lib.carla_sim import (
     get_all_mobility,
-    get_position,
     stop_vehicules
 )
 from carla_ros2_ns3.lib.net import (
@@ -26,7 +25,8 @@ from carla_ros2_ns3.lib.net import (
     get_source_tlv,
     get_destination_tlv,
     get_position_tlv,
-    get_speed_tlv
+    get_speed_tlv,
+    parse_tlv
 )
 from carla_ros2_ns3.lib.ros import (
     create_node,
@@ -249,15 +249,15 @@ def listen_tap_devices(tap_sockets):
                 data, _ = sock.recvfrom(65535)  # Taille max d'un paquet
                 tap = sock.getsockname()[0]  # Nom du device lié
                 if check_message(data):
-                    message = (data[42:].hex())
-                    #splits = message.split(" ")
-                    #if splits[0] == tap.replace("tap", ""):
-                    #    # compte uniquement si l'on est la cible
+                    message_tlv = data[42:]
+                    src, dst, x, y, z, vx, vy, vz = parse_tlv(message_tlv)
+                    if dst == int(tap.replace("tap", "")):
+                        # compte uniquement si l'on est la cible
 
-                    #    cst.number_message_received += 1
-                    #    # A faire: traier ce qu'on recoit sur tap1,2,3,...
-                    #    inflog(f"{tap} received a packet from tap{splits[1]}")
-                    #    inflog(f"Received packet (decoded): {message}")
+                        cst.number_message_received += 1
+                        # A faire: traier ce qu'on recoit sur tap1,2,3,...
+                        inflog(f"{tap} received a packet from tap{src}")
+                        inflog(f"Received packet (decoded): {message_tlv.hex()}")
 
         except Exception as e:
             errlog(f"Erreur lors de l'écoute des tap devices: {e}")

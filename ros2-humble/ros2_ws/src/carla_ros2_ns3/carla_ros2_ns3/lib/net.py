@@ -188,3 +188,37 @@ def get_speed_tlv(vehicle):
         errlog("Velocity will be wrong")
         value = struct.pack('=fff', 0.0, 0.0, 0.0)
         return struct.pack('=BB', 4, len(value)) + value
+
+
+def parse_tlv(message_tlv):
+    """Extrait d'un message tlv ses composantes."""
+    size = len(message_tlv)
+    parse = 0
+
+    src = -1
+    dst = -1
+    x = -1
+    y = -1
+    z = -1
+    vx = -1
+    vy = -1
+    vz = -1
+
+    while parse < size:
+        tlv_type = message_tlv[parse]
+        parse += 1
+        length = message_tlv[parse]
+        parse += 1
+
+        if tlv_type == 1 and length == 1:
+            src = message_tlv[parse]
+        elif tlv_type == 2 and length == 1:
+            dst = message_tlv[parse]
+        elif tlv_type == 3 and length == 12:
+            x, y, z = struct.unpack("!fff", message_tlv[parse:parse+length])
+        elif tlv_type == 4 and length == 12:
+            vx, vy, vz = struct.unpack("!fff", message_tlv[parse:parse+length])
+
+        parse += length
+
+    return src, dst, x, y, z, vx, vy, vz

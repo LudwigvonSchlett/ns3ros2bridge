@@ -36,9 +36,8 @@ namespace ns3 {
       virtual void StartApplication (void);    // Called at time specified by Start
       virtual void StopApplication (void);     // Called at time specified by Stop
 
-      static std::vector<std::string> SplitCharPointer(const char* input);
-      void HandleReadTapi (Ptr<Socket> socket);
-      void HandleReadWavei (Ptr<Socket> socket);
+      void HandleReadTap (Ptr<Socket> socket);
+      void HandleReadWave (Ptr<Socket> socket);
 
       // ATTRIBUTES
 

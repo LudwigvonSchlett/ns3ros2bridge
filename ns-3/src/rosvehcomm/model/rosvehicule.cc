@@ -123,7 +123,7 @@ namespace ns3
     tapSocketi->SetAllowBroadcast (true);//autoriser la communication broadcast
     tapSocketi->Bind(tapAddr);
     tapSocketi->Connect(ros_ipi);
-    tapSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadTapi, this));
+    tapSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadTap, this));
 
 
     Ipv4Address waveIp = InetSocketAddress::ConvertFrom(wave_ipi).GetIpv4();  // extract Ipv4Address
@@ -132,7 +132,7 @@ namespace ns3
     waveSocketi = Socket::CreateSocket(nodei, m_waveSocket_tidi);
     waveSocketi->SetAllowBroadcast(true);
     waveSocketi->Bind(waveAddr);
-    waveSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadWavei, this));
+    waveSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadWave, this));
   }
 
 
@@ -152,7 +152,7 @@ namespace ns3
     }
   }
 
-  void ROSVehicule::HandleReadTapi(Ptr<Socket> socket)
+  void ROSVehicule::HandleReadTap(Ptr<Socket> socket)
   {
     NS_LOG_FUNCTION(this << socket);
 
@@ -184,7 +184,7 @@ namespace ns3
 
         uint8_t type = buffer[parse];
         parse++;
-        uint8_t lenght = buffer[parse];
+        uint8_t length = buffer[parse];
         parse++;
 
         if (type == 1) {
@@ -201,7 +201,7 @@ namespace ns3
 
         }
         */
-        parse+=lenght;
+        parse+=length;
       }
 
       // unicast basique
@@ -223,7 +223,7 @@ namespace ns3
     }
   }
 
-void ROSVehicule::HandleReadWavei (Ptr<Socket> socket)
+void ROSVehicule::HandleReadWave (Ptr<Socket> socket)
 {
   NS_LOG_FUNCTION(this << socket);
 
