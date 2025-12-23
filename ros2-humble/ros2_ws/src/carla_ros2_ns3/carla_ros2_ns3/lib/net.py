@@ -2,6 +2,7 @@
 
 import socket
 import time
+import struct
 import rclpy
 
 from std_msgs.msg import String
@@ -150,3 +151,42 @@ def connect_tap_device(tap_device):
             inflog("Nouvelle tentative dans 5 secondes...")
             time.sleep(5)  # Attendre 5 secondes avant de réessayer
     return None
+
+
+def get_source_tlv(node):
+    """Génère le tlv de source pour un noeud."""
+    value = struct.pack('=B', node)
+    return struct.pack('=BB', 1, len(value)) + value
+
+
+def get_destination_tlv(node):
+    """Génère le tlv de source pour un noeud."""
+    value = struct.pack('=B', node)
+    return struct.pack('=BB', 2, len(value)) + value
+
+
+def get_position_tlv(vehicle):
+    """Recupère la position d'un vehicule carla et génère le tlv."""
+    try:
+        transform = vehicle.get_transform()
+        location = transform.location
+        value = struct.pack('=fff', location.x, location.y, location.z)
+        return struct.pack('=BB', 3, len(value)) + value
+    except Exception as e:
+        print(e)
+        errlog("Location will be wrong")
+        value = struct.pack('=fff', 0.0, 0.0, 0.0)
+        return struct.pack('=BB', 3, len(value)) + value
+
+
+def get_speed_tlv(vehicle):
+    """Recupère la vitesse d'un vehicule carla et génère le tlv."""
+    try:
+        velocity = vehicle.get_velocity()
+        value = struct.pack('=fff', velocity.x, velocity.y, velocity.z)
+        return struct.pack('=BB', 4, len(value)) + value
+    except Exception as e:
+        print(e)
+        errlog("Velocity will be wrong")
+        value = struct.pack('=fff', 0.0, 0.0, 0.0)
+        return struct.pack('=BB', 4, len(value)) + value
