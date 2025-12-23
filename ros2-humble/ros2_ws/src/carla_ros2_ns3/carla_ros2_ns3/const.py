@@ -13,7 +13,7 @@ simulation_duration = 0
 # Listes des vehicules pour carla
 vehicles = []
 # Thread et essentiels pour la sychronisation
-position_listener_thread = None
+time_request_thread = None
 comunication_nodes_thread = None
 listen_tap_devices_thread = None
 stop_state = False

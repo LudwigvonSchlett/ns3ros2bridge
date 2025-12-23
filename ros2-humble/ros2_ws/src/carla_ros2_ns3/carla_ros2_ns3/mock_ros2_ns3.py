@@ -130,11 +130,10 @@ def launch_simulation(sockets, control_socket):
     """Lance la simulation."""
     interval = 1
 
-    # Lancer l'écoute périodique des positions dans un thread
-    inflog("Launching  periodic_position_sender")
-    cst.position_listener_thread = threading.Thread(
-        target=periodic_position_sender, args=(interval,))
-    cst.position_listener_thread.start()
+    inflog("Launching  periodic_time_request")
+    cst.time_request_thread = threading.Thread(
+        target=periodic_time_request, args=(interval,))
+    cst.time_request_thread.start()
 
     inflog("Launching comunication_node")
     cst.comunication_nodes_thread = threading.Thread(
@@ -154,22 +153,22 @@ def stop_simulation():
     inflog("Stopping all threads")
     cst.stop_state = True
 
-    if cst.position_listener_thread is not None:
-        cst.position_listener_thread.join()
-        inflog("periodic_position_sender is stopped")
+    if cst.time_request_thread is not None:
+        cst.time_request_thread.join()
+        inflog("time_request_thread is stopped")
 
     if cst.comunication_nodes_thread is not None:
         cst.comunication_nodes_thread.join()
-        inflog("cst.comunication_nodes_thread is stopped")
+        inflog("comunication_nodes_thread is stopped")
 
     if cst.listen_tap_devices_thread is not None:
         cst.listen_tap_devices_thread.join()
-        inflog("cst.listen_tap_devices_thread is stopped")
+        inflog("listen_tap_devices_thread is stopped")
 
     # Arrete les vehicules dans ns3
     if len(cst.vehicles) > 0:
         inflog("Stoping vehicules in ns3")
-        tap_sender_control(f"set_mobility {stop_vehicules()}")
+        tap_sender_control(f"stop_nodes {stop_vehicules()}")
 
     inflog("Simulation terminée.")
     if cst.number_message_sent != 0:
@@ -264,26 +263,17 @@ def listen_tap_devices(tap_sockets):
             cst.error_state = True
 
 
-def periodic_position_sender(interval):
-    """
-    Envoie sur tap0 les informations de controle.
-
-    Envoie les positions et vitesses de tous les véhicule.
-    Demande également le temps de la simulation.
-    """
+def periodic_time_request(interval):
+    """Demande sur tap 0 le temps de la simulation."""
     while rclpy.ok():
         if cst.error_state or cst.stop_state:
-            inflog("Exiting periodic_position_sender")
+            inflog("Exiting periodic_time_request")
             sys.exit()
         try:
-            mobilities = get_all_mobility()
-            tap_sender_control(f"set_mobility {mobilities}")
             tap_sender_control("request_time")
             time.sleep(interval)
         except Exception as e:
-            errlog(
-                "Erreur lors de la récupération/"
-                + f"envoie périodique des positions : {e}")
+            errlog(f"Erreur lors de la requete de temps : {e}")
             cst.error_state = True
 
 

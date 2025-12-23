@@ -191,7 +191,7 @@ def stop_vehicules():
         output = " "
         index_vehicle = 1
         for vehicle in cst.vehicles:
-            output += f"{index_vehicle} {get_position(vehicle)} 0.0 0.0 0.0"
+            output += f"{index_vehicle} {get_position(vehicle)}"
             if index_vehicle < cst.nb_nodes:
                 output += " "
                 index_vehicle += 1

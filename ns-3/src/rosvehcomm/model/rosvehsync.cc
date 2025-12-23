@@ -278,31 +278,25 @@ namespace ns3
           NS_LOG_INFO("Received init_node => responding " << message);
     	    socket->Send (responsePacket);
         }
-        else if (command == "set_mobility")
+        else if (command == "stop_nodes")
         {
           //NS_LOG_INFO("Set mobility command");
           unsigned long n = 1;
           NodeContainer Globalnode;
     	    Globalnode = NodeContainer::GetGlobal();
-          double x = 0.0, y = 0.0, z = 0.0, xs = 0.0, ys = 0.0, zs = 0.0;
-          while(n <= instructions.size()-7)
+          double x = 0.0, y = 0.0, z = 0.0;
+          while(n <= instructions.size()-4)
           {
         	  Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
             ++n;
-            std::istringstream(instructions[n]) >> x; // 2) xs
+            std::istringstream(instructions[n]) >> x; // 2) x
             ++n;
-      		  std::istringstream(instructions[n]) >> y; // 3) ys
+      		  std::istringstream(instructions[n]) >> y; // 3) y
             ++n;
-      		  std::istringstream(instructions[n]) >> z; // 4) zs
-            ++n;
-            std::istringstream(instructions[n]) >> xs; // 5) xs
-            ++n;
-      		  std::istringstream(instructions[n]) >> ys; // 6) ys
-            ++n;
-      		  std::istringstream(instructions[n]) >> zs; // 7) zs
+      		  std::istringstream(instructions[n]) >> z; // 4) z
 
             const Vector NODE_I_POSITION(x, y, z);
-        	  const Vector NODE_I_SPEED(xs, ys, zs);
+        	  const Vector NODE_I_SPEED(0.0, 0.0, 0.0);
             mobilityi->SetPosition(NODE_I_POSITION);
         	  mobilityi->SetVelocity(NODE_I_SPEED);
 
