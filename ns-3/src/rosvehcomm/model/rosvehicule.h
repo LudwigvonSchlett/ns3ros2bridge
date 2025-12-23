@@ -3,6 +3,7 @@
 #define ROSVEHICULE_H
 
 #include <functional>
+#include <iomanip>
 #include <unordered_map>
 
 #include "ns3/core-module.h"

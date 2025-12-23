@@ -166,22 +166,44 @@ namespace ns3
       std::vector<uint8_t> buffer(size);
       packet->CopyData(buffer.data(), size);
 
-      char* contenu = reinterpret_cast<char*>(buffer.data());
+      std::ostringstream oss;
+      oss << std::hex << std::setfill('0');
 
-      NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " received: " << contenu);
-
-      std::istringstream iss(contenu);
-
-      int dst, src;
-      std::string rest;
-
-      iss >> dst >> src;
-      std::getline(iss, rest);
-
-      if (!rest.empty() && rest[0] == ' '){
-        rest.erase(0, 1);
+      for (uint8_t b : buffer)
+      {
+        oss << std::setw(2) << static_cast<int>(b) << " ";
       }
-        
+
+      NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " received (hex): " << oss.str());
+
+      uint32_t parse = 0;
+      int src = 0;
+      int dst = 0;
+
+      while (parse < size) {
+
+        uint8_t type = buffer[parse];
+        parse++;
+        uint8_t lenght = buffer[parse];
+        parse++;
+
+        if (type == 1) {
+          src = buffer[parse];
+        }
+        else if (type == 2) {
+          dst = buffer[parse];
+        }
+        /*
+        else if (type == 3) {
+
+        }
+        else if (type == 4) {
+
+        }
+        */
+        parse+=lenght;
+      }
+
       // unicast basique
       if (dst != 0) {
 
@@ -192,11 +214,7 @@ namespace ns3
 
         ROSHeader hdr(dst, src);
 
-        Ptr<Packet> p = Create<Packet>(
-          reinterpret_cast<const uint8_t*>(rest.c_str()),
-          rest.size() + 1   // keep '\0'
-        );
-
+        Ptr<Packet> p = packet->Copy();
         p->AddHeader(hdr);
 
         waveSocketi->SendTo(p, 0, remoteAddr);
@@ -221,22 +239,17 @@ void ROSVehicule::HandleReadWavei (Ptr<Socket> socket)
     std::vector<uint8_t> buffer(size);
     packet->CopyData(buffer.data(), size);
 
-    std::string rest(reinterpret_cast<char*>(buffer.data()));
-
-    NS_LOG_INFO("VEHICLE WAVE " << vehicle_number
-                 << " received: " << hdr << " payload: " << rest);
-
     std::ostringstream oss;
-    oss << int(hdr.GetDstId()) << " "
-        << int(hdr.GetSrcId()) << " "
-        << rest;
+    oss << std::hex << std::setfill('0');
 
-    std::string out = oss.str();
+    for (uint8_t b : buffer)
+    {
+      oss << std::setw(2) << static_cast<int>(b) << " ";
+    }
 
-    Ptr<Packet> tapPacket = Create<Packet>(
-        reinterpret_cast<const uint8_t*>(out.c_str()),
-        out.size() + 1 // keep '\0'
-    );
+    NS_LOG_INFO("VEHICLE WAVE " << vehicle_number << " received: " << hdr << " payload (hex): " << oss.str());
+
+    Ptr<Packet> tapPacket = packet->Copy();
 
     tapSocketi->Send(tapPacket);
   }

@@ -289,7 +289,7 @@ main (int argc, char *argv[])
 
   // NetAnim does not support creating nodes at run-time
   // We have to create nodes and then update them according to ROS
-  const uint32_t maxNodes = 5;
+  const uint32_t maxNodes = 2;
 
   NS_LOG_INFO("Initialisation des noeuds vehicules");
   initVehicules(maxNodes, ip_ROS);
