@@ -20,7 +20,11 @@ from carla_ros2_ns3.lib.net import (
     print_udp,
     tap_sender,
     tap_sender_control,
-    connect_tap_device
+    connect_tap_device,
+    get_source_tlv,
+    get_destination_tlv,
+    get_position_tlv,
+    get_speed_tlv
 )
 from carla_ros2_ns3.lib.ros import (
     create_node,
@@ -260,15 +264,15 @@ def listen_tap_devices(tap_sockets):
                 data, _ = sock.recvfrom(65535)  # Taille max d'un paquet
                 tap = sock.getsockname()[0]  # Nom du device lié
                 if check_message(data):
-                    message = (data[42:].decode()).rstrip("\n")
-                    splits = message.split(" ")
-                    if splits[0] == tap.replace("tap", ""):
-                        # compte uniquement si l'on est la cible
+                    message = (data[42:].hex())
+                    #splits = message.split(" ")
+                    #if splits[0] == tap.replace("tap", ""):
+                    #    # compte uniquement si l'on est la cible
 
-                        cst.number_message_received += 1
-                        # A faire: traier ce qu'on recoit sur tap1,2,3,...
-                        inflog(f"{tap} received a packet from tap{splits[1]}")
-                        inflog(f"Received packet (decoded): {message}")
+                    #    cst.number_message_received += 1
+                    #    # A faire: traier ce qu'on recoit sur tap1,2,3,...
+                    #    inflog(f"{tap} received a packet from tap{splits[1]}")
+                    #    inflog(f"Received packet (decoded): {message}")
 
         except Exception as e:
             errlog(f"Erreur lors de l'écoute des tap devices: {e}")
@@ -315,8 +319,12 @@ def comunication_node(interval):
                 dest_node = node
                 while dest_node == node:
                     dest_node = random.randint(1, cst.nb_nodes)
-                position = get_position(cst.vehicles[node-1])
-                tap_sender(f"{dest_node} {node} position {position}", node)
+                src_tlv = get_source_tlv(node)
+                dest_tlv = get_destination_tlv(dest_node)
+                position_tlv = get_position_tlv(cst.vehicles[node-1])
+                speed_tlv = get_speed_tlv(cst.vehicles[node-1])
+                packet = b''.join([src_tlv, dest_tlv, position_tlv, speed_tlv])
+                tap_sender(packet, node)
                 cst.number_message_sent += 1
             time.sleep(interval)
         except Exception as e:

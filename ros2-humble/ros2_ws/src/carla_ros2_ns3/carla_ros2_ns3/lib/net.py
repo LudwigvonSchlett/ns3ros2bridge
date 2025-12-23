@@ -80,8 +80,8 @@ def calculate_udp_checksum(
     return calculate_checksum(all_words)
 
 
-def tap_sender(message, num_node):
-    """Permet d'envoyer un message grace a un numéro de noeud."""
+def tap_sender(packet, num_node):
+    """Permet d'envoyer des bytes grace a un numéro de noeud."""
     # Créer un éditeur pour publier les paquets sur un topic spécifique
     topic_name = f'/tap{num_node}_packets'
     pub = create_pub(topic_name)
@@ -90,11 +90,9 @@ def tap_sender(message, num_node):
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udp_ip = f"10.0.{num_node}.1"
         udp_port = 12000+num_node
-        null_term_msg = message + "\0"
-        packet = null_term_msg.encode("utf-8")
         udp_socket.sendto(packet, (udp_ip, udp_port))
         udp_socket.close()
-        inflog(f"Message envoyé à {udp_ip}:{udp_port} : {message}")
+        inflog(f"Message envoyé à {udp_ip}:{udp_port} : {packet.hex()}")
         # Publier le paquet sous forme hexadécimale
         msg = String()
         msg.data = packet.hex()
