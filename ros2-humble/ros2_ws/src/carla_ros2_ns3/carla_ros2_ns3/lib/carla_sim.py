@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import random
+import struct
 
 import carla
 
@@ -126,6 +127,20 @@ def get_position(vehicle):
         return location_string
 
 
+def get_position_tlv(vehicle):
+    """Recupère la position d'un vehicule carla."""
+    try:
+        transform = vehicle.get_transform()
+        location = transform.location
+        value = struct.pack('=fff', location.x, location.y, location.z)
+        return struct.pack('=BB', 3, len(value)) + value
+    except Exception as e:
+        print(e)
+        errlog("Location will be wrong")
+        value = struct.pack('=fff', 0.0, 0.0, 0.0)
+        return struct.pack('=BB', 3, len(value)) + value
+
+
 def get_speed(vehicle):
     """Recupère la vitesse d'un vehicule carla."""
     try:
@@ -137,6 +152,19 @@ def get_speed(vehicle):
         errlog("Velocity will be wrong")
         velocity_string = "0 0 0"
         return velocity_string
+
+
+def get_speed_tlv(vehicle):
+    """Recupère la vitesse d'un vehicule carla."""
+    try:
+        velocity = vehicle.get_velocity()
+        value = struct.pack('=fff', velocity.x, velocity.y, velocity.z)
+        return struct.pack('=BB', 4, len(value)) + value
+    except Exception as e:
+        print(e)
+        errlog("Velocity will be wrong")
+        value = struct.pack('=fff', 0.0, 0.0, 0.0)
+        return struct.pack('=BB', 4, len(value)) + value
 
 
 def get_all_position():
