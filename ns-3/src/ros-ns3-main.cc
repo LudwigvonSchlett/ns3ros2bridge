@@ -187,7 +187,7 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
                                     "ControlMode",StringValue (phyMode));
 
   NetDeviceContainer devices_wifi = wifi80211p.Install(wifiPhy, wifi80211pMac, nodes);
-  wifiPhy.EnablePcap("wave-simple-80211p", devices_wifi);
+  wifiPhy.EnablePcap("rosvehicule-80211p", devices_wifi);
   Ipv4AddressHelper ipv4;
   ipv4.SetBase("11.0.0.0", "255.255.255.0");
   Ipv4InterfaceContainer ipv4_80211p = ipv4.Assign(devices_wifi);
@@ -214,15 +214,7 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
     AddressValue sinkLocalAddressi(InetSocketAddress (tap_neti, portveh));
 
     // WAVE
-    Ptr<NetDevice> waveDevice = nodei->GetDevice(2);
-    // Log the assigned IP address
-    Ptr<Ipv4> ipv4_i = nodei->GetObject<Ipv4> ();
-
     uint16_t portwave = 14000;
-    std::ostringstream ipWave;
-	  ipWave << "11.0.0." << i;
-    Ipv4Address wave_neti = Ipv4Address(ipWave.str().c_str());
-    AddressValue waveLocalAddressi(InetSocketAddress (wave_neti, portwave));
 
     // Check installation
     Ptr<Ipv4> ipv4check = nodei->GetObject<Ipv4>();
@@ -238,13 +230,10 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
 
     //Mettre en place les paramètres de ROS
     ROSVehiculeHelper rosVehiculeHelper;
-    rosVehiculeHelper.SetAttribute ("RemoteROS",remoteAddressi);
+    rosVehiculeHelper.SetAttribute ("RemoteROS", remoteAddressi);
     rosVehiculeHelper.SetAttribute ("LocalTap", sinkLocalAddressi);
-    rosVehiculeHelper.SetAttribute ("LocalWave", waveLocalAddressi);
     rosVehiculeHelper.SetAttribute ("VehicleNumber", IntegerValue(i));
-    rosVehiculeHelper.SetAttribute ("PortTap", UintegerValue(portveh));
     rosVehiculeHelper.SetAttribute ("PortWave", UintegerValue(portwave));
-    //Ajout adresse destination dans le node 1 ex :  tap 1 -> wave
 
     ApplicationContainer ROSVehSyncApps1 = rosVehiculeHelper.Install (nodei);
   }

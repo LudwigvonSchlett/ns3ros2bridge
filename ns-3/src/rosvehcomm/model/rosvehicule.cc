@@ -14,10 +14,6 @@ namespace ns3
     .SetParent<Application> ()
     .SetGroupName("Applications")
     .AddConstructor<ROSVehicule> ()
-    .AddAttribute ("PortTap", "Port on which we send packets to ROS",
-                     UintegerValue (11000),
-                     MakeUintegerAccessor (&ROSVehicule::portTapi),
-                     MakeUintegerChecker<uint16_t> ())
     .AddAttribute ("PortWave", "Port on which we send packets to WAVE",
                      UintegerValue (11000),
                      MakeUintegerAccessor (&ROSVehicule::portWavei),
@@ -30,11 +26,6 @@ namespace ns3
                      "The Address on which to Bind the tap socket.",
                      AddressValue (),
                      MakeAddressAccessor (&ROSVehicule::tap_ipi),
-                     MakeAddressChecker ())
-    .AddAttribute ("LocalWave",
-                     "The Address on which to Bind the WAVE socket.",
-                     AddressValue (),
-                     MakeAddressAccessor (&ROSVehicule::wave_ipi),
                      MakeAddressChecker ())
     .AddAttribute ("VehicleNumber",
                      "The Number of the vehicle",
@@ -115,23 +106,21 @@ namespace ns3
 
     // Get node
     Ptr<Node> nodei = GetNode();
+    Ptr<NetDevice> wifiDev = nodei->GetDevice(2);
 
-    Ipv4Address tapIp = InetSocketAddress::ConvertFrom(tap_ipi).GetIpv4();  // extract Ipv4Address
-    InetSocketAddress tapAddr(tapIp, portTapi);
-
+    //Tap
     tapSocketi = Socket::CreateSocket(nodei, m_tapSocket_tidi);
     tapSocketi->SetAllowBroadcast (true);//autoriser la communication broadcast
-    tapSocketi->Bind(tapAddr);
+    tapSocketi->Bind(tap_ipi);
     tapSocketi->Connect(ros_ipi);
     tapSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadTap, this));
 
-
-    Ipv4Address waveIp = InetSocketAddress::ConvertFrom(wave_ipi).GetIpv4();  // extract Ipv4Address
-    InetSocketAddress waveAddr(waveIp, portWavei);
+    //Wave
+    InetSocketAddress waveAddr(Ipv4Address::GetAny(), portWavei);
 
     waveSocketi = Socket::CreateSocket(nodei, m_waveSocket_tidi);
     waveSocketi->SetAllowBroadcast(true);
-    waveSocketi->Bind(waveAddr);
+    waveSocketi->Bind(waveAddr); // accepte tout sur son adresse (11.0.0.i et 11.0.0.255)
     waveSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadWave, this));
   }
 
@@ -215,8 +204,22 @@ namespace ns3
         parse+=length;
       }
 
+      // broadcast basique
+      if (dst == 255) {
+
+        auto singleAddress = Ipv4Address("11.0.0.255");
+        InetSocketAddress remoteAddr(singleAddress, portWavei);
+
+        ROSHeader hdr(dst, src);
+
+        Ptr<Packet> p = packet->Copy();
+        p->AddHeader(hdr);
+
+        waveSocketi->SendTo(p, 0, remoteAddr);
+
+      }
       // unicast basique
-      if (dst != 0) {
+      else if ((dst != 255) && (dst != 0)) {
 
         std::ostringstream ipWave;
         ipWave << "11.0.0." << dst;
@@ -229,7 +232,6 @@ namespace ns3
         p->AddHeader(hdr);
 
         waveSocketi->SendTo(p, 0, remoteAddr);
-
       }
     }
   }
