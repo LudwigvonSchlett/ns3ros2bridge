@@ -172,11 +172,11 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
   * at reference distance of 1m.
   */
 
-  YansWavePhyHelper wavePhy = YansWavePhyHelper::Default();
-  wavePhy.SetChannel(sharedChannel);
-  wavePhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
-  wavePhy.Set("TxPowerEnd", DoubleValue(20.0));  // in dBm
-  wavePhy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11);
+  YansWifiPhyHelper wifiPhy;
+  wifiPhy.SetChannel(sharedChannel);
+  wifiPhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
+  wifiPhy.Set("TxPowerEnd", DoubleValue(20.0));  // in dBm
+  wifiPhy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11);
   NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
   Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
 
@@ -186,8 +186,8 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
                                     "DataMode",StringValue (phyMode),
                                     "ControlMode",StringValue (phyMode));
 
-  NetDeviceContainer devices_wifi = wifi80211p.Install(wavePhy, wifi80211pMac, nodes);
-  wavePhy.EnablePcap("wave-simple-80211p", devices_wifi);
+  NetDeviceContainer devices_wifi = wifi80211p.Install(wifiPhy, wifi80211pMac, nodes);
+  wifiPhy.EnablePcap("wave-simple-80211p", devices_wifi);
   Ipv4AddressHelper ipv4;
   ipv4.SetBase("11.0.0.0", "255.255.255.0");
   Ipv4InterfaceContainer ipv4_802p = ipv4.Assign(devices_wifi);
@@ -253,7 +253,7 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
 int
 main (int argc, char *argv[])
 {
-  
+
   std::string phyMode ("OfdmRate6MbpsBW10MHz");
 
   /*** Options ***/
