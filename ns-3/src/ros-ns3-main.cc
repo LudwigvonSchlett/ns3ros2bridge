@@ -190,7 +190,7 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
   wifiPhy.EnablePcap("wave-simple-80211p", devices_wifi);
   Ipv4AddressHelper ipv4;
   ipv4.SetBase("11.0.0.0", "255.255.255.0");
-  Ipv4InterfaceContainer ipv4_802p = ipv4.Assign(devices_wifi);
+  Ipv4InterfaceContainer ipv4_80211p = ipv4.Assign(devices_wifi);
 
   for(int i=1; i<=nb_vehicule; i++) {
 
