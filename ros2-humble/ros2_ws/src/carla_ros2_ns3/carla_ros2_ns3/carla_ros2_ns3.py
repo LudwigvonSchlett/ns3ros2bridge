@@ -266,7 +266,7 @@ def listen_tap_devices(tap_sockets):
                 if check_message(data):
                     message_tlv = data[42:]
                     src, dst, x, y, z, vx, vy, vz = parse_tlv(message_tlv)
-                    if dst == int(tap.replace("tap", "")):
+                    if dst == int(tap.replace("tap", "")) or dst == 255:
                         # compte uniquement si l'on est la cible
 
                         cst.number_message_received += 1
