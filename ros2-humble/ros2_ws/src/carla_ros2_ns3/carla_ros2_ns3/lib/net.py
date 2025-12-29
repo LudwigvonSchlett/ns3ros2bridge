@@ -168,12 +168,12 @@ def get_position_tlv(node, vehicle):
     try:
         transform = vehicle.get_transform()
         location = transform.location
-        value = struct.pack('=fffB', location.x, location.y, location.z, node)
+        value = struct.pack('=Bxxxfff', node, location.x, location.y, location.z)
         return struct.pack('=BB', 3, len(value)) + value
     except Exception as e:
         print(e)
         errlog("Location will be wrong")
-        value = struct.pack('=fffB', 0.0, 0.0, 0.0, node)
+        value = struct.pack('=fffBxxx', node, 0.0, 0.0, 0.0)
         return struct.pack('=BB', 3, len(value)) + value
 
 
@@ -181,12 +181,12 @@ def get_speed_tlv(node, vehicle):
     """Recupère la vitesse d'un vehicule carla et génère le tlv."""
     try:
         velocity = vehicle.get_velocity()
-        value = struct.pack('=fffB', velocity.x, velocity.y, velocity.z, node)
+        value = struct.pack('=Bxxxfff', node, velocity.x, velocity.y, velocity.z)
         return struct.pack('=BB', 4, len(value)) + value
     except Exception as e:
         print(e)
         errlog("Velocity will be wrong")
-        value = struct.pack('=fffB', 0.0, 0.0, 0.0, node)
+        value = struct.pack('=Bxxxfff', node, 0.0, 0.0, 0.0)
         return struct.pack('=BB', 4, len(value)) + value
 
 
@@ -216,10 +216,10 @@ def parse_tlv(message_tlv):
             src = message_tlv[parse]
         elif tlv_type == 2 and length == 1:
             dst = message_tlv[parse]
-        elif tlv_type == 3 and length == 13:
-            x, y, z, pos_src = struct.unpack("=fffB", message_tlv[parse:parse+length])
-        elif tlv_type == 4 and length == 13:
-            vx, vy, vz, vel_src = struct.unpack("=fffB", message_tlv[parse:parse+length])
+        elif tlv_type == 3 and length == 16:
+            pos_src, x, y, z = struct.unpack("=Bxxxfff", message_tlv[parse:parse+length])
+        elif tlv_type == 4 and length == 16:
+            vel_src, vx, vy, vz = struct.unpack("=Bxxxfff", message_tlv[parse:parse+length])
 
         parse += length
 
