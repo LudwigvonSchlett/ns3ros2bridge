@@ -184,6 +184,7 @@ namespace ns3
         else if ((type == 2) && (length == 1)) {
           dst = buffer[parse];
         }
+        /*
         // permet de lire les messages de position et de mettre à jour sa propre position
         else if ((type == 3) && (length == 13)) {
           float x, y, z;
@@ -197,6 +198,7 @@ namespace ns3
             //NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " would update position to " << NODE_POSITION);
           }
         }
+        // permet de lire les messages de position et de mettre à jour sa propre vitesse
         else if ((type == 4) && (length == 13)) {
           float vx, vy, vz;
           std::memcpy(&vx, data + parse, sizeof(float));
@@ -209,6 +211,7 @@ namespace ns3
             //NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " would update speed to " << NODE_SPEED);
           }
         }
+        */
 
         parse+=length;
       }
