@@ -177,6 +177,7 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
   wifiPhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
   wifiPhy.Set("TxPowerEnd", DoubleValue(20.0));  // in dBm
   wifiPhy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11);
+  //wifiPhy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11_RADIO); // alternative avec radiotapd
   NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
   Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
 

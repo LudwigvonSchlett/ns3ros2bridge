@@ -6,6 +6,7 @@ MODE = "gpu"  # gpu cpu vm
 
 # Varibles
 # Variables de simulation
+node = None
 nb_nodes = 0   # nombre de nodes et donc de voitures dans la simulation
 number_message_sent = 0  # Pour les messages s'envoyant via tap1,2,3,...
 number_message_received = 0  # Pour les messages s'envoyant via tap1,2,3,...

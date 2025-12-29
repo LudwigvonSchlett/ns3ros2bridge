@@ -116,7 +116,7 @@ namespace ns3
     tapSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadTap, this));
 
     //Wave
-    InetSocketAddress waveAddr(Ipv4Address::GetAny(), portWavei);
+    InetSocketAddress waveAddr(Ipv4Address::GetAny(), portWavei); // 0.0.0.0::portWavei
 
     waveSocketi = Socket::CreateSocket(nodei, m_waveSocket_tidi);
     waveSocketi->SetAllowBroadcast(true);
@@ -125,7 +125,7 @@ namespace ns3
   }
 
 
-  void ROSVehicule::StopApplication () { //cette fonction nous permet lors de l'arret de la simulation de premièrement fermer le socket créer vers RTmaps, et aussi ceux provenant de Rtmaps
+  void ROSVehicule::StopApplication () { //cette fonction nous permet lors de l'arret de la simulation de premièrement fermer le socket créer vers ros2
     NS_LOG_UNCOND("TEST STOP APPLI ");
     NS_LOG_FUNCTION (this);
     NS_LOG_INFO("Stopping Rosvehicule "  << vehicle_number);
@@ -184,21 +184,30 @@ namespace ns3
         else if ((type == 2) && (length == 1)) {
           dst = buffer[parse];
         }
-        else if ((type == 3) && (length == 12)) {
+        // permet de lire les messages de position et de mettre à jour sa propre position
+        else if ((type == 3) && (length == 13)) {
           float x, y, z;
           std::memcpy(&x, data + parse, sizeof(float));
           std::memcpy(&y, data + parse + 4, sizeof(float));
           std::memcpy(&z, data + parse + 8, sizeof(float));
+          uint8_t pos_src = buffer[parse + 12];
           const Vector NODE_POSITION(x, y, z);
-          mobility->SetPosition(NODE_POSITION);
+          if (pos_src == vehicle_number) {
+            mobility->SetPosition(NODE_POSITION); // permet au noeud de mettre à jour sa position
+            //NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " would update position to " << NODE_POSITION);
+          }
         }
-        else if ((type == 4) && (length == 12)) {
+        else if ((type == 4) && (length == 13)) {
           float vx, vy, vz;
           std::memcpy(&vx, data + parse, sizeof(float));
           std::memcpy(&vy, data + parse + 4, sizeof(float));
           std::memcpy(&vz, data + parse + 8, sizeof(float));
+          uint8_t vel_src = buffer[parse + 12];
           const Vector NODE_SPEED(vx, vy, vz);
-          mobility->SetVelocity(NODE_SPEED);
+          if (vel_src == vehicle_number) {
+            mobility->SetVelocity(NODE_SPEED); // permet au noeud de mettre à jour sa vitesse
+            //NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " would update speed to " << NODE_SPEED);
+          }
         }
 
         parse+=length;
@@ -207,8 +216,7 @@ namespace ns3
       // broadcast basique
       if (dst == 255) {
 
-        auto singleAddress = Ipv4Address("11.0.0.255");
-        InetSocketAddress remoteAddr(singleAddress, portWavei);
+        InetSocketAddress remoteAddr(Ipv4Address("11.0.0.255"), portWavei);
 
         ROSHeader hdr(dst, src);
 

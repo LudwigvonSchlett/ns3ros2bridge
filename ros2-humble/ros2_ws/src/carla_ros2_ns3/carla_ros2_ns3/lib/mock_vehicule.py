@@ -33,7 +33,7 @@ class Location:
 
 
 class Velocity:
-    """A basic mock for carla Location."""
+    """A basic mock for carla Velocity."""
 
     def __init__(self, x, y, z):
         self.x = x
