@@ -163,30 +163,30 @@ def get_destination_tlv(node):
     return struct.pack('=BB', 2, len(value)) + value
 
 
-def get_position_tlv(vehicle):
+def get_position_tlv(node, vehicle):
     """Recupère la position d'un vehicule carla et génère le tlv."""
     try:
         transform = vehicle.get_transform()
         location = transform.location
-        value = struct.pack('=fff', location.x, location.y, location.z)
+        value = struct.pack('=fffB', location.x, location.y, location.z, node)
         return struct.pack('=BB', 3, len(value)) + value
     except Exception as e:
         print(e)
         errlog("Location will be wrong")
-        value = struct.pack('=fff', 0.0, 0.0, 0.0)
+        value = struct.pack('=fffB', 0.0, 0.0, 0.0, node)
         return struct.pack('=BB', 3, len(value)) + value
 
 
-def get_speed_tlv(vehicle):
+def get_speed_tlv(node, vehicle):
     """Recupère la vitesse d'un vehicule carla et génère le tlv."""
     try:
         velocity = vehicle.get_velocity()
-        value = struct.pack('=fff', velocity.x, velocity.y, velocity.z)
+        value = struct.pack('=fffB', velocity.x, velocity.y, velocity.z, node)
         return struct.pack('=BB', 4, len(value)) + value
     except Exception as e:
         print(e)
         errlog("Velocity will be wrong")
-        value = struct.pack('=fff', 0.0, 0.0, 0.0)
+        value = struct.pack('=fffB', 0.0, 0.0, 0.0, node)
         return struct.pack('=BB', 4, len(value)) + value
 
 
@@ -197,9 +197,11 @@ def parse_tlv(message_tlv):
 
     src = -1
     dst = -1
+    pos_src = -1
     x = -1
     y = -1
     z = -1
+    vel_src = -1
     vx = -1
     vy = -1
     vz = -1
@@ -214,11 +216,11 @@ def parse_tlv(message_tlv):
             src = message_tlv[parse]
         elif tlv_type == 2 and length == 1:
             dst = message_tlv[parse]
-        elif tlv_type == 3 and length == 12:
-            x, y, z = struct.unpack("!fff", message_tlv[parse:parse+length])
-        elif tlv_type == 4 and length == 12:
-            vx, vy, vz = struct.unpack("!fff", message_tlv[parse:parse+length])
+        elif tlv_type == 3 and length == 13:
+            x, y, z, pos_src = struct.unpack("=fffB", message_tlv[parse:parse+length])
+        elif tlv_type == 4 and length == 13:
+            vx, vy, vz, vel_src = struct.unpack("=fffB", message_tlv[parse:parse+length])
 
         parse += length
 
-    return src, dst, x, y, z, vx, vy, vz
+    return src, dst, pos_src, x, y, z, vel_src, vx, vy, vz

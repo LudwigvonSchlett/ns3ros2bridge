@@ -265,14 +265,14 @@ def listen_tap_devices(tap_sockets):
                 tap = sock.getsockname()[0]  # Nom du device lié
                 if check_message(data):
                     message_tlv = data[42:]
-                    src, dst, x, y, z, vx, vy, vz = parse_tlv(message_tlv)
+                    src, dst, pos_src, x, y, z, vel_src, vx, vy, vz = parse_tlv(message_tlv)
                     if dst == int(tap.replace("tap", "")) or dst == 255:
-                        # compte uniquement si l'on est la cible
+                        # compte uniquement si l'on est la cible ou broadcast
 
                         cst.number_message_received += 1
                         # A faire: traier ce qu'on recoit sur tap1,2,3,...
                         inflog(f"{tap} received a packet from tap{src}")
-                        inflog(f"Received packet (decoded): {message_tlv.hex()}")
+                        inflog(f"Received packet (hex): {message_tlv.hex()}")
 
         except Exception as e:
             errlog(f"Erreur lors de l'écoute des tap devices: {e}")
@@ -321,8 +321,8 @@ def comunication_node(interval):
                     dest_node = random.randint(1, cst.nb_nodes)
                 src_tlv = get_source_tlv(node)
                 dest_tlv = get_destination_tlv(dest_node)
-                position_tlv = get_position_tlv(cst.vehicles[node-1])
-                speed_tlv = get_speed_tlv(cst.vehicles[node-1])
+                position_tlv = get_position_tlv(node, cst.vehicles[node-1])
+                speed_tlv = get_speed_tlv(node, cst.vehicles[node-1])
                 packet = b''.join([src_tlv, dest_tlv, position_tlv, speed_tlv])
                 tap_sender(packet, node)
                 cst.number_message_sent += 1
