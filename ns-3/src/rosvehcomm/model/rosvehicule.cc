@@ -173,25 +173,25 @@ namespace ns3
 
       while (parse < size) {
 
-        uint8_t type = buffer[parse];
+        uint8_t type = data[parse];
         parse++;
-        uint8_t length = buffer[parse];
+        uint8_t length = data[parse];
         parse++;
 
         if ((type == 1) && (length == 1)) {
-          src = buffer[parse];
+          src = data[parse];
         }
         else if ((type == 2) && (length == 1)) {
-          dst = buffer[parse];
+          dst = data[parse];
         }
         /*
         // permet de lire les messages de position et de mettre à jour sa propre position
-        else if ((type == 3) && (length == 13)) {
+        else if ((type == 3) && (length == 16)) {
           float x, y, z;
-          std::memcpy(&x, data + parse, sizeof(float));
-          std::memcpy(&y, data + parse + 4, sizeof(float));
-          std::memcpy(&z, data + parse + 8, sizeof(float));
-          uint8_t pos_src = buffer[parse + 12];
+          uint8_t pos_src = data[parse];
+          std::memcpy(&x, data + parse + 4, sizeof(float));
+          std::memcpy(&y, data + parse + 8, sizeof(float));
+          std::memcpy(&z, data + parse + 12, sizeof(float));
           const Vector NODE_POSITION(x, y, z);
           if (pos_src == vehicle_number) {
             mobility->SetPosition(NODE_POSITION); // permet au noeud de mettre à jour sa position
@@ -199,12 +199,12 @@ namespace ns3
           }
         }
         // permet de lire les messages de position et de mettre à jour sa propre vitesse
-        else if ((type == 4) && (length == 13)) {
+        else if ((type == 4) && (length == 16)) {
           float vx, vy, vz;
-          std::memcpy(&vx, data + parse, sizeof(float));
-          std::memcpy(&vy, data + parse + 4, sizeof(float));
-          std::memcpy(&vz, data + parse + 8, sizeof(float));
-          uint8_t vel_src = buffer[parse + 12];
+          uint8_t vel_src = data[parse];
+          std::memcpy(&vx, data + parse + 4, sizeof(float));
+          std::memcpy(&vy, data + parse + 8, sizeof(float));
+          std::memcpy(&vz, data + parse + 12, sizeof(float));
           const Vector NODE_SPEED(vx, vy, vz);
           if (vel_src == vehicle_number) {
             mobility->SetVelocity(NODE_SPEED); // permet au noeud de mettre à jour sa vitesse
