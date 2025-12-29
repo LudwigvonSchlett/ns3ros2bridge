@@ -184,7 +184,7 @@ namespace ns3
         else if ((type == 2) && (length == 1)) {
           dst = buffer[parse];
         }
-        /*
+
         // permet de lire les messages de position et de mettre à jour sa propre position
         else if ((type == 3) && (length == 13)) {
           float x, y, z;
@@ -195,7 +195,7 @@ namespace ns3
           const Vector NODE_POSITION(x, y, z);
           if (pos_src == vehicle_number) {
             mobility->SetPosition(NODE_POSITION); // permet au noeud de mettre à jour sa position
-            //NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " would update position to " << NODE_POSITION);
+            NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " would update position to " << NODE_POSITION);
           }
         }
         // permet de lire les messages de position et de mettre à jour sa propre vitesse
@@ -208,10 +208,9 @@ namespace ns3
           const Vector NODE_SPEED(vx, vy, vz);
           if (vel_src == vehicle_number) {
             mobility->SetVelocity(NODE_SPEED); // permet au noeud de mettre à jour sa vitesse
-            //NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " would update speed to " << NODE_SPEED);
+            NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " would update speed to " << NODE_SPEED);
           }
         }
-        */
 
         parse+=length;
       }
