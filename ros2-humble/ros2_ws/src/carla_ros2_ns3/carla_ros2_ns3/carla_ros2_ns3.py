@@ -100,11 +100,6 @@ def control_node_listener(socket_tap0):
                     inflog(f"ns3 Simulation saved on file {netanim_file}")
                     inflog("Initializing carla")
                     init_carla()
-                    mobility = get_all_mobility()
-                    tap_sender_control(f"init_node {mobility}")
-
-                elif response_command == "init_success":
-
                     inflog("Initializing connexion to tap devices")
                     sockets = []
                     for num_node in range(1, cst.nb_nodes+1):
