@@ -223,6 +223,12 @@ def get_req_anim_tlv():
     return struct.pack('=BB', 103, len(value)) + value
 
 
+def get_req_time_tlv():
+    """Génère le tlv pour la requete du temps de la simulation."""
+    value = struct.pack('=B', 0)
+    return struct.pack('=BB', 104, len(value)) + value
+
+
 def parse_tlv(message_tlv):
     """Extrait d'un message tlv ses composantes."""
     size = len(message_tlv)
