@@ -250,7 +250,7 @@ def listen_tap_devices(tap_sockets):
                 tap = sock.getsockname()[0]  # Nom du device lié
                 if check_message(data):
                     message_tlv = data[42:]
-                    src, dst, pos_src, x, y, z, vel_src, vx, vy, vz = parse_tlv(message_tlv)
+                    src, dst, pos, vel = parse_tlv(message_tlv)
                     if dst == int(tap.replace("tap", "")) or dst == 255:
                         # compte uniquement si l'on est la cible ou broadcast
 

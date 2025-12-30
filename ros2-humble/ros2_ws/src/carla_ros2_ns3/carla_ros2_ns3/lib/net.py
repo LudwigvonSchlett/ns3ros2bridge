@@ -197,14 +197,8 @@ def parse_tlv(message_tlv):
 
     src = -1
     dst = -1
-    pos_src = -1
-    x = -1
-    y = -1
-    z = -1
-    vel_src = -1
-    vx = -1
-    vy = -1
-    vz = -1
+    pos = []
+    vel = []
 
     while parse < size:
         tlv_type = message_tlv[parse]
@@ -217,10 +211,10 @@ def parse_tlv(message_tlv):
         elif tlv_type == 2 and length == 1:
             dst = message_tlv[parse]
         elif tlv_type == 3 and length == 16:
-            pos_src, x, y, z = struct.unpack("=Bxxxfff", message_tlv[parse:parse+length])
+            pos.append(struct.unpack("=Bxxxfff", message_tlv[parse:parse+length]))
         elif tlv_type == 4 and length == 16:
-            vel_src, vx, vy, vz = struct.unpack("=Bxxxfff", message_tlv[parse:parse+length])
+            vel.append(struct.unpack("=Bxxxfff", message_tlv[parse:parse+length]))
 
         parse += length
 
-    return src, dst, pos_src, x, y, z, vel_src, vx, vy, vz
+    return src, dst, pos, vel
