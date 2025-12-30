@@ -141,7 +141,7 @@ namespace ns3
   }
 
   void
-  ROSVehSync::StopApplication ()//cette fonction nous permet lors de l'arret de la simulation de premièrement fermer le socket créer vers RTmaps, et aussi ceux provenant de Rtmaps
+  ROSVehSync::StopApplication ()//cette fonction nous permet lors de l'arret de la simulation de premièrement fermer le socket créé vers RTmaps, et aussi ceux provenant de Rtmaps
   {
     NS_LOG_FUNCTION(this);
     NS_LOG_INFO("STOP APPLICATION NUMÉROS 8");
@@ -156,7 +156,7 @@ namespace ns3
     //tant que la liste des socket n'est pas vide alors on
     while(!m_socketList.empty ()) //these are accepted sockets, close them
     {
-      Ptr<Socket> acceptedSocket = m_socketList.front ();//pour envoyer la référence du premier element et la stocker dans un variable qui s'appelle acceptedsocket
+      Ptr<Socket> acceptedSocket = m_socketList.front ();//pour envoyer la référence du premier element et la stocker dans une variable qui s'appelle acceptedsocket
       m_socketList.pop_front ();//supprime le premier element de la liste m_socketlist
       acceptedSocket->Close ();//ferme le socket
     }
@@ -191,105 +191,122 @@ namespace ns3
 
     while ((packet = socket->RecvFrom(from)))
     {
-      uint8_t *buffer = new uint8_t[packet->GetSize ()];
-      packet->CopyData(buffer, packet->GetSize ());
 
-      char* contenu = (char *) buffer;
-      NS_LOG_INFO("CONTROLLER SOCKET has received " << contenu);
+      uint32_t size = packet->GetSize();
+      std::vector<uint8_t> buffer(size);
+      packet->CopyData(buffer.data(), size);
 
-      std::vector<std::string> instructions = SplitCharPointerController(contenu);
+      std::ostringstream oss;
+      oss << std::hex << std::setfill('0');
 
-      if (!instructions.empty())
+      for (uint8_t b : buffer)
       {
-        const std::string& command = instructions[0];
-        Ptr<Packet> responsePacket;
-        if(command == "hello_ROS2")
-        {
+        oss << std::setw(2) << static_cast<int>(b) << " ";
+      }
+
+      NS_LOG_INFO("CONTROLLER SOCKET has received (hex): " << oss.str());
+
+      uint32_t parse = 0;
+      Ptr<Packet> responsePacket;
+      const uint8_t* data = buffer.data();
+      NodeContainer Globalnode = NodeContainer::GetGlobal();
+
+      while (parse < size) {
+
+        uint8_t type = data[parse];
+        parse++;
+        uint8_t length = data[parse];
+        parse++;
+
+        if ((type == 0) && (length == 1) && (data[parse] == 0)) { // hello ros
           std::string message = "hello_NS3";
 		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           NS_LOG_INFO("Received hello_ROS2 => responding hello_NS3");
-    	    socket->Send (responsePacket);
+          socket->Send (responsePacket);
         }
-        else if (command == "request_animfile")
-        {
-          std::string message = "file " + simInfo.filename;
-		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-          NS_LOG_INFO("Received request_animfile => responding " << message);
-    	    socket->Send (responsePacket);
+        else if ((type == 1) && (length == 1)) {
+          int src = data[parse];
+          NS_LOG_INFO("Message has source " << src);
         }
-        else if (command == "request_node")
-        {
-          std::string message = "node " + std::to_string(simInfo.nodeCount);
-		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-          NS_LOG_INFO("Received request_node => responding " << message);
-    	    socket->Send (responsePacket);
+        else if ((type == 2) && (length == 1)) {
+          int dst = data[parse];
+          NS_LOG_INFO("Message has destination " << dst);
         }
-        else if (command == "request_duration")
-        { 
+        // permet de lire les messages de position et de mettre à jour la position du noeud concerné
+        else if ((type == 3) && (length == 16)) {
+          float x, y, z;
+          uint8_t pos_src = data[parse];
+          Ptr<ConstantVelocityMobilityModel> mobility = Globalnode.Get(pos_src)->GetObject<ConstantVelocityMobilityModel>();
+          std::memcpy(&x, data + parse + 4, sizeof(float));
+          std::memcpy(&y, data + parse + 8, sizeof(float));
+          std::memcpy(&z, data + parse + 12, sizeof(float));
+          const Vector NODE_POSITION(x, y, z);
+          mobility->SetPosition(NODE_POSITION); // permet au noeud de mettre à jour sa position
+          NS_LOG_INFO("Node " << static_cast<unsigned int>(pos_src) << " now has position " << NODE_POSITION);
+        }
+        // permet de lire les messages de position et de mettre à jour la vitesse du noeud concerné
+        else if ((type == 4) && (length == 16)) {
+          float vx, vy, vz;
+          uint8_t vel_src = data[parse];
+          Ptr<ConstantVelocityMobilityModel> mobility = Globalnode.Get(vel_src)->GetObject<ConstantVelocityMobilityModel>();
+          std::memcpy(&vx, data + parse + 4, sizeof(float));
+          std::memcpy(&vy, data + parse + 8, sizeof(float));
+          std::memcpy(&vz, data + parse + 12, sizeof(float));
+          const Vector NODE_SPEED(vx, vy, vz);
+          mobility->SetVelocity(NODE_SPEED); // permet au noeud de mettre à jour sa vitesse
+          NS_LOG_INFO("Node " << static_cast<unsigned int>(vel_src) << " now has speed " << NODE_SPEED);
+        }
+        // requetes de ros
+        else if ((type == 101) && (length == 1) && (data[parse] == 0)) { // request_duration
           Time::Unit unit = Time::Unit::S;
           std::string message = "duration " + std::to_string(simInfo.duration.ToInteger(unit));
-		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+          responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           NS_LOG_INFO("Received request_duration => responding " << message);
-    	    socket->Send (responsePacket);
+          socket->Send (responsePacket);
         }
-        else if (command == "request_time")
-        { 
+        else if ((type == 102) && (length == 1) && (data[parse] == 0)) { // request_node
+          std::string message = "node " + std::to_string(simInfo.nodeCount);
+          responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+          NS_LOG_INFO("Received request_node => responding " << message);
+          socket->Send (responsePacket);
+        }
+        else if ((type == 103) && (length == 1) && (data[parse] == 0)) { // request_animfile
+          std::string message = "file " + simInfo.filename;
+          responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+          NS_LOG_INFO("Received request_animfile => responding " << message);
+          socket->Send (responsePacket);
+        }
+        else if ((type == 104) && (length == 1) && (data[parse] == 0)) { // request_time
           Time::Unit unit = Time::Unit::S;
           std::string message = "time " + std::to_string(Simulator::Now().ToInteger(unit));
-		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
+          responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
           NS_LOG_INFO("Received request_time => responding " << message);
-    	    socket->Send (responsePacket);
+          socket->Send (responsePacket);
         }
-        else if (command == "set_mobility")
-        {
-          //NS_LOG_INFO("Set mobility command");
-          unsigned long n = 1;
-          NodeContainer Globalnode;
-    	    Globalnode = NodeContainer::GetGlobal();
-          double x = 0.0, y = 0.0, z = 0.0, xs = 0.0, ys = 0.0, zs = 0.0;
-          while(n <= instructions.size()-7)
-          {
-        	  Ptr<ConstantVelocityMobilityModel> mobilityi = Globalnode.Get(std::stoi(instructions[n]))->GetObject<ConstantVelocityMobilityModel>(); // 1) Number node
-            ++n;
-            std::istringstream(instructions[n]) >> x; // 2) xs
-            ++n;
-      		  std::istringstream(instructions[n]) >> y; // 3) ys
-            ++n;
-      		  std::istringstream(instructions[n]) >> z; // 4) zs
-            ++n;
-            std::istringstream(instructions[n]) >> xs; // 5) xs
-            ++n;
-      		  std::istringstream(instructions[n]) >> ys; // 6) ys
-            ++n;
-      		  std::istringstream(instructions[n]) >> zs; // 7) zs
-
-            const Vector NODE_I_POSITION(x, y, z);
-        	  const Vector NODE_I_SPEED(xs, ys, zs);
-            mobilityi->SetPosition(NODE_I_POSITION);
-        	  mobilityi->SetVelocity(NODE_I_SPEED);
-
-            ++n;
-          }
+        else {
+          NS_LOG_ERROR("Message unable to be parsed");
         }
+
+        parse+=length;
       }
     }
   }
 
   void ROSVehSync::HandlePeerClose (Ptr<Socket> socket)
   {
-    NS_LOG_INFO("HANDDLE PEER CLOSE   NUMEROS 12  ");
+    NS_LOG_INFO("HANDLE PEER CLOSE   NUMEROS 12  ");
     NS_LOG_FUNCTION (this << socket);
   }
 
   void ROSVehSync::HandlePeerError (Ptr<Socket> socket)
   {
-    NS_LOG_INFO("HANDDLE PEER Error   NUMEROS 13  ");
+    NS_LOG_INFO("HANDLE PEER Error   NUMEROS 13  ");
     NS_LOG_FUNCTION (this << socket);
   }
 
   void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
   {
-    NS_LOG_INFO("HANDDLE PEER ACCEPT   NUMEROS 13  ");
+    NS_LOG_INFO("HANDLE PEER ACCEPT   NUMEROS 13  ");
     NS_LOG_FUNCTION (this << s << from);
     s->SetRecvCallback (MakeCallback (&ROSVehSync::HandleRead, this));
     m_socketList.push_back (s);

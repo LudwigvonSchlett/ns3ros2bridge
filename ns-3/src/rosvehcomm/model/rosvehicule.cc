@@ -187,7 +187,6 @@ namespace ns3
         else if ((type == 2) && (length == 1)) {
           dst = data[parse];
         }
-        /*
         // permet de lire les messages de position et de mettre à jour sa propre position
         else if ((type == 3) && (length == 16)) {
           float x, y, z;
@@ -197,7 +196,7 @@ namespace ns3
           std::memcpy(&z, data + parse + 12, sizeof(float));
           const Vector NODE_POSITION(x, y, z);
           if (pos_src == vehicle_number) {
-            mobility->SetPosition(NODE_POSITION); // permet au noeud de mettre à jour sa position
+            //mobility->SetPosition(NODE_POSITION); // permet au noeud de mettre à jour sa position
             //NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " would update position to " << NODE_POSITION);
           }
         }
@@ -210,11 +209,13 @@ namespace ns3
           std::memcpy(&vz, data + parse + 12, sizeof(float));
           const Vector NODE_SPEED(vx, vy, vz);
           if (vel_src == vehicle_number) {
-            mobility->SetVelocity(NODE_SPEED); // permet au noeud de mettre à jour sa vitesse
+            //mobility->SetVelocity(NODE_SPEED); // permet au noeud de mettre à jour sa vitesse
             //NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " would update speed to " << NODE_SPEED);
           }
         }
-        */
+        else {
+          NS_LOG_ERROR("Message unable to be parsed");
+        }
 
         parse+=length;
       }

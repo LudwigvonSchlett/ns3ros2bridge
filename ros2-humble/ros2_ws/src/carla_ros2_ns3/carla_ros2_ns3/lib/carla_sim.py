@@ -83,6 +83,9 @@ def init_carla():
         traffic_manager.set_global_distance_to_leading_vehicle(2.0)
         # Distance minimale
 
+        for vehicle in cst.vehicles:
+            vehicle.set_autopilot(True, 8001)
+
     except Exception as e:
         errlog("Exception initializing carla")
         raise e
@@ -110,91 +113,3 @@ def spawn_vehicle(world, blueprints, spawn_points):
     vehicle = world.try_spawn_actor(blueprint, spawn_point)
 
     return vehicle
-
-
-def get_position(vehicle):
-    """Recupère la position d'un vehicule carla."""
-    try:
-        transform = vehicle.get_transform()
-        location = transform.location
-        location_string = f"{location.x} {location.y} {location.z}"
-        return location_string
-    except Exception as e:
-        print(e)
-        errlog("Location will be wrong")
-        location_string = "0 0 0"
-        return location_string
-
-
-def get_speed(vehicle):
-    """Recupère la vitesse d'un vehicule carla."""
-    try:
-        velocity = vehicle.get_velocity()
-        velocity_string = f"{velocity.x} {velocity.y} {velocity.z}"
-        return velocity_string
-    except Exception as e:
-        print(e)
-        errlog("Velocity will be wrong")
-        velocity_string = "0 0 0"
-        return velocity_string
-
-
-def get_all_position():
-    """Recupère les positions de tous les vehicules carla."""
-    try:
-        output = " "
-        index_vehicle = 1
-        for vehicle in cst.vehicles:
-            output += f" {index_vehicle} {get_position(vehicle)}"
-            if index_vehicle < cst.nb_nodes:
-                output += " "
-                index_vehicle += 1
-        return output
-    except Exception as e:
-        print(e)
-
-
-def get_all_speed():
-    """Recupère les vitesses de tous les vehicules carla."""
-    try:
-        output = " "
-        index_vehicle = 1
-        for vehicle in cst.vehicles:
-            output += f" {index_vehicle} {get_speed(vehicle)}"
-            if index_vehicle < cst.nb_nodes:
-                output += " "
-                index_vehicle += 1
-        return output
-    except Exception as e:
-        print(e)
-
-
-def get_all_mobility():
-    """Recupère les positions et vitesses de tous les vehicules carla."""
-    try:
-        output = " "
-        index_vehicle = 1
-        for vehicle in cst.vehicles:
-            output += (f"{index_vehicle} {get_position(vehicle)} "
-                       + f"{get_speed(vehicle)}")
-            if index_vehicle < cst.nb_nodes:
-                output += " "
-                index_vehicle += 1
-        return output
-    except Exception as e:
-        print(e)
-
-
-def stop_vehicules():
-    """Recupère les positions et met leur vitesse à 0 pour les vehicules."""
-    try:
-        output = " "
-        index_vehicle = 1
-        for vehicle in cst.vehicles:
-            output += f"{index_vehicle} {get_position(vehicle)} 0.0 0.0 0.0"
-            if index_vehicle < cst.nb_nodes:
-                output += " "
-                index_vehicle += 1
-        return output
-    except Exception as e:
-        print(e)

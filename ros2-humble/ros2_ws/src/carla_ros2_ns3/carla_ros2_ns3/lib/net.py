@@ -102,8 +102,8 @@ def tap_sender(packet, num_node):
         errlog(f"Erreur lors de l'envoi du message : {e}")
 
 
-def tap_sender_control(message):
-    """Permet d'envoyer un message au noeud de controle."""
+def tap_sender_control(packet):
+    """Permet d'envoyer des bytes au noeud de controle."""
     # Créer un éditeur pour publier les paquets sur un topic spécifique
     topic_name = "/tap0_packets"
     pub = create_pub(topic_name)
@@ -112,11 +112,9 @@ def tap_sender_control(message):
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udp_ip = "10.0.0.2"
         udp_port = 12000
-        null_term_msg = message + "\0"
-        packet = null_term_msg.encode("utf-8")
         udp_socket.sendto(packet, (udp_ip, udp_port))
         udp_socket.close()
-        inflog(f"Message envoyé à {udp_ip}:{udp_port} : {message}")
+        inflog(f"Message envoyé à {udp_ip}:{udp_port} : {packet.hex()}")
         # Publier le paquet sous forme hexadécimale
         msg = String()
         msg.data = packet.hex()
@@ -229,6 +227,9 @@ def get_req_time_tlv():
     return struct.pack('=BB', 104, len(value)) + value
 
 
+# Utilitaires
+
+
 def parse_tlv(message_tlv):
     """Extrait d'un message tlv ses composantes."""
     size = len(message_tlv)
@@ -257,3 +258,29 @@ def parse_tlv(message_tlv):
         parse += length
 
     return src, dst, pos, vel
+
+
+def get_stop_vehicule_tlv(node):
+    """Génère un tlv avec une vitesse nulle."""
+    value = struct.pack('=Bxxxfff', node, 0.0, 0.0, 0.0)
+    return struct.pack('=BB', 4, len(value)) + value
+
+
+def get_mobility_tlv(vehicles):
+    """Génère un ensemble de tlv avec toutes les positions et vitesses."""
+    packet = b''
+    for i in range(len(vehicles)):
+        pos = get_position_tlv(i+1, vehicles[i])
+        vel = get_speed_tlv(i+1, vehicles[i])
+        packet = b''.join([pos, vel, packet])
+    return packet
+
+
+def get_stop_vehicles_tlv(vehicles):
+    """Génère un ensemble de tlv avec toutes les positions et la vitesse nulle."""
+    packet = b''
+    for i in range(len(vehicles)):
+        pos = get_position_tlv(i+1, vehicles[i])
+        vel = get_stop_vehicule_tlv(i+1)
+        packet = b''.join([pos, vel, packet])
+    return packet

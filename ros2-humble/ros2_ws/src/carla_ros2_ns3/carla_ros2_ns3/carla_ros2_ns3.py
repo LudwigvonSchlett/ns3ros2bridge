@@ -11,8 +11,9 @@ import rclpy
 import carla_ros2_ns3.const as cst
 from carla_ros2_ns3.lib.carla_sim import (
     init_carla,
-    get_all_mobility,
-    stop_vehicules
+)
+from carla_ros2_ns3.lib.mock_sim import (
+    init_mock
 )
 from carla_ros2_ns3.lib.net import (
     check_message,
@@ -20,11 +21,18 @@ from carla_ros2_ns3.lib.net import (
     tap_sender,
     tap_sender_control,
     connect_tap_device,
+    get_hello_ros_tlv,
     get_source_tlv,
     get_destination_tlv,
     get_position_tlv,
     get_speed_tlv,
-    parse_tlv
+    get_req_dur_tlv,
+    get_req_node_tlv,
+    get_req_anim_tlv,
+    get_req_time_tlv,
+    parse_tlv,
+    get_mobility_tlv,
+    get_stop_vehicles_tlv
 )
 from carla_ros2_ns3.lib.ros import (
     create_node,
@@ -41,7 +49,8 @@ def main():
         node_name = "carla_ros2_ns3"
         create_node(node_name)
         socket_tap0 = connect_tap_device("tap0")
-        tap_sender_control("hello_ROS2")
+        packet = get_hello_ros_tlv()
+        tap_sender_control(packet)
         control_node_listener(socket_tap0)
 
     except KeyboardInterrupt:
@@ -78,28 +87,34 @@ def control_node_listener(socket_tap0):
                 if response_command == "hello_NS3":
 
                     inflog("Requesting simulation duration")
-                    tap_sender_control("request_duration")
+                    packet = get_req_dur_tlv()
+                    tap_sender_control(packet)
 
                 elif response_command == "duration":
 
                     cst.simulation_duration = int(msg_split[1])
                     inflog(f"ns3 Simulation duration is {cst.simulation_duration}")
                     inflog("Requesting NetAnim Node count")
-                    tap_sender_control("request_node")
+                    packet = get_req_node_tlv()
+                    tap_sender_control(packet)
 
                 elif response_command == "node":
 
                     cst.nb_nodes = int(msg_split[1])
                     inflog(f"ns3 Simulation Node count is {cst.nb_nodes}")
                     inflog("Requesting NetAnim animation file")
-                    tap_sender_control("request_animfile")
+                    packet = get_req_anim_tlv()
+                    tap_sender_control(packet)
 
                 elif response_command == "file":
 
                     netanim_file = msg_split[1]
                     inflog(f"ns3 Simulation saved on file {netanim_file}")
                     inflog("Initializing carla")
-                    init_carla()
+                    if cst.carla_sim == "carla":
+                        init_carla()
+                    else:
+                        init_mock()
                     inflog("Initializing connexion to tap devices")
                     sockets = []
                     for num_node in range(1, cst.nb_nodes+1):
@@ -123,24 +138,14 @@ def control_node_listener(socket_tap0):
 
 def launch_simulation(sockets, control_socket):
     """Lance la simulation."""
-    try:
-        for vehicle in cst.vehicles:
-            vehicle.set_autopilot(True, 8001)
-    except Exception as e:
-        errlog("Exception starting vehicles")
-        raise e
-
-    interval = 1
-
-    # Lancer l'écoute périodique des positions dans un thread
     inflog("Launching  periodic_position_sender")
     cst.position_listener_thread = threading.Thread(
-        target=periodic_position_sender, args=(interval,))
+        target=periodic_position_sender, args=(cst.interval,))
     cst.position_listener_thread.start()
 
     inflog("Launching comunication_node")
     cst.comunication_nodes_thread = threading.Thread(
-        target=comunication_node, args=(interval,))
+        target=comunication_node, args=(cst.interval,))
     cst.comunication_nodes_thread.start()
 
     inflog("Launching listen_tap_devices")
@@ -171,15 +176,17 @@ def stop_simulation():
     # Arrete les vehicules dans ns3
     if len(cst.vehicles) > 0:
         inflog("Stoping vehicules in ns3")
-        tap_sender_control(f"set_mobility {stop_vehicules()}")
+        packet = get_stop_vehicles_tlv(cst.vehicles)
+        tap_sender_control(packet)
 
     # Détruire les véhicules pour nettoyer la simulation
-    for vehicle in cst.vehicles:
-        if vehicle.is_alive:
-            vid = vehicle.id
-            vehicle.set_autopilot(False, 8001)
-            vehicle.destroy()
-            inflog(f"Véhicule {vid} détruit.")
+    if cst.carla_sim == "carla":
+        for vehicle in cst.vehicles:
+            if vehicle.is_alive:
+                vid = vehicle.id
+                vehicle.set_autopilot(False, 8001)
+                vehicle.destroy()
+                inflog(f"Véhicule {vid} détruit.")
 
     inflog("Simulation terminée.")
     if cst.number_message_sent != 0:
@@ -286,9 +293,10 @@ def periodic_position_sender(interval):
             inflog("Exiting periodic_position_sender")
             sys.exit()
         try:
-            mobilities = get_all_mobility()
-            tap_sender_control(f"set_mobility {mobilities}")
-            tap_sender_control("request_time")
+            packet = get_mobility_tlv(cst.vehicles)
+            tap_sender_control(packet)
+            packet = get_req_time_tlv()
+            tap_sender_control(packet)
             time.sleep(interval)
         except Exception as e:
             errlog(
