@@ -106,12 +106,14 @@ namespace ns3
 
     // Get node
     Ptr<Node> nodei = GetNode();
+    Ptr<NetDevice> tapDev = nodei->GetDevice(1);
     Ptr<NetDevice> wifiDev = nodei->GetDevice(2);
 
     //Tap
     tapSocketi = Socket::CreateSocket(nodei, m_tapSocket_tidi);
     tapSocketi->SetAllowBroadcast (true);//autoriser la communication broadcast
-    tapSocketi->Bind(tap_ipi);
+    tapSocketi->Bind(tap_ipi); // accepte adrresseTap::portTap
+    tapSocketi->BindToNetDevice(tapDev); // bloque à uniquement l'interface tap
     tapSocketi->Connect(ros_ipi);
     tapSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadTap, this));
 
@@ -120,7 +122,8 @@ namespace ns3
 
     waveSocketi = Socket::CreateSocket(nodei, m_waveSocket_tidi);
     waveSocketi->SetAllowBroadcast(true);
-    waveSocketi->Bind(waveAddr); // accepte tout sur son adresse (11.0.0.i et 11.0.0.255)
+    waveSocketi->Bind(waveAddr); // accepte tout sur son le portWavei
+    waveSocketi->BindToNetDevice(wifiDev); // bloque à uniquement l'interface wave
     waveSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadWave, this));
   }
 
