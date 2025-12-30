@@ -151,6 +151,18 @@ def connect_tap_device(tap_device):
     return None
 
 
+# TLV Hello (type 0)
+
+
+def get_hello_ros_tlv():
+    """Génère le tlv hello pour ros."""
+    value = struct.pack('=B', 0)  # hello 0 ros / hello 1 ns3
+    return struct.pack('=BB', 0, len(value)) + value
+
+
+# TLV Informatif (type 1+)
+
+
 def get_source_tlv(node):
     """Génère le tlv de source pour un noeud."""
     value = struct.pack('=B', node)
@@ -188,6 +200,27 @@ def get_speed_tlv(node, vehicle):
         errlog("Velocity will be wrong")
         value = struct.pack('=Bxxxfff', node, 0.0, 0.0, 0.0)
         return struct.pack('=BB', 4, len(value)) + value
+
+
+# TLV Requetes (type 101+)
+
+
+def get_req_dur_tlv():
+    """Génère le tlv pour la requete de durée."""
+    value = struct.pack('=B', 0)
+    return struct.pack('=BB', 101, len(value)) + value
+
+
+def get_req_node_tlv():
+    """Génère le tlv pour la requete du nombre de noeuds."""
+    value = struct.pack('=B', 0)
+    return struct.pack('=BB', 102, len(value)) + value
+
+
+def get_req_anim_tlv():
+    """Génère le tlv pour la requete du fichier netanim."""
+    value = struct.pack('=B', 0)
+    return struct.pack('=BB', 103, len(value)) + value
 
 
 def parse_tlv(message_tlv):
