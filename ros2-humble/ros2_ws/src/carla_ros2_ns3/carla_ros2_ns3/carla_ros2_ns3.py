@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import random
+import struct
 import time
 import sys
 import select
@@ -79,57 +80,62 @@ def control_node_listener(socket_tap0):
             if check_message(packet) and dest_ip_str != '10.0.0.2':
                 inflog("tap0 received a packet from control node")
                 print_udp(packet)
-                message = (packet[42:].decode()).rstrip("\n")
-                inflog(f"Received packet (decoded): {message}")
-                msg_split = message.split(" ")
-                response_command = msg_split[0]
+                message = packet[42:]
+                inflog(f"Received packet (hex): {message.hex()}")
 
-                if response_command == "hello_NS3":
+                size = len(message)
+                parse = 0
 
-                    inflog("Requesting simulation duration")
-                    packet = get_req_dur_tlv()
-                    tap_sender_control(packet)
+                while parse < size:
+                    tlv_type = message[parse]
+                    parse += 1
+                    length = message[parse]
+                    parse += 1
 
-                elif response_command == "duration":
+                    if tlv_type == 0 and length == 1 and message[parse] == 1:
 
-                    cst.simulation_duration = int(msg_split[1])
-                    inflog(f"ns3 Simulation duration is {cst.simulation_duration}")
-                    inflog("Requesting NetAnim Node count")
-                    packet = get_req_node_tlv()
-                    tap_sender_control(packet)
+                        inflog("Requesting simulation duration")
+                        packet = get_req_dur_tlv()
+                        tap_sender_control(packet)
 
-                elif response_command == "node":
+                    elif tlv_type == 201 and length == 2:
 
-                    cst.nb_nodes = int(msg_split[1])
-                    inflog(f"ns3 Simulation Node count is {cst.nb_nodes}")
-                    inflog("Requesting NetAnim animation file")
-                    packet = get_req_anim_tlv()
-                    tap_sender_control(packet)
+                        cst.simulation_duration, = struct.unpack("=H", message[parse:parse+length])
+                        inflog(f"ns3 Simulation duration is {cst.simulation_duration}")
+                        inflog("Requesting Ns3 Node count")
+                        packet = get_req_node_tlv()
+                        tap_sender_control(packet)
 
-                elif response_command == "file":
+                    elif tlv_type == 202 and length == 1:
 
-                    netanim_file = msg_split[1]
-                    inflog(f"ns3 Simulation saved on file {netanim_file}")
-                    inflog("Initializing carla")
-                    if cst.carla_sim == "carla":
-                        init_carla()
+                        cst.nb_nodes = message[parse]
+                        inflog(f"ns3 Simulation Node count is {cst.nb_nodes}")
+                        inflog("Requesting NetAnim animation file")
+                        packet = get_req_anim_tlv()
+                        tap_sender_control(packet)
+
+                    elif tlv_type == 203 and length != 0:
+
+                        data_format = f"{length}s"
+                        netanim_file, = struct.unpack(data_format, message[parse:parse+length])
+                        inflog(f"ns3 Simulation saved on file {netanim_file}")
+                        inflog("Initializing carla")
+                        if cst.carla_sim == "carla":
+                            init_carla()
+                        else:
+                            init_mock()
+                        inflog("Initializing connexion to tap devices")
+                        sockets = []
+                        for num_node in range(1, cst.nb_nodes+1):
+                            tap_socket = connect_tap_device(f"tap{num_node}")
+                            sockets.append(tap_socket)
+                        inflog("Launching simulation")
+                        launch_simulation(sockets, socket_tap0)
+
                     else:
-                        init_mock()
-                    inflog("Initializing connexion to tap devices")
-                    sockets = []
-                    for num_node in range(1, cst.nb_nodes+1):
-                        tap_socket = connect_tap_device(f"tap{num_node}")
-                        sockets.append(tap_socket)
-                    inflog("Launching simulation")
-                    launch_simulation(sockets, socket_tap0)
+                        errlog(f"Unparsable message : {message.hex()}")
 
-                else:
-                    errlog(f"Erreur message recue : {message}")
-
-        except UnicodeDecodeError as e:
-            errlog(f"Erreur de décodage Unicode : {e}")
-            inflog("Le paquet reçu ne peut pas être décodé en UTF-8.")
-            stop_simulation()
+                    parse += length
 
         except Exception as e:
             errlog(f"Erreur inattendue lors du traitement du paquet : {e}")
@@ -225,27 +231,30 @@ def listen_control_tap(control_socket):
 
             if check_message(packet) and dest_ip_str != '10.0.0.2':
                 inflog("tap0 received a packet from control node")
-                message = (packet[42:].decode()).rstrip("\n")
-                inflog(f"Received packet (decoded): {message}")
-                msg_split = message.split(" ")
-                command = msg_split[0]
+                message = packet[42:]
+                inflog(f"Received packet (hex): {message.hex()}")
 
-                if command == "time":
+                size = len(message)
+                parse = 0
 
-                    simulation_time = int(msg_split[1])
-                    inflog(f"ns3 Simulation time is {simulation_time} seconds")
+                while parse < size:
+                    tlv_type = message[parse]
+                    parse += 1
+                    length = message[parse]
+                    parse += 1
 
-                    if cst.simulation_duration - simulation_time < 5:
-                        inflog("Fin de la simulation")
-                        stop_simulation()
+                    if tlv_type == 204 and length == 2:
 
-                else:
-                    errlog(f"Erreur message recue : {message}")
+                        simulation_time, = struct.unpack("=H", message[parse:parse+length])
+                        inflog(f"ns3 Simulation time is {simulation_time} seconds")
+                        if cst.simulation_duration - simulation_time < 5:
+                            inflog("Fin de la simulation")
+                            stop_simulation()
 
-        except UnicodeDecodeError as e:
-            errlog(f"Erreur de décodage Unicode : {e}")
-            inflog("Le paquet reçu ne peut pas être décodé en UTF-8.")
-            stop_simulation()
+                    else:
+                        errlog(f"Unparsable message : {message.hex()}")
+
+                    parse += length
 
         except Exception as e:
             errlog(f"Erreur inattendue lors du traitement du paquet : {e}")

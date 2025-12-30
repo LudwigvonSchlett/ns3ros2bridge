@@ -220,8 +220,11 @@ namespace ns3
 
         if ((type == 0) && (length == 1) && (data[parse] == 0)) { // hello ros
           std::string message = "hello_NS3";
-		      responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-          NS_LOG_INFO("Received hello_ROS2 => responding hello_NS3");
+          uint8_t *packet_content = new uint8_t[3];
+          packet_content[0] = 0;
+          packet_content[1] = 1;
+          packet_content[2] = 1; // hello ns3
+          responsePacket = Create<Packet> (packet_content, 3);
           socket->Send (responsePacket);
         }
         else if ((type == 1) && (length == 1)) {
@@ -259,28 +262,40 @@ namespace ns3
         // requetes de ros
         else if ((type == 101) && (length == 1) && (data[parse] == 0)) { // request_duration
           Time::Unit unit = Time::Unit::S;
-          std::string message = "duration " + std::to_string(simInfo.duration.ToInteger(unit));
-          responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-          NS_LOG_INFO("Received request_duration => responding " << message);
+          uint16_t duration = simInfo.duration.ToInteger(unit);
+          uint8_t *packet_content = new uint8_t[4];
+          packet_content[0] = 201; // reponse duration
+          packet_content[1] = 2;
+          std::memcpy(&packet_content[2], &duration, sizeof(uint16_t));
+          responsePacket = Create<Packet> (packet_content, 4);
           socket->Send (responsePacket);
         }
         else if ((type == 102) && (length == 1) && (data[parse] == 0)) { // request_node
-          std::string message = "node " + std::to_string(simInfo.nodeCount);
-          responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-          NS_LOG_INFO("Received request_node => responding " << message);
+          uint8_t node = simInfo.nodeCount;
+          uint8_t *packet_content = new uint8_t[3];
+          packet_content[0] = 202; // reponse node
+          packet_content[1] = 1;
+          std::memcpy(&packet_content[2], &node, sizeof(uint8_t));
+          responsePacket = Create<Packet> (packet_content, 3);
           socket->Send (responsePacket);
         }
         else if ((type == 103) && (length == 1) && (data[parse] == 0)) { // request_animfile
-          std::string message = "file " + simInfo.filename;
-          responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-          NS_LOG_INFO("Received request_animfile => responding " << message);
+          std::string filename = simInfo.filename;
+          uint8_t *packet_content = new uint8_t[2+filename.length()];
+          packet_content[0] = 203; // reponse file
+          packet_content[1] = filename.length();
+          std::memcpy(&packet_content[2], filename.data(), filename.length());
+          responsePacket = Create<Packet> (packet_content, 2+filename.length());
           socket->Send (responsePacket);
         }
         else if ((type == 104) && (length == 1) && (data[parse] == 0)) { // request_time
           Time::Unit unit = Time::Unit::S;
-          std::string message = "time " + std::to_string(Simulator::Now().ToInteger(unit));
-          responsePacket = Create<Packet> ((uint8_t*) message.c_str (), message.length ());
-          NS_LOG_INFO("Received request_time => responding " << message);
+          uint16_t time = Simulator::Now().ToInteger(unit);
+          uint8_t *packet_content = new uint8_t[4];
+          packet_content[0] = 204; // reponse time
+          packet_content[1] = 2;
+          std::memcpy(&packet_content[2], &time, sizeof(uint16_t));
+          responsePacket = Create<Packet> (packet_content, 4);
           socket->Send (responsePacket);
         }
         else {

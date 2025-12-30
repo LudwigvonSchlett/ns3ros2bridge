@@ -27,7 +27,7 @@ namespace ns3 {
 
   struct SimInfo {
       std::string filename;
-      int nodeCount;
+      uint8_t nodeCount;
       Time duration;
   };
 

@@ -183,7 +183,7 @@ def get_position_tlv(node, vehicle):
     except Exception as e:
         print(e)
         errlog("Location will be wrong")
-        value = struct.pack('=fffBxxx', node, 0.0, 0.0, 0.0)
+        value = struct.pack('=Bxxxfff', node, 0.0, 0.0, 0.0)
         return struct.pack('=BB', 3, len(value)) + value
 
 
@@ -254,6 +254,8 @@ def parse_tlv(message_tlv):
             pos.append(struct.unpack("=Bxxxfff", message_tlv[parse:parse+length]))
         elif tlv_type == 4 and length == 16:
             vel.append(struct.unpack("=Bxxxfff", message_tlv[parse:parse+length]))
+        else:
+            errlog(f"Unparsable message : {message_tlv.hex()}")
 
         parse += length
 
