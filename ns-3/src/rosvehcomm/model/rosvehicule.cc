@@ -79,7 +79,6 @@ namespace ns3
     NS_LOG_INFO("Constructeur Rosvehicule");
     tapSocketi = nullptr;
     waveSocketi = nullptr;
-    m_totalRx1 = 0;
   }
 
   // Destructor
@@ -118,11 +117,11 @@ namespace ns3
     tapSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadTap, this));
 
     //Wave
-    InetSocketAddress waveAddr(Ipv4Address::GetAny(), portWavei); // 0.0.0.0::portWavei
+    InetSocketAddress wave_ipi(Ipv4Address::GetAny(), portWavei); // 0.0.0.0::portWavei
 
     waveSocketi = Socket::CreateSocket(nodei, m_waveSocket_tidi);
     waveSocketi->SetAllowBroadcast(true);
-    waveSocketi->Bind(waveAddr); // accepte tout sur son le portWavei
+    waveSocketi->Bind(wave_ipi); // accepte tout sur son le portWavei
     waveSocketi->BindToNetDevice(wifiDev); // bloque à uniquement l'interface wave
     waveSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadWave, this));
   }

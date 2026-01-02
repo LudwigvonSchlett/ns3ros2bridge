@@ -20,10 +20,6 @@ namespace ns3
                    AddressValue (),
                    MakeAddressAccessor (&ROSVehSync::ros_ip),
                    MakeAddressChecker ())
-    .AddAttribute ("Port", "Port on which we exchange packets with ROS",
-                   UintegerValue (12000),
-                   MakeUintegerAccessor (&ROSVehSync::port),
-                   MakeUintegerChecker<uint16_t> ())
     .AddAttribute ("TAP_IP_AddressValue", "The AddressValue of the tap",
                    AddressValue (),
                    MakeAddressAccessor (&ROSVehSync::tap_ip),
@@ -65,11 +61,6 @@ namespace ns3
   {
     NS_LOG_FUNCTION(this);//pour obtenir des infos lors de la compilation de cette fonction.
     NS_LOG_INFO("Constructeur RosvehSync");
-    m_sendEvent_rtmaps = EventId ();//obtenir l'id de l'evènement.
-
-    // Create Wave PHY using the shared channel
-	  YansWifiChannelHelper waveChannel = YansWifiChannelHelper::Default();
-	  sharedChannel = waveChannel.Create();
   }
 
   // Destructeur
@@ -84,8 +75,6 @@ namespace ns3
   {
     NS_LOG_FUNCTION(this);
     NS_LOG_INFO("DoDispose RosvehSync");
-    m_socket_from_rtmaps = nullptr;
-    m_socketList.clear ();//vider le conteneur de socket
     Application::DoDispose ();
   }
 
@@ -110,15 +99,13 @@ namespace ns3
     // Initialize socket
     controlSocket = Socket::CreateSocket(GetNode (), controlSocket_tid);
     controlSocket->SetAllowBroadcast (true);//autoriser la communication broadcast
-    controlSocket->Connect(ros_ip);
-
     controlSocket->Bind(tap_ip);
+    controlSocket->Connect(ros_ip);
     controlSocket->Listen ();
 
     if (addressUtils::IsMulticast (tap_ip))
     {
-      Ptr<UdpSocket> udpSocket = DynamicCast<UdpSocket> (controlSocket);
-      if (udpSocket)
+      if (Ptr<UdpSocket> udpSocket = DynamicCast<UdpSocket> (controlSocket))
         {
           // equivalent to setsockopt (MCAST_JOIN_GROUP)
           udpSocket->MulticastJoinGroup (0, tap_ip);
@@ -149,21 +136,6 @@ namespace ns3
     {
       controlSocket->Close ();
       controlSocket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
-    }
-
-    Simulator::Cancel (m_sendEvent_rtmaps);
-
-    //tant que la liste des socket n'est pas vide alors on
-    while(!m_socketList.empty ()) //these are accepted sockets, close them
-    {
-      Ptr<Socket> acceptedSocket = m_socketList.front ();//pour envoyer la référence du premier element et la stocker dans une variable qui s'appelle acceptedsocket
-      m_socketList.pop_front ();//supprime le premier element de la liste m_socketlist
-      acceptedSocket->Close ();//ferme le socket
-    }
-    if (m_socket_from_rtmaps) //si on recoit toujours quelque chose de rtmaps alors on le ferme
-    {
-      m_socket_from_rtmaps->Close ();
-      m_socket_from_rtmaps->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
     }
   }
 
@@ -220,7 +192,7 @@ namespace ns3
 
         if ((type == 0) && (length == 1) && (data[parse] == 0)) { // hello ros
           std::string message = "hello_NS3";
-          uint8_t *packet_content = new uint8_t[3];
+          auto packet_content = new uint8_t[3];
           packet_content[0] = 0;
           packet_content[1] = 1;
           packet_content[2] = 1; // hello ns3
@@ -263,7 +235,7 @@ namespace ns3
         else if ((type == 101) && (length == 1) && (data[parse] == 0)) { // request_duration
           Time::Unit unit = Time::Unit::S;
           uint16_t duration = simInfo.duration.ToInteger(unit);
-          uint8_t *packet_content = new uint8_t[4];
+          auto packet_content = new uint8_t[4];
           packet_content[0] = 201; // reponse duration
           packet_content[1] = 2;
           std::memcpy(&packet_content[2], &duration, sizeof(uint16_t));
@@ -272,7 +244,7 @@ namespace ns3
         }
         else if ((type == 102) && (length == 1) && (data[parse] == 0)) { // request_node
           uint8_t node = simInfo.nodeCount;
-          uint8_t *packet_content = new uint8_t[3];
+          auto packet_content = new uint8_t[3];
           packet_content[0] = 202; // reponse node
           packet_content[1] = 1;
           std::memcpy(&packet_content[2], &node, sizeof(uint8_t));
@@ -281,7 +253,7 @@ namespace ns3
         }
         else if ((type == 103) && (length == 1) && (data[parse] == 0)) { // request_animfile
           std::string filename = simInfo.filename;
-          uint8_t *packet_content = new uint8_t[2+filename.length()];
+          auto packet_content = new uint8_t[2+filename.length()];
           packet_content[0] = 203; // reponse file
           packet_content[1] = filename.length();
           std::memcpy(&packet_content[2], filename.data(), filename.length());
@@ -319,12 +291,11 @@ namespace ns3
     NS_LOG_FUNCTION (this << socket);
   }
 
-  void ROSVehSync::HandleAccept (Ptr<Socket> s, const Address& from)
+  void ROSVehSync::HandleAccept (Ptr<Socket> socket, const Address& from)
   {
     NS_LOG_INFO("HANDLE PEER ACCEPT   NUMEROS 13  ");
-    NS_LOG_FUNCTION (this << s << from);
-    s->SetRecvCallback (MakeCallback (&ROSVehSync::HandleRead, this));
-    m_socketList.push_back (s);
+    NS_LOG_FUNCTION (this << socket << from);
+    socket->SetRecvCallback (MakeCallback (&ROSVehSync::HandleRead, this));
   }
 
 }  
