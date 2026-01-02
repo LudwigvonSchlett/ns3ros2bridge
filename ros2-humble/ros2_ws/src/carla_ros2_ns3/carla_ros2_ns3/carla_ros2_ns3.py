@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import random
+import struct
 import time
 import sys
 import select
@@ -11,16 +12,28 @@ import rclpy
 import carla_ros2_ns3.const as cst
 from carla_ros2_ns3.lib.carla_sim import (
     init_carla,
-    get_all_mobility,
-    get_position,
-    stop_vehicules
+)
+from carla_ros2_ns3.lib.mock_sim import (
+    init_mock
 )
 from carla_ros2_ns3.lib.net import (
     check_message,
     print_udp,
     tap_sender,
     tap_sender_control,
-    connect_tap_device
+    connect_tap_device,
+    get_hello_ros_tlv,
+    get_source_tlv,
+    get_destination_tlv,
+    get_position_tlv,
+    get_speed_tlv,
+    get_req_dur_tlv,
+    get_req_node_tlv,
+    get_req_anim_tlv,
+    get_req_time_tlv,
+    parse_tlv,
+    get_mobility_tlv,
+    get_stop_vehicles_tlv
 )
 from carla_ros2_ns3.lib.ros import (
     create_node,
@@ -37,7 +50,8 @@ def main():
         node_name = "carla_ros2_ns3"
         create_node(node_name)
         socket_tap0 = connect_tap_device("tap0")
-        tap_sender_control("hello_ROS2")
+        packet = get_hello_ros_tlv()
+        tap_sender_control(packet)
         control_node_listener(socket_tap0)
 
     except KeyboardInterrupt:
@@ -66,56 +80,62 @@ def control_node_listener(socket_tap0):
             if check_message(packet) and dest_ip_str != '10.0.0.2':
                 inflog("tap0 received a packet from control node")
                 print_udp(packet)
-                message = (packet[42:].decode()).rstrip("\n")
-                inflog(f"Received packet (decoded): {message}")
-                msg_split = message.split(" ")
-                response_command = msg_split[0]
+                message = packet[42:]
+                inflog(f"Received packet (hex): {message.hex()}")
 
-                if response_command == "hello_NS3":
+                size = len(message)
+                parse = 0
 
-                    inflog("Requesting simulation duration")
-                    tap_sender_control("request_duration")
+                while parse < size:
+                    tlv_type = message[parse]
+                    parse += 1
+                    length = message[parse]
+                    parse += 1
 
-                elif response_command == "duration":
+                    if tlv_type == 0 and length == 1 and message[parse] == 1:
 
-                    cst.simulation_duration = int(msg_split[1])
-                    inflog(f"ns3 Simulation duration is {cst.simulation_duration}")
-                    inflog("Requesting NetAnim Node count")
-                    tap_sender_control("request_node")
+                        inflog("Requesting simulation duration")
+                        packet = get_req_dur_tlv()
+                        tap_sender_control(packet)
 
-                elif response_command == "node":
+                    elif tlv_type == 201 and length == 2:
 
-                    cst.nb_nodes = int(msg_split[1])
-                    inflog(f"ns3 Simulation Node count is {cst.nb_nodes}")
-                    inflog("Requesting NetAnim animation file")
-                    tap_sender_control("request_animfile")
+                        cst.simulation_duration, = struct.unpack("=H", message[parse:parse+length])
+                        inflog(f"ns3 Simulation duration is {cst.simulation_duration}")
+                        inflog("Requesting Ns3 Node count")
+                        packet = get_req_node_tlv()
+                        tap_sender_control(packet)
 
-                elif response_command == "file":
+                    elif tlv_type == 202 and length == 1:
 
-                    netanim_file = msg_split[1]
-                    inflog(f"ns3 Simulation saved on file {netanim_file}")
-                    inflog("Initializing carla")
-                    init_carla()
-                    mobility = get_all_mobility()
-                    tap_sender_control(f"init_node {mobility}")
+                        cst.nb_nodes = message[parse]
+                        inflog(f"ns3 Simulation Node count is {cst.nb_nodes}")
+                        inflog("Requesting NetAnim animation file")
+                        packet = get_req_anim_tlv()
+                        tap_sender_control(packet)
 
-                elif response_command == "init_success":
+                    elif tlv_type == 203 and length != 0:
 
-                    inflog("Initializing connexion to tap devices")
-                    sockets = []
-                    for num_node in range(1, cst.nb_nodes+1):
-                        tap_socket = connect_tap_device(f"tap{num_node}")
-                        sockets.append(tap_socket)
-                    inflog("Launching simulation")
-                    launch_simulation(sockets, socket_tap0)
+                        data_format = f"{length}s"
+                        netanim_file, = struct.unpack(data_format, message[parse:parse+length])
+                        inflog(f"ns3 Simulation saved on file {netanim_file}")
+                        inflog("Initializing carla")
+                        if cst.carla_sim == "carla":
+                            init_carla()
+                        else:
+                            init_mock()
+                        inflog("Initializing connexion to tap devices")
+                        sockets = []
+                        for num_node in range(1, cst.nb_nodes+1):
+                            tap_socket = connect_tap_device(f"tap{num_node}")
+                            sockets.append(tap_socket)
+                        inflog("Launching simulation")
+                        launch_simulation(sockets, socket_tap0)
 
-                else:
-                    errlog(f"Erreur message recue : {message}")
+                    else:
+                        errlog(f"Unparsable message : {message.hex()}")
 
-        except UnicodeDecodeError as e:
-            errlog(f"Erreur de décodage Unicode : {e}")
-            inflog("Le paquet reçu ne peut pas être décodé en UTF-8.")
-            stop_simulation()
+                    parse += length
 
         except Exception as e:
             errlog(f"Erreur inattendue lors du traitement du paquet : {e}")
@@ -124,24 +144,14 @@ def control_node_listener(socket_tap0):
 
 def launch_simulation(sockets, control_socket):
     """Lance la simulation."""
-    try:
-        for vehicle in cst.vehicles:
-            vehicle.set_autopilot(True, 8001)
-    except Exception as e:
-        errlog("Exception starting vehicles")
-        raise e
-
-    interval = 1
-
-    # Lancer l'écoute périodique des positions dans un thread
     inflog("Launching  periodic_position_sender")
     cst.position_listener_thread = threading.Thread(
-        target=periodic_position_sender, args=(interval,))
+        target=periodic_position_sender, args=(cst.interval,))
     cst.position_listener_thread.start()
 
     inflog("Launching comunication_node")
     cst.comunication_nodes_thread = threading.Thread(
-        target=comunication_node, args=(interval,))
+        target=comunication_node, args=(cst.interval,))
     cst.comunication_nodes_thread.start()
 
     inflog("Launching listen_tap_devices")
@@ -172,15 +182,17 @@ def stop_simulation():
     # Arrete les vehicules dans ns3
     if len(cst.vehicles) > 0:
         inflog("Stoping vehicules in ns3")
-        tap_sender_control(f"set_mobility {stop_vehicules()}")
+        packet = get_stop_vehicles_tlv(cst.vehicles)
+        tap_sender_control(packet)
 
     # Détruire les véhicules pour nettoyer la simulation
-    for vehicle in cst.vehicles:
-        if vehicle.is_alive:
-            vid = vehicle.id
-            vehicle.set_autopilot(False, 8001)
-            vehicle.destroy()
-            inflog(f"Véhicule {vid} détruit.")
+    if cst.carla_sim == "carla":
+        for vehicle in cst.vehicles:
+            if vehicle.is_alive:
+                vid = vehicle.id
+                vehicle.set_autopilot(False, 8001)
+                vehicle.destroy()
+                inflog(f"Véhicule {vid} détruit.")
 
     inflog("Simulation terminée.")
     if cst.number_message_sent != 0:
@@ -219,27 +231,30 @@ def listen_control_tap(control_socket):
 
             if check_message(packet) and dest_ip_str != '10.0.0.2':
                 inflog("tap0 received a packet from control node")
-                message = (packet[42:].decode()).rstrip("\n")
-                inflog(f"Received packet (decoded): {message}")
-                msg_split = message.split(" ")
-                command = msg_split[0]
+                message = packet[42:]
+                inflog(f"Received packet (hex): {message.hex()}")
 
-                if command == "time":
+                size = len(message)
+                parse = 0
 
-                    simulation_time = int(msg_split[1])
-                    inflog(f"ns3 Simulation time is {simulation_time} seconds")
+                while parse < size:
+                    tlv_type = message[parse]
+                    parse += 1
+                    length = message[parse]
+                    parse += 1
 
-                    if cst.simulation_duration - simulation_time < 5:
-                        inflog("Fin de la simulation")
-                        stop_simulation()
+                    if tlv_type == 204 and length == 2:
 
-                else:
-                    errlog(f"Erreur message recue : {message}")
+                        simulation_time, = struct.unpack("=H", message[parse:parse+length])
+                        inflog(f"ns3 Simulation time is {simulation_time} seconds")
+                        if cst.simulation_duration - simulation_time < 5:
+                            inflog("Fin de la simulation")
+                            stop_simulation()
 
-        except UnicodeDecodeError as e:
-            errlog(f"Erreur de décodage Unicode : {e}")
-            inflog("Le paquet reçu ne peut pas être décodé en UTF-8.")
-            stop_simulation()
+                    else:
+                        errlog(f"Unparsable message : {message.hex()}")
+
+                    parse += length
 
         except Exception as e:
             errlog(f"Erreur inattendue lors du traitement du paquet : {e}")
@@ -260,15 +275,15 @@ def listen_tap_devices(tap_sockets):
                 data, _ = sock.recvfrom(65535)  # Taille max d'un paquet
                 tap = sock.getsockname()[0]  # Nom du device lié
                 if check_message(data):
-                    message = (data[42:].decode()).rstrip("\n")
-                    splits = message.split(" ")
-                    if splits[0] == tap.replace("tap", ""):
-                        # compte uniquement si l'on est la cible
+                    message_tlv = data[42:]
+                    src, dst, pos, vel = parse_tlv(message_tlv)
+                    if dst == int(tap.replace("tap", "")) or dst == 255:
+                        # compte uniquement si l'on est la cible ou broadcast
 
                         cst.number_message_received += 1
                         # A faire: traier ce qu'on recoit sur tap1,2,3,...
-                        inflog(f"{tap} received a packet from tap{splits[1]}")
-                        inflog(f"Received packet (decoded): {message}")
+                        inflog(f"{tap} received a packet from tap{src}")
+                        inflog(f"Received packet (hex): {message_tlv.hex()}")
 
         except Exception as e:
             errlog(f"Erreur lors de l'écoute des tap devices: {e}")
@@ -287,9 +302,10 @@ def periodic_position_sender(interval):
             inflog("Exiting periodic_position_sender")
             sys.exit()
         try:
-            mobilities = get_all_mobility()
-            tap_sender_control(f"set_mobility {mobilities}")
-            tap_sender_control("request_time")
+            packet = get_mobility_tlv(cst.vehicles)
+            tap_sender_control(packet)
+            packet = get_req_time_tlv()
+            tap_sender_control(packet)
             time.sleep(interval)
         except Exception as e:
             errlog(
@@ -315,8 +331,12 @@ def comunication_node(interval):
                 dest_node = node
                 while dest_node == node:
                     dest_node = random.randint(1, cst.nb_nodes)
-                position = get_position(cst.vehicles[node-1])
-                tap_sender(f"{dest_node} {node} position {position}", node)
+                src_tlv = get_source_tlv(node)
+                dest_tlv = get_destination_tlv(dest_node)
+                position_tlv = get_position_tlv(node, cst.vehicles[node-1])
+                speed_tlv = get_speed_tlv(node, cst.vehicles[node-1])
+                packet = b''.join([src_tlv, dest_tlv, position_tlv, speed_tlv])
+                tap_sender(packet, node)
                 cst.number_message_sent += 1
             time.sleep(interval)
         except Exception as e:

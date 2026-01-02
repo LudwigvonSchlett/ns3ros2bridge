@@ -84,7 +84,6 @@ initControlNode (std::string ip_ROS)
   ROSVehSyncHelper.SetAttribute ("ROS_IP_AddressValue", remoteAddress); //adresse de destination
   ROSVehSyncHelper.SetAttribute ("TAP_IP_AddressValue", sinkLocalAddress);     //adresse local
   ROSVehSyncHelper.SetAttribute ("Protocol", StringValue("ns3::UdpSocketFactory"));    //protocol de communication UDPSocket
-  ROSVehSyncHelper.SetAttribute ("Port", UintegerValue(port));    //  port de Rtmaps par défaut
   ApplicationContainer ROSAppContainer = ROSVehSyncHelper.Install (controlNode); //On stock notre application dans un conteneur application et on installe sur notre neoud Contrôle Node
 
 }
@@ -172,11 +171,12 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
   * at reference distance of 1m.
   */
 
-  YansWavePhyHelper wavePhy = YansWavePhyHelper::Default();
-  wavePhy.SetChannel(sharedChannel);
-  wavePhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
-  wavePhy.Set("TxPowerEnd", DoubleValue(20.0));  // in dBm
-  wavePhy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11);
+  YansWifiPhyHelper wifiPhy;
+  wifiPhy.SetChannel(sharedChannel);
+  wifiPhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
+  wifiPhy.Set("TxPowerEnd", DoubleValue(20.0));  // in dBm
+  wifiPhy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11);
+  //wifiPhy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11_RADIO); // alternative avec radiotapd
   NqosWaveMacHelper wifi80211pMac = NqosWaveMacHelper::Default ();
   Wifi80211pHelper wifi80211p = Wifi80211pHelper::Default ();
 
@@ -186,11 +186,11 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
                                     "DataMode",StringValue (phyMode),
                                     "ControlMode",StringValue (phyMode));
 
-  NetDeviceContainer devices_wifi = wifi80211p.Install(wavePhy, wifi80211pMac, nodes);
-  wavePhy.EnablePcap("wave-simple-80211p", devices_wifi);
+  NetDeviceContainer devices_wifi = wifi80211p.Install(wifiPhy, wifi80211pMac, nodes);
+  wifiPhy.EnablePcap("rosvehicule-80211p", devices_wifi);
   Ipv4AddressHelper ipv4;
   ipv4.SetBase("11.0.0.0", "255.255.255.0");
-  Ipv4InterfaceContainer ipv4_802p = ipv4.Assign(devices_wifi);
+  Ipv4InterfaceContainer ipv4_80211p = ipv4.Assign(devices_wifi);
 
   for(int i=1; i<=nb_vehicule; i++) {
 
@@ -214,15 +214,7 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
     AddressValue sinkLocalAddressi(InetSocketAddress (tap_neti, portveh));
 
     // WAVE
-    Ptr<NetDevice> waveDevice = nodei->GetDevice(2);
-    // Log the assigned IP address
-    Ptr<Ipv4> ipv4_i = nodei->GetObject<Ipv4> ();
-
     uint16_t portwave = 14000;
-    std::ostringstream ipWave;
-	  ipWave << "11.0.0." << i;
-    Ipv4Address wave_neti = Ipv4Address(ipWave.str().c_str());
-    AddressValue waveLocalAddressi(InetSocketAddress (wave_neti, portwave));
 
     // Check installation
     Ptr<Ipv4> ipv4check = nodei->GetObject<Ipv4>();
@@ -238,13 +230,10 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
 
     //Mettre en place les paramètres de ROS
     ROSVehiculeHelper rosVehiculeHelper;
-    rosVehiculeHelper.SetAttribute ("RemoteROS",remoteAddressi);
+    rosVehiculeHelper.SetAttribute ("RemoteROS", remoteAddressi);
     rosVehiculeHelper.SetAttribute ("LocalTap", sinkLocalAddressi);
-    rosVehiculeHelper.SetAttribute ("LocalWave", waveLocalAddressi);
     rosVehiculeHelper.SetAttribute ("VehicleNumber", IntegerValue(i));
-    rosVehiculeHelper.SetAttribute ("PortTap", UintegerValue(portveh));
     rosVehiculeHelper.SetAttribute ("PortWave", UintegerValue(portwave));
-    //Ajout adresse destination dans le node 1 ex :  tap 1 -> wave
 
     ApplicationContainer ROSVehSyncApps1 = rosVehiculeHelper.Install (nodei);
   }
@@ -253,7 +242,7 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
 int
 main (int argc, char *argv[])
 {
-  
+
   std::string phyMode ("OfdmRate6MbpsBW10MHz");
 
   /*** Options ***/
@@ -289,7 +278,7 @@ main (int argc, char *argv[])
 
   // NetAnim does not support creating nodes at run-time
   // We have to create nodes and then update them according to ROS
-  const uint32_t maxNodes = 5;
+  const uint8_t maxNodes = 5;
 
   NS_LOG_INFO("Initialisation des noeuds vehicules");
   initVehicules(maxNodes, ip_ROS);

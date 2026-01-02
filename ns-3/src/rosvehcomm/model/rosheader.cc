@@ -56,8 +56,8 @@ ROSHeader::Deserialize(Buffer::Iterator i)
 void
 ROSHeader::Print(std::ostream &os) const
 {
-  os << "dst=" << uint32_t(m_dstId)
-     << " src=" << uint32_t(m_srcId);
+  os << "dst=" << static_cast<uint32_t>(m_dstId)
+     << " src=" << static_cast<uint32_t>(m_srcId);
 }
 
 uint8_t  ROSHeader::GetDstId() const { return m_dstId; }

@@ -2,6 +2,7 @@
 
 import socket
 import time
+import struct
 import rclpy
 
 from std_msgs.msg import String
@@ -79,8 +80,8 @@ def calculate_udp_checksum(
     return calculate_checksum(all_words)
 
 
-def tap_sender(message, num_node):
-    """Permet d'envoyer un message grace a un numéro de noeud."""
+def tap_sender(packet, num_node):
+    """Permet d'envoyer des bytes grace a un numéro de noeud."""
     # Créer un éditeur pour publier les paquets sur un topic spécifique
     topic_name = f'/tap{num_node}_packets'
     pub = create_pub(topic_name)
@@ -89,11 +90,9 @@ def tap_sender(message, num_node):
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udp_ip = f"10.0.{num_node}.1"
         udp_port = 12000+num_node
-        null_term_msg = message + "\0"
-        packet = null_term_msg.encode("utf-8")
         udp_socket.sendto(packet, (udp_ip, udp_port))
         udp_socket.close()
-        inflog(f"Message envoyé à {udp_ip}:{udp_port} : {message}")
+        inflog(f"Message envoyé à {udp_ip}:{udp_port} : {packet.hex()}")
         # Publier le paquet sous forme hexadécimale
         msg = String()
         msg.data = packet.hex()
@@ -103,8 +102,8 @@ def tap_sender(message, num_node):
         errlog(f"Erreur lors de l'envoi du message : {e}")
 
 
-def tap_sender_control(message):
-    """Permet d'envoyer un message au noeud de controle."""
+def tap_sender_control(packet):
+    """Permet d'envoyer des bytes au noeud de controle."""
     # Créer un éditeur pour publier les paquets sur un topic spécifique
     topic_name = "/tap0_packets"
     pub = create_pub(topic_name)
@@ -113,11 +112,9 @@ def tap_sender_control(message):
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udp_ip = "10.0.0.2"
         udp_port = 12000
-        null_term_msg = message + "\0"
-        packet = null_term_msg.encode("utf-8")
         udp_socket.sendto(packet, (udp_ip, udp_port))
         udp_socket.close()
-        inflog(f"Message envoyé à {udp_ip}:{udp_port} : {message}")
+        inflog(f"Message envoyé à {udp_ip}:{udp_port} : {packet.hex()}")
         # Publier le paquet sous forme hexadécimale
         msg = String()
         msg.data = packet.hex()
@@ -150,3 +147,142 @@ def connect_tap_device(tap_device):
             inflog("Nouvelle tentative dans 5 secondes...")
             time.sleep(5)  # Attendre 5 secondes avant de réessayer
     return None
+
+
+# TLV Hello (type 0)
+
+
+def get_hello_ros_tlv():
+    """Génère le tlv hello pour ros."""
+    value = struct.pack('=B', 0)  # hello 0 ros / hello 1 ns3
+    return struct.pack('=BB', 0, len(value)) + value
+
+
+# TLV Informatif (type 1+)
+
+
+def get_source_tlv(node):
+    """Génère le tlv de source pour un noeud."""
+    value = struct.pack('=B', node)
+    return struct.pack('=BB', 1, len(value)) + value
+
+
+def get_destination_tlv(node):
+    """Génère le tlv de source pour un noeud."""
+    value = struct.pack('=B', node)
+    return struct.pack('=BB', 2, len(value)) + value
+
+
+def get_position_tlv(node, vehicle):
+    """Recupère la position d'un vehicule carla et génère le tlv."""
+    try:
+        transform = vehicle.get_transform()
+        location = transform.location
+        value = struct.pack('=Bxxxfff', node, location.x, location.y, location.z)
+        return struct.pack('=BB', 3, len(value)) + value
+    except Exception as e:
+        print(e)
+        errlog("Location will be wrong")
+        value = struct.pack('=Bxxxfff', node, 0.0, 0.0, 0.0)
+        return struct.pack('=BB', 3, len(value)) + value
+
+
+def get_speed_tlv(node, vehicle):
+    """Recupère la vitesse d'un vehicule carla et génère le tlv."""
+    try:
+        velocity = vehicle.get_velocity()
+        value = struct.pack('=Bxxxfff', node, velocity.x, velocity.y, velocity.z)
+        return struct.pack('=BB', 4, len(value)) + value
+    except Exception as e:
+        print(e)
+        errlog("Velocity will be wrong")
+        value = struct.pack('=Bxxxfff', node, 0.0, 0.0, 0.0)
+        return struct.pack('=BB', 4, len(value)) + value
+
+
+# TLV Requetes (type 101+)
+
+
+def get_req_dur_tlv():
+    """Génère le tlv pour la requete de durée."""
+    value = struct.pack('=B', 0)
+    return struct.pack('=BB', 101, len(value)) + value
+
+
+def get_req_node_tlv():
+    """Génère le tlv pour la requete du nombre de noeuds."""
+    value = struct.pack('=B', 0)
+    return struct.pack('=BB', 102, len(value)) + value
+
+
+def get_req_anim_tlv():
+    """Génère le tlv pour la requete du fichier netanim."""
+    value = struct.pack('=B', 0)
+    return struct.pack('=BB', 103, len(value)) + value
+
+
+def get_req_time_tlv():
+    """Génère le tlv pour la requete du temps de la simulation."""
+    value = struct.pack('=B', 0)
+    return struct.pack('=BB', 104, len(value)) + value
+
+
+# Utilitaires
+
+
+def parse_tlv(message_tlv):
+    """Extrait d'un message tlv ses composantes."""
+    size = len(message_tlv)
+    parse = 0
+
+    src = -1
+    dst = -1
+    pos = []
+    vel = []
+
+    while parse < size:
+        tlv_type = message_tlv[parse]
+        parse += 1
+        length = message_tlv[parse]
+        parse += 1
+
+        if tlv_type == 1 and length == 1:
+            src = message_tlv[parse]
+        elif tlv_type == 2 and length == 1:
+            dst = message_tlv[parse]
+        elif tlv_type == 3 and length == 16:
+            pos.append(struct.unpack("=Bxxxfff", message_tlv[parse:parse+length]))
+        elif tlv_type == 4 and length == 16:
+            vel.append(struct.unpack("=Bxxxfff", message_tlv[parse:parse+length]))
+        else:
+            errlog(f"Unparsable message : {message_tlv.hex()}")
+
+        parse += length
+
+    return src, dst, pos, vel
+
+
+def get_stop_vehicule_tlv(node):
+    """Génère un tlv avec une vitesse nulle."""
+    value = struct.pack('=Bxxxfff', node, 0.0, 0.0, 0.0)
+    return struct.pack('=BB', 4, len(value)) + value
+
+
+def get_mobility_tlv(vehicles):
+    """Génère un ensemble de tlv avec toutes les positions et vitesses."""
+    packet = b''
+    for i in range(len(vehicles)):
+        pos = get_position_tlv(i+1, vehicles[i])
+        vel = get_speed_tlv(i+1, vehicles[i])
+        packet = b''.join([pos, vel, packet])
+    return packet
+
+
+def get_stop_vehicles_tlv(vehicles):
+    """Génère un ensemble de tlv avec toutes les positions et la vitesse nulle."""
+    packet = b''
+    for i in range(len(vehicles)):
+        pos = get_position_tlv(i+1, vehicles[i])
+        vel = get_stop_vehicule_tlv(i+1)
+        packet = b''.join([pos, vel, packet])
+    return packet

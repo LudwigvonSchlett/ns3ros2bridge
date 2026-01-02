@@ -14,10 +14,6 @@ namespace ns3
     .SetParent<Application> ()
     .SetGroupName("Applications")
     .AddConstructor<ROSVehicule> ()
-    .AddAttribute ("PortTap", "Port on which we send packets to ROS",
-                     UintegerValue (11000),
-                     MakeUintegerAccessor (&ROSVehicule::portTapi),
-                     MakeUintegerChecker<uint16_t> ())
     .AddAttribute ("PortWave", "Port on which we send packets to WAVE",
                      UintegerValue (11000),
                      MakeUintegerAccessor (&ROSVehicule::portWavei),
@@ -30,11 +26,6 @@ namespace ns3
                      "The Address on which to Bind the tap socket.",
                      AddressValue (),
                      MakeAddressAccessor (&ROSVehicule::tap_ipi),
-                     MakeAddressChecker ())
-    .AddAttribute ("LocalWave",
-                     "The Address on which to Bind the WAVE socket.",
-                     AddressValue (),
-                     MakeAddressAccessor (&ROSVehicule::wave_ipi),
                      MakeAddressChecker ())
     .AddAttribute ("VehicleNumber",
                      "The Number of the vehicle",
@@ -88,7 +79,6 @@ namespace ns3
     NS_LOG_INFO("Constructeur Rosvehicule");
     tapSocketi = nullptr;
     waveSocketi = nullptr;
-    m_totalRx1 = 0;
   }
 
   // Destructor
@@ -115,28 +105,29 @@ namespace ns3
 
     // Get node
     Ptr<Node> nodei = GetNode();
+    Ptr<NetDevice> tapDev = nodei->GetDevice(1);
+    Ptr<NetDevice> wifiDev = nodei->GetDevice(2);
 
-    Ipv4Address tapIp = InetSocketAddress::ConvertFrom(tap_ipi).GetIpv4();  // extract Ipv4Address
-    InetSocketAddress tapAddr(tapIp, portTapi);
-
+    //Tap
     tapSocketi = Socket::CreateSocket(nodei, m_tapSocket_tidi);
     tapSocketi->SetAllowBroadcast (true);//autoriser la communication broadcast
-    tapSocketi->Bind(tapAddr);
+    tapSocketi->Bind(tap_ipi); // accepte adrresseTap::portTap
+    tapSocketi->BindToNetDevice(tapDev); // bloque à uniquement l'interface tap
     tapSocketi->Connect(ros_ipi);
-    tapSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadTapi, this));
+    tapSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadTap, this));
 
-
-    Ipv4Address waveIp = InetSocketAddress::ConvertFrom(wave_ipi).GetIpv4();  // extract Ipv4Address
-    InetSocketAddress waveAddr(waveIp, portWavei);
+    //Wave
+    InetSocketAddress wave_ipi(Ipv4Address::GetAny(), portWavei); // 0.0.0.0::portWavei
 
     waveSocketi = Socket::CreateSocket(nodei, m_waveSocket_tidi);
     waveSocketi->SetAllowBroadcast(true);
-    waveSocketi->Bind(waveAddr);
-    waveSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadWavei, this));
+    waveSocketi->Bind(wave_ipi); // accepte tout sur son le portWavei
+    waveSocketi->BindToNetDevice(wifiDev); // bloque à uniquement l'interface wave
+    waveSocketi->SetRecvCallback (MakeCallback (&ROSVehicule::HandleReadWave, this));
   }
 
 
-  void ROSVehicule::StopApplication () { //cette fonction nous permet lors de l'arret de la simulation de premièrement fermer le socket créer vers RTmaps, et aussi ceux provenant de Rtmaps
+  void ROSVehicule::StopApplication () { //cette fonction nous permet lors de l'arret de la simulation de premièrement fermer le socket créer vers ros2
     NS_LOG_UNCOND("TEST STOP APPLI ");
     NS_LOG_FUNCTION (this);
     NS_LOG_INFO("Stopping Rosvehicule "  << vehicle_number);
@@ -152,10 +143,11 @@ namespace ns3
     }
   }
 
-  void ROSVehicule::HandleReadTapi(Ptr<Socket> socket)
+  void ROSVehicule::HandleReadTap(Ptr<Socket> socket)
   {
     NS_LOG_FUNCTION(this << socket);
 
+    Ptr<ConstantVelocityMobilityModel> mobility = GetNode()->GetObject<ConstantVelocityMobilityModel>();
     Ptr<Packet> packet;
     Address from;
 
@@ -166,24 +158,82 @@ namespace ns3
       std::vector<uint8_t> buffer(size);
       packet->CopyData(buffer.data(), size);
 
-      char* contenu = reinterpret_cast<char*>(buffer.data());
+      std::ostringstream oss;
+      oss << std::hex << std::setfill('0');
 
-      NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " received: " << contenu);
-
-      std::istringstream iss(contenu);
-
-      int dst, src;
-      std::string rest;
-
-      iss >> dst >> src;
-      std::getline(iss, rest);
-
-      if (!rest.empty() && rest[0] == ' '){
-        rest.erase(0, 1);
+      for (uint8_t b : buffer)
+      {
+        oss << std::setw(2) << static_cast<int>(b) << " ";
       }
-        
+
+      NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " received (hex): " << oss.str());
+
+      uint32_t parse = 0;
+      int src = 0;
+      int dst = 0;
+      const uint8_t* data = buffer.data();
+
+      while (parse < size) {
+
+        uint8_t type = data[parse];
+        parse++;
+        uint8_t length = data[parse];
+        parse++;
+
+        if ((type == 1) && (length == 1)) {
+          src = data[parse];
+        }
+        else if ((type == 2) && (length == 1)) {
+          dst = data[parse];
+        }
+        // permet de lire les messages de position et de mettre à jour sa propre position
+        else if ((type == 3) && (length == 16)) {
+          float x, y, z;
+          uint8_t pos_src = data[parse];
+          std::memcpy(&x, data + parse + 4, sizeof(float));
+          std::memcpy(&y, data + parse + 8, sizeof(float));
+          std::memcpy(&z, data + parse + 12, sizeof(float));
+          const Vector NODE_POSITION(x, y, z);
+          if (pos_src == vehicle_number) {
+            //mobility->SetPosition(NODE_POSITION); // permet au noeud de mettre à jour sa position
+            //NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " would update position to " << NODE_POSITION);
+          }
+        }
+        // permet de lire les messages de position et de mettre à jour sa propre vitesse
+        else if ((type == 4) && (length == 16)) {
+          float vx, vy, vz;
+          uint8_t vel_src = data[parse];
+          std::memcpy(&vx, data + parse + 4, sizeof(float));
+          std::memcpy(&vy, data + parse + 8, sizeof(float));
+          std::memcpy(&vz, data + parse + 12, sizeof(float));
+          const Vector NODE_SPEED(vx, vy, vz);
+          if (vel_src == vehicle_number) {
+            //mobility->SetVelocity(NODE_SPEED); // permet au noeud de mettre à jour sa vitesse
+            //NS_LOG_INFO("VEHICLE TAP " << vehicle_number << " would update speed to " << NODE_SPEED);
+          }
+        }
+        else {
+          NS_LOG_ERROR("Message unable to be parsed");
+        }
+
+        parse+=length;
+      }
+
+      // broadcast basique
+      if (dst == 255) {
+
+        InetSocketAddress remoteAddr(Ipv4Address("11.0.0.255"), portWavei);
+
+        ROSHeader hdr(dst, src);
+
+        Ptr<Packet> p = packet->Copy();
+        p->AddHeader(hdr);
+
+        waveSocketi->SendTo(p, 0, remoteAddr);
+
+      }
       // unicast basique
-      if (dst != 0) {
+      else if ((dst != 255) && (dst != 0)) {
 
         std::ostringstream ipWave;
         ipWave << "11.0.0." << dst;
@@ -192,20 +242,15 @@ namespace ns3
 
         ROSHeader hdr(dst, src);
 
-        Ptr<Packet> p = Create<Packet>(
-          reinterpret_cast<const uint8_t*>(rest.c_str()),
-          rest.size() + 1   // keep '\0'
-        );
-
+        Ptr<Packet> p = packet->Copy();
         p->AddHeader(hdr);
 
         waveSocketi->SendTo(p, 0, remoteAddr);
-
       }
     }
   }
 
-void ROSVehicule::HandleReadWavei (Ptr<Socket> socket)
+void ROSVehicule::HandleReadWave (Ptr<Socket> socket)
 {
   NS_LOG_FUNCTION(this << socket);
 
@@ -221,22 +266,17 @@ void ROSVehicule::HandleReadWavei (Ptr<Socket> socket)
     std::vector<uint8_t> buffer(size);
     packet->CopyData(buffer.data(), size);
 
-    std::string rest(reinterpret_cast<char*>(buffer.data()));
-
-    NS_LOG_INFO("VEHICLE WAVE " << vehicle_number
-                 << " received: " << hdr << " payload: " << rest);
-
     std::ostringstream oss;
-    oss << int(hdr.GetDstId()) << " "
-        << int(hdr.GetSrcId()) << " "
-        << rest;
+    oss << std::hex << std::setfill('0');
 
-    std::string out = oss.str();
+    for (uint8_t b : buffer)
+    {
+      oss << std::setw(2) << static_cast<int>(b) << " ";
+    }
 
-    Ptr<Packet> tapPacket = Create<Packet>(
-        reinterpret_cast<const uint8_t*>(out.c_str()),
-        out.size() + 1 // keep '\0'
-    );
+    NS_LOG_INFO("VEHICLE WAVE " << vehicle_number << " received: " << hdr << " payload (hex): " << oss.str());
+
+    Ptr<Packet> tapPacket = packet->Copy();
 
     tapSocketi->Send(tapPacket);
   }

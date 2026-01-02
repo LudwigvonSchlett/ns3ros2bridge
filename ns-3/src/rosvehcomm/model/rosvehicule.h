@@ -3,6 +3,7 @@
 #define ROSVEHICULE_H
 
 #include <functional>
+#include <iomanip>
 #include <unordered_map>
 
 #include "ns3/core-module.h"
@@ -35,26 +36,22 @@ namespace ns3 {
       virtual void StartApplication (void);    // Called at time specified by Start
       virtual void StopApplication (void);     // Called at time specified by Stop
 
-      static std::vector<std::string> SplitCharPointer(const char* input);
-      void HandleReadTapi (Ptr<Socket> socket);
-      void HandleReadWavei (Ptr<Socket> socket);
+      void HandleReadTap (Ptr<Socket> socket);
+      void HandleReadWave (Ptr<Socket> socket);
 
       // ATTRIBUTES
 
       // Socket with tap device
       Ptr<Socket>     tapSocketi;
       TypeId          m_tapSocket_tidi;
-      Address         tap_ipi;
-      uint16_t        portTapi; // socket port
-      Address         ros_ipi;
+      Address         tap_ipi; // contiens adresse + port
+      Address         ros_ipi; // contiens adresse + port
 
       Ptr<Socket>     waveSocketi;
       TypeId          m_waveSocket_tidi;
       uint16_t        portWavei; // socket port
-      Address         wave_ipi;
 
-      int         		  vehicle_number;
-      uint64_t          m_totalRx1;
+      int         		vehicle_number;
 
       bool            m_enableSeqTsSizeHeader1 {false};
 

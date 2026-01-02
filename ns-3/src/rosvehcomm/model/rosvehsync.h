@@ -27,7 +27,7 @@ namespace ns3 {
 
   struct SimInfo {
       std::string filename;
-      int nodeCount;
+      uint8_t nodeCount;
       Time duration;
   };
 
@@ -57,7 +57,6 @@ namespace ns3 {
 	    Time m_interval; //Time to wait between packets
 
 	    Address ros_ip; // ROS Address
-      uint16_t port; // socket port
 	    Address tap_ip;	// Tap device IP
 
       Ptr<Socket> controlSocket; // Socket with ROS for controller node
@@ -65,14 +64,8 @@ namespace ns3 {
 
 	    std::vector<Ptr<ConstantVelocityMobilityModel>> vector_mobilities;
 
-      Ptr<YansWifiChannel> sharedChannel;
-
       virtual void StartApplication (void);
       virtual void StopApplication (void);
-
-      Ptr<Socket> m_socket_from_rtmaps; //!< IPv4 Socket
-
-      EventId m_sendEvent_rtmaps; //!< Event to send the next packet
 
       /// Callbacks for tracing the packet Tx events
       TracedCallback<Ptr<const Packet> > m_txTrace;
@@ -116,8 +109,6 @@ namespace ns3 {
       };
 
       std::unordered_map<Address, Ptr<Packet>, AddressHash> m_buffer; //!< Buffer for received packets
-
-      std::list<Ptr<Socket> > m_socketList; //!< the accepted sockets
 
       uint64_t        m_totalRx;      //!< Total bytes received
 
