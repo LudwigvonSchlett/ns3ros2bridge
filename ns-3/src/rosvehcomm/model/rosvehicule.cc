@@ -226,10 +226,11 @@ namespace ns3
 
         ROSHeader hdr(dst, src);
 
-        Ptr<Packet> p = packet->Copy();
-        p->AddHeader(hdr);
+        Ptr<Packet> wavePacket = Create<Packet>(buffer.data(), buffer.size());
 
-        waveSocketi->SendTo(p, 0, remoteAddr);
+        wavePacket->AddHeader(hdr);
+
+        waveSocketi->SendTo(wavePacket, 0, remoteAddr);
 
       }
       // unicast basique
@@ -242,10 +243,11 @@ namespace ns3
 
         ROSHeader hdr(dst, src);
 
-        Ptr<Packet> p = packet->Copy();
-        p->AddHeader(hdr);
+        Ptr<Packet> wavePacket = Create<Packet>(buffer.data(), buffer.size());
 
-        waveSocketi->SendTo(p, 0, remoteAddr);
+        wavePacket->AddHeader(hdr);
+
+        waveSocketi->SendTo(wavePacket, 0, remoteAddr);
       }
     }
   }
@@ -276,7 +278,7 @@ void ROSVehicule::HandleReadWave (Ptr<Socket> socket)
 
     NS_LOG_INFO("VEHICLE WAVE " << vehicle_number << " received: " << hdr << " payload (hex): " << oss.str());
 
-    Ptr<Packet> tapPacket = packet->Copy();
+    Ptr<Packet> tapPacket = Create<Packet>(buffer.data(), buffer.size());
 
     tapSocketi->Send(tapPacket);
   }

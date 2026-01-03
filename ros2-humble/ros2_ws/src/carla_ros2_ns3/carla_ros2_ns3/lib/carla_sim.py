@@ -18,7 +18,7 @@ if cst.MODE == "cpu":
     RENDERING = True
 elif cst.MODE == "vm":
     HOST = "192.168.56.1"
-    RENDERING = True
+    RENDERING = False
 else:  # gpu
     HOST = "localhost"
     RENDERING = False
