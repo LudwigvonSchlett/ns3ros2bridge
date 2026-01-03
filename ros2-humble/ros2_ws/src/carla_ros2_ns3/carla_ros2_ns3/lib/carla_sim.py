@@ -23,7 +23,9 @@ else:  # gpu
     HOST = "localhost"
     RENDERING = False
 
-client = carla.Client(HOST, 2000)  # connexion a Carla
+CARLA_PORT = 2000
+TM_PORT = 8000
+client = carla.Client(HOST, CARLA_PORT)  # connexion a Carla
 
 
 def init_carla():
@@ -77,14 +79,14 @@ def init_carla():
             cst.vehicles.append(vehicle)
 
         inflog("Initializing traffic manager")
-        traffic_manager = client.get_trafficmanager(8001)
+        traffic_manager = client.get_trafficmanager(TM_PORT)
         traffic_manager.set_synchronous_mode(False)
         # Désactiver le mode synchrone du Traffic Manager
         traffic_manager.set_global_distance_to_leading_vehicle(2.0)
         # Distance minimale
 
         for vehicle in cst.vehicles:
-            vehicle.set_autopilot(True, 8001)
+            vehicle.set_autopilot(True, TM_PORT)
 
     except Exception as e:
         errlog("Exception initializing carla")
