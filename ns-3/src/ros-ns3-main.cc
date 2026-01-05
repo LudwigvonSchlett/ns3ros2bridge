@@ -143,7 +143,9 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
     helperi.SetTapIpv4Mask (tap_maski);//et un masque de sous réseau.
 
     NetDeviceContainer netDeviceContaineri = helperi.Install (nodei);//On créer un device container et on lui attribut notre tap device
-    Ptr<NetDevice> netDevicei = netDeviceContaineri.Get (0);//Pas utile vu qu'on a un seul noeud
+    Ptr<NetDevice> netDevicei = netDeviceContaineri.Get (0);//Pour pcap 
+    
+    helperi.EnablePcap("rosvehicule-80211p", netDevicei);
 
     Ptr<Ipv4> ipv4_i = nodei->GetObject<Ipv4> ();
     uint32_t interfacei = ipv4_i->AddInterface (netDevicei);
