@@ -173,11 +173,11 @@ def stop_simulation():
 
     if cst.comunication_nodes_thread is not None:
         cst.comunication_nodes_thread.join()
-        inflog("cst.comunication_nodes_thread is stopped")
+        inflog("comunication_nodes_thread is stopped")
 
     if cst.listen_tap_devices_thread is not None:
         cst.listen_tap_devices_thread.join()
-        inflog("cst.listen_tap_devices_thread is stopped")
+        inflog("listen_tap_devices_thread is stopped")
 
     # Arrete les vehicules dans ns3
     if len(cst.vehicles) > 0:

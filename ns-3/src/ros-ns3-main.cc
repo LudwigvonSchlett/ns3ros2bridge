@@ -164,17 +164,30 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
   std::string phyMode ("OfdmRate6MbpsBW10MHz");// A voir --------------
 
   YansWifiChannelHelper waveChannel = YansWifiChannelHelper::Default();
-  Ptr<YansWifiChannel> sharedChannel = waveChannel.Create();
-
   /* Documentantion for YansWifiChannelHelper::Default()
   * Create a channel helper in a default working state. By default, we create
   * a channel model with a propagation delay equal to a constant, the speed of light,
   * and a propagation loss based on a log distance model with a reference loss of 46.6777 dB
   * at reference distance of 1m.
   */
+  
+  // Modèles de base mutuelement exclusifs
+  DoubleValue waveFreq =  DoubleValue(5.9e9);
+  DoubleValue antenna = DoubleValue(1.5);
+  //waveChannel.AddPropagationLoss("ns3::LogDistancePropagationLossModel");
+  //waveChannel.AddPropagationLoss("ns3::FriisPropagationLossModel", "Frequency", waveFreq);
+  //waveChannel.AddPropagationLoss("ns3::TwoRayGroundPropagationLossModel", "Frequency", waveFreq, "HeightAboveZ", antenna);
 
+  // Modèles de shadowing
+  StringValue logNormal = StringValue("ns3::LogNormalRandomVariable[Mu=0.0|Sigma=6.0]");
+  //waveChannel.AddPropagationLoss("ns3::RandomPropagationLossModel", "Variable", logNormal);
+
+  // Modèles de fading 
+  //waveChannel.AddPropagationLoss("ns3::NakagamiPropagationLossModel");
+  //waveChannel.AddPropagationLoss("ns3::JakesPropagationLossModel");
+  
   YansWifiPhyHelper wifiPhy;
-  wifiPhy.SetChannel(sharedChannel);
+  wifiPhy.SetChannel(waveChannel.Create());
   wifiPhy.Set("TxPowerStart", DoubleValue(20.0));  // in dBm
   wifiPhy.Set("TxPowerEnd", DoubleValue(20.0));  // in dBm
   wifiPhy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11);
@@ -280,7 +293,7 @@ main (int argc, char *argv[])
 
   // NetAnim does not support creating nodes at run-time
   // We have to create nodes and then update them according to ROS
-  const uint8_t maxNodes = 5;
+  const uint8_t maxNodes = 2;
 
   NS_LOG_INFO("Initialisation des noeuds vehicules");
   initVehicules(maxNodes, ip_ROS);

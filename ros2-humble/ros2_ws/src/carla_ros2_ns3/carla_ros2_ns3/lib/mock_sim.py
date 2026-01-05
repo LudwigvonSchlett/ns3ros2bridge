@@ -9,11 +9,18 @@ from carla_ros2_ns3.lib.mock_vehicule import ConstantPositionVehicule
 def init_mock():
     """Initialise les mocks."""
     # Créer les véhicules
-    for _ in range(cst.nb_nodes):
-        vehicle = None
-        while vehicle is None:
-            x = random.randint(-50, 50)
-            y = random.randint(-50, 50)
-            z = 0
-            vehicle = ConstantPositionVehicule(x, y, z)
+    for i in range(cst.nb_nodes):
+        if i == 0:
+            x = -35.0
+            y = 0.0
+            z = 0.0
+        elif i == 1:
+            x = 35.0
+            y = 0.0
+            z = 0.0
+        else:
+            x = random.uniform(-50.0, 50.0)
+            y = random.uniform(-50.0, 50.0)
+            z = 0.0
+        vehicle = ConstantPositionVehicule(x, y, z)
         cst.vehicles.append(vehicle)
