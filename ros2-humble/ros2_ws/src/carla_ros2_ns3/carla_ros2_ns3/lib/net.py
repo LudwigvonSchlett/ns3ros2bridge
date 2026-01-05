@@ -12,6 +12,10 @@ from carla_ros2_ns3.lib.ros import (
     errlog,
     create_pub
 )
+from carla_ros2_ns3.lib.carla_sim import (
+    get_position,
+    get_speed
+)
 
 # Partie Réseau
 
@@ -175,29 +179,16 @@ def get_destination_tlv(node):
 
 def get_position_tlv(node, vehicle):
     """Recupère la position d'un vehicule carla et génère le tlv."""
-    try:
-        transform = vehicle.get_transform()
-        location = transform.location
-        value = struct.pack('=Bxxxfff', node, location.x, location.y, location.z)
-        return struct.pack('=BB', 3, len(value)) + value
-    except Exception as e:
-        print(e)
-        errlog("Location will be wrong")
-        value = struct.pack('=Bxxxfff', node, 0.0, 0.0, 0.0)
-        return struct.pack('=BB', 3, len(value)) + value
+    x, y, z = get_position(vehicle)
+    value = struct.pack('=Bxxxfff', node, x, y, z)
+    return struct.pack('=BB', 3, len(value)) + value
 
 
 def get_speed_tlv(node, vehicle):
     """Recupère la vitesse d'un vehicule carla et génère le tlv."""
-    try:
-        velocity = vehicle.get_velocity()
-        value = struct.pack('=Bxxxfff', node, velocity.x, velocity.y, velocity.z)
-        return struct.pack('=BB', 4, len(value)) + value
-    except Exception as e:
-        print(e)
-        errlog("Velocity will be wrong")
-        value = struct.pack('=Bxxxfff', node, 0.0, 0.0, 0.0)
-        return struct.pack('=BB', 4, len(value)) + value
+    vx, vy, vz = get_speed(vehicle)
+    value = struct.pack('=Bxxxfff', node, vx, vy, vz)
+    return struct.pack('=BB', 4, len(value)) + value
 
 
 # TLV Requetes (type 101+)

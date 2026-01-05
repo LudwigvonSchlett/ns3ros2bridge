@@ -115,3 +115,16 @@ def spawn_vehicle(world, blueprints, spawn_points):
     vehicle = world.try_spawn_actor(blueprint, spawn_point)
 
     return vehicle
+
+
+def get_position(vehicle):
+    """Get vehicule position"""
+    transform = vehicle.get_transform()
+    location = transform.location
+    return location.x, location.y, location.z
+
+
+def get_speed(vehicle):
+    """Get vehicule speed"""
+    velocity = vehicle.get_velocity()
+    return velocity.x, velocity.y, velocity.z
