@@ -271,9 +271,9 @@ def get_stop_vehicule_tlv(node):
 def get_mobility_tlv(vehicles):
     """Génère un ensemble de tlv avec toutes les positions et vitesses."""
     packet = b''
-    for i in range(len(vehicles)):
-        pos = get_position_tlv(i+1, vehicles[i])
-        vel = get_speed_tlv(i+1, vehicles[i])
+    for i, vehicle in enumerate(vehicles):
+        pos = get_position_tlv(i+1, vehicle)
+        vel = get_speed_tlv(i+1, vehicle)
         packet = b''.join([pos, vel, packet])
     return packet
 
@@ -281,8 +281,8 @@ def get_mobility_tlv(vehicles):
 def get_stop_vehicles_tlv(vehicles):
     """Génère un ensemble de tlv avec toutes les positions et la vitesse nulle."""
     packet = b''
-    for i in range(len(vehicles)):
-        pos = get_position_tlv(i+1, vehicles[i])
+    for i, vehicle in enumerate(vehicles):
+        pos = get_position_tlv(i+1, vehicle)
         vel = get_stop_vehicule_tlv(i+1)
         packet = b''.join([pos, vel, packet])
     return packet

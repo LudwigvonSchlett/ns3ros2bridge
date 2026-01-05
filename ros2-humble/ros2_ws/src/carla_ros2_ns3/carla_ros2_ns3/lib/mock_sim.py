@@ -3,7 +3,7 @@
 import random
 
 import carla_ros2_ns3.const as cst
-from carla_ros2_ns3.lib.mock_vehicule import Vehicule, Transform, Location, Velocity
+from carla_ros2_ns3.lib.mock_vehicule import ConstantPositionVehicule
 
 
 def init_mock():
@@ -15,8 +15,5 @@ def init_mock():
             x = random.randint(-50, 50)
             y = random.randint(-50, 50)
             z = 0
-            vx = 0
-            vy = 0
-            vz = 0
-            vehicle = Vehicule(Transform(Location(x, y, z)), Velocity(vx, vy, vz))
+            vehicle = ConstantPositionVehicule(x, y, z)
         cst.vehicles.append(vehicle)

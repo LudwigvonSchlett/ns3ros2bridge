@@ -39,3 +39,12 @@ class Velocity:
         self.x = x
         self.y = y
         self.z = z
+
+
+class ConstantPositionVehicule(Vehicule):
+    """A basic mock for a static carla Vehicule."""
+
+    def __init__(self, x, y, z):
+        transform = Transform(Location(x, y, z))
+        velocity = Velocity(0, 0, 0)
+        Vehicule.__init__(self, transform, velocity)
