@@ -163,18 +163,22 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
 
   std::string phyMode ("OfdmRate6MbpsBW10MHz");// A voir --------------
 
-  YansWifiChannelHelper waveChannel = YansWifiChannelHelper::Default();
+  //YansWifiChannelHelper waveChannel = YansWifiChannelHelper::Default();
   /* Documentantion for YansWifiChannelHelper::Default()
   * Create a channel helper in a default working state. By default, we create
   * a channel model with a propagation delay equal to a constant, the speed of light,
   * and a propagation loss based on a log distance model with a reference loss of 46.6777 dB
   * at reference distance of 1m.
   */
+
+  YansWifiChannelHelper waveChannel;
+  waveChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
   
   // Modèles de base mutuelement exclusifs
-  DoubleValue waveFreq =  DoubleValue(5.9e9);
-  DoubleValue antenna = DoubleValue(1.5);
-  //waveChannel.AddPropagationLoss("ns3::LogDistancePropagationLossModel");
+  DoubleValue waveFreq =  DoubleValue(5.9e9); // 5.9 GHz
+  DoubleValue antenna = DoubleValue(1.5);     // 1.5 m
+  DoubleValue refLoss = DoubleValue(47.8648); // -47,8648 dB calculé à partir de Friis à 1 m avec 5.9 GHz
+  waveChannel.AddPropagationLoss("ns3::LogDistancePropagationLossModel", "ReferenceLoss", refLoss);
   //waveChannel.AddPropagationLoss("ns3::FriisPropagationLossModel", "Frequency", waveFreq);
   //waveChannel.AddPropagationLoss("ns3::TwoRayGroundPropagationLossModel", "Frequency", waveFreq, "HeightAboveZ", antenna);
 
@@ -282,7 +286,7 @@ main (int argc, char *argv[])
 
   /*** Paramètres de la simulation ***/
   NS_LOG_INFO("Setting up parameters");
-  Time simulationTime (Seconds(60));
+  Time simulationTime (Seconds(100));
 
   /*** Mise en place du noeud de contrôle ***/
   // Peu importe l'adresse ROS peut voir tout ce qui se passe sur le TAP

@@ -148,8 +148,8 @@ def connect_tap_device(tap_device):
                 "Erreur lors de la connexion au périphérique"
                 + f"{tap_device}: {e}")
 
-            inflog("Nouvelle tentative dans 5 secondes...")
-            time.sleep(5)  # Attendre 5 secondes avant de réessayer
+            inflog("Nouvelle tentative dans 1 secondes...")
+            time.sleep(1)  # Attendre 1 seconde avant de réessayer
     return None
 
 

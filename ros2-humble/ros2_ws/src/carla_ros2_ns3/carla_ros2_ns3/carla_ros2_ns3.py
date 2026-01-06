@@ -130,6 +130,10 @@ def control_node_listener(socket_tap0):
                             tap_socket = connect_tap_device(f"tap{num_node}")
                             sockets.append(tap_socket)
                         inflog("Launching simulation")
+
+                        for vehicle in cst.vehicles:
+                            vehicle.set_autopilot(True, cst.TM_PORT)
+
                         launch_simulation(sockets, socket_tap0)
 
                     else:
@@ -186,13 +190,12 @@ def stop_simulation():
         tap_sender_control(packet)
 
     # Détruire les véhicules pour nettoyer la simulation
-    if cst.carla_sim == "carla":
-        for vehicle in cst.vehicles:
-            if vehicle.is_alive:
-                vid = vehicle.id
-                vehicle.set_autopilot(False, 8001)
-                vehicle.destroy()
-                inflog(f"Véhicule {vid} détruit.")
+    for vehicle in cst.vehicles:
+        if vehicle.is_alive:
+            vid = vehicle.id
+            vehicle.set_autopilot(False, cst.TM_PORT)
+            vehicle.destroy()
+            inflog(f"Véhicule {vid} détruit.")
 
     inflog("Simulation terminée.")
     if cst.number_message_sent != 0:
@@ -247,7 +250,7 @@ def listen_control_tap(control_socket):
 
                         simulation_time, = struct.unpack("=H", message[parse:parse+length])
                         inflog(f"ns3 Simulation time is {simulation_time} seconds")
-                        if cst.simulation_duration - simulation_time < 5:
+                        if cst.simulation_duration - simulation_time <= 2:
                             inflog("Fin de la simulation")
                             stop_simulation()
 

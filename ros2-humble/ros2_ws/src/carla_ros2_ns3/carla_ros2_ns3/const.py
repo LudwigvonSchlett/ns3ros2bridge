@@ -2,7 +2,7 @@
 
 # Constantes
 MTU = 15000   # Maximum Transmission Unit pour Ethernet frame
-MODE = "gpu"  # gpu cpu vm
+MODE = "vm"  # gpu cpu vm
 
 # Varibles
 # Variables de simulation
@@ -13,6 +13,9 @@ number_message_sent = 0  # Pour les messages s'envoyant via tap1,2,3,...
 number_message_received = 0  # Pour les messages s'envoyant via tap1,2,3,...
 simulation_duration = 0
 interval = 1
+# Ports pour carla
+CARLA_PORT = 2000
+TM_PORT = 8000
 # Listes des vehicules pour carla
 vehicles = []
 # Thread et essentiels pour la sychronisation
