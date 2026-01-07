@@ -57,6 +57,8 @@ initControlNode (std::string ip_ROS)
   NetDeviceContainer netDeviceContainer = tapHelper.Install (controlNode);
   Ptr<NetDevice> netDevice = netDeviceContainer.Get (0);
 
+  tapHelper.EnablePcap("rosvehsync", netDevice);
+
   // Interface
   Ptr<Ipv4> ipv4 = controlNode->GetObject<Ipv4> ();
   uint32_t interface = ipv4->AddInterface (netDevice);
