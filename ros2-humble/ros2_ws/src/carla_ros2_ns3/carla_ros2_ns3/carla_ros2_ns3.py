@@ -77,7 +77,7 @@ def control_node_listener(socket_tap0):
             # Vérifiez si le paquet est destiné
             # à votre propre adresse TAP pour l'ignorer
 
-            if check_message(packet) and dest_ip_str != '10.0.0.2':
+            if check_message(packet) and dest_ip_str != cst.CONTROL_NODE_IP:
                 inflog("tap0 received a packet from control node")
                 print_udp(packet)
                 message = packet[42:]
@@ -232,7 +232,7 @@ def listen_control_tap(control_socket):
             # Vérifiez si le paquet est destiné
             # à votre propre adresse TAP pour l'ignorer
 
-            if check_message(packet) and dest_ip_str != '10.0.0.2':
+            if check_message(packet) and dest_ip_str != cst.CONTROL_NODE_IP:
                 inflog("tap0 received a packet from control node")
                 message = packet[42:]
                 inflog(f"Received packet (hex): {message.hex()}")

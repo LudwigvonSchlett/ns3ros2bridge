@@ -114,7 +114,7 @@ def tap_sender_control(packet):
 
     try:
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        udp_ip = "10.0.0.2"
+        udp_ip = "10.0.0.1"
         udp_port = 12000
         udp_socket.sendto(packet, (udp_ip, udp_port))
         udp_socket.close()

@@ -2,6 +2,7 @@
 
 # Constantes
 MTU = 15000   # Maximum Transmission Unit pour Ethernet frame
+CONTROL_NODE_IP = "10.0.0.1"
 MODE = "vm"  # gpu cpu vm
 
 # Varibles

@@ -45,13 +45,14 @@ initControlNode (std::string ip_ROS)
   //Une fois les adresses IP obtenu on les attribut au noeud de controle ( qui gère le tap device)
   Ipv4AddressHelper addressHelper;
   addressHelper.SetBase (controlNetwork, controlMask); // 10.0.0.0 et 255.255.255.0
-  Ipv4Address controlNodeIp = addressHelper.NewAddress (); // 10.0.0.1
+  Ipv4Address controlTapIp = addressHelper.NewAddress (); // 10.0.0.1
+  Ipv4Address externalTapIp = addressHelper.NewAddress (); //10.0.0.2
 
   //Mise en place du tap device
   TapFdNetDeviceHelper tapHelper; // Fd = File Descriptor
   tapHelper.SetDeviceName (tapName); //tap0
   tapHelper.SetModePi (modePi); //false (Pi = protocol information)
-  tapHelper.SetTapIpv4Address (controlNodeIp);//ip du noeud de controle = 10.0.0.1
+  tapHelper.SetTapIpv4Address (externalTapIp);//ip externe du tap = 10.0.0.2
   tapHelper.SetTapIpv4Mask (controlMask);//255.255.255.0
 
   NetDeviceContainer netDeviceContainer = tapHelper.Install (controlNode);
@@ -62,7 +63,6 @@ initControlNode (std::string ip_ROS)
   // Interface
   Ptr<Ipv4> ipv4 = controlNode->GetObject<Ipv4> ();
   uint32_t interface = ipv4->AddInterface (netDevice);
-  Ipv4Address controlTapIp = addressHelper.NewAddress (); //10.0.0.2
   Ipv4InterfaceAddress controlInterfaceAddress = Ipv4InterfaceAddress (controlTapIp, controlMask);
   ipv4->AddAddress (interface, controlInterfaceAddress);
   ipv4->SetMetric (interface, 1);
@@ -71,14 +71,16 @@ initControlNode (std::string ip_ROS)
   //Mise en place du routage
   Ipv4StaticRoutingHelper ipv4RoutingHelper;
   Ptr<Ipv4StaticRouting> staticRouting = ipv4RoutingHelper.GetStaticRouting (ipv4);
-  staticRouting->SetDefaultRoute (controlNodeIp, interface);
+  staticRouting->SetDefaultRoute (externalTapIp, interface);
 
-  AddressValue remoteAddress(InetSocketAddress (ipv4_address_ROS, port));
-  AddressValue sinkLocalAddress(InetSocketAddress (controlTapIp, port));
-
+  //Mobilité pour le noeud
   MobilityHelper mobilityControlNode;
   mobilityControlNode.SetMobilityModel("ns3::ConstantPositionMobilityModel");
   mobilityControlNode.Install(controlNode);
+
+  //Adresses pour le noeud
+  AddressValue remoteAddress(InetSocketAddress (ipv4_address_ROS, port));
+  AddressValue sinkLocalAddress(InetSocketAddress (controlTapIp, port));
 
   /*** Mise en place de ROSVehSyncHelper ***/
   ROSVehSyncHelper ROSVehSyncHelper;
@@ -231,11 +233,34 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
     Ipv4Address tap_neti (tap_neti_string.c_str());
     Ipv4Address ros_ipv4 (ip_ROS.c_str ());
 
+    // Adresses pour le noeud
     AddressValue remoteAddressi(InetSocketAddress (ros_ipv4, portveh));
     AddressValue sinkLocalAddressi(InetSocketAddress (tap_neti, portveh));
 
     // WAVE
     uint16_t portwave = 14000;
+
+    //Mettre en place les paramètres de ROS
+    ROSVehiculeHelper rosVehiculeHelper;
+    rosVehiculeHelper.SetAttribute ("RemoteROS", remoteAddressi);
+    rosVehiculeHelper.SetAttribute ("LocalTap", sinkLocalAddressi);
+    rosVehiculeHelper.SetAttribute ("VehicleNumber", IntegerValue(i));
+    rosVehiculeHelper.SetAttribute ("PortWave", UintegerValue(portwave));
+
+    ApplicationContainer ROSVehSyncApps1 = rosVehiculeHelper.Install (nodei);
+  }
+}
+
+void 
+check_nodes (int nb_vehicule) {
+
+  for (int i = 0; i <= nb_vehicule; i++) {
+
+    Ptr<Node> nodei = NodeContainer::GetGlobal().Get(i);
+
+    string nodeNumberString = to_string(i);
+
+    NS_LOG_UNCOND("Checking node "+nodeNumberString);
 
     // Check installation
     Ptr<Ipv4> ipv4check = nodei->GetObject<Ipv4>();
@@ -249,15 +274,8 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
       NS_LOG_INFO("Device " << j << ": " << nodei->GetDevice(j)->GetInstanceTypeId().GetName());
     }
 
-    //Mettre en place les paramètres de ROS
-    ROSVehiculeHelper rosVehiculeHelper;
-    rosVehiculeHelper.SetAttribute ("RemoteROS", remoteAddressi);
-    rosVehiculeHelper.SetAttribute ("LocalTap", sinkLocalAddressi);
-    rosVehiculeHelper.SetAttribute ("VehicleNumber", IntegerValue(i));
-    rosVehiculeHelper.SetAttribute ("PortWave", UintegerValue(portwave));
-
-    ApplicationContainer ROSVehSyncApps1 = rosVehiculeHelper.Install (nodei);
   }
+
 }
 
 int
@@ -304,6 +322,10 @@ main (int argc, char *argv[])
   NS_LOG_INFO("Initialisation des noeuds vehicules");
   initVehicules(maxNodes, ip_ROS);
 
+  NS_LOG_INFO("Verification des noeuds");
+  check_nodes(maxNodes);
+
+  //Setup for netanim
   auto now = std::time(nullptr);
   std::tm localTime = *std::localtime(&now);
 
@@ -317,6 +339,7 @@ main (int argc, char *argv[])
   AnimationInterface anim(animFileName);
   anim.EnablePacketMetadata(true);
 
+  //Informations à transferer à ros2
   simInfo.filename = animFileName;
   simInfo.nodeCount = maxNodes;
   simInfo.duration = simulationTime;
