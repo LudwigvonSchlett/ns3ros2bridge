@@ -18,6 +18,7 @@ TM_PORT = 8000
 # Varibles
 # Variables de simulation
 carla_sim = "carla"  # carla sim
+mock_type = "static"  # static mobile range_test
 node = None
 nb_nodes = 0   # nombre de nodes et donc de voitures dans la simulation
 number_message_sent = 0  # Pour les messages s'envoyant via tap1,2,3,...

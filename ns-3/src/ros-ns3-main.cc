@@ -115,7 +115,7 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
 
     string nodeNumberString = to_string(i);
 
-    NS_LOG_UNCOND("Creating node "+nodeNumberString);
+    NS_LOG_UNCOND("Creating tap for node "+nodeNumberString);
 
     //IP:
     string tap_neti_string = "10.0."+nodeNumberString+".0";
@@ -186,12 +186,11 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
   //waveChannel.AddPropagationLoss("ns3::FriisPropagationLossModel", "Frequency", waveFreq);
   //waveChannel.AddPropagationLoss("ns3::TwoRayGroundPropagationLossModel", "Frequency", waveFreq, "HeightAboveZ", antenna);
 
-  // Modèles de shadowing
+  // Modèle de shadowing
   StringValue logNormal = StringValue("ns3::LogNormalRandomVariable[Mu=0.0|Sigma=6.0]");
   //waveChannel.AddPropagationLoss("ns3::RandomPropagationLossModel", "Variable", logNormal);
 
-  // Modèles de fading 
-  //waveChannel.AddPropagationLoss("ns3::NakagamiPropagationLossModel");
+  // Modèle de fading
   //waveChannel.AddPropagationLoss("ns3::JakesPropagationLossModel");
   
   YansWifiPhyHelper wifiPhy;
@@ -221,7 +220,7 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
 
     string nodeNumberString = to_string(i);
 
-    NS_LOG_UNCOND("Creating node "+nodeNumberString);
+    NS_LOG_UNCOND("Installing node "+nodeNumberString);
     //TAP
     //IP:
     string tap_neti_string = "10.0."+nodeNumberString+".1";
@@ -247,7 +246,7 @@ initVehicules (int nb_vehicule, std::string ip_ROS)
     rosVehiculeHelper.SetAttribute ("VehicleNumber", IntegerValue(i));
     rosVehiculeHelper.SetAttribute ("PortWave", UintegerValue(portwave));
 
-    ApplicationContainer ROSVehSyncApps1 = rosVehiculeHelper.Install (nodei);
+    ApplicationContainer ROSVehiculeAppContainer = rosVehiculeHelper.Install (nodei);
   }
 }
 
@@ -266,7 +265,7 @@ check_nodes (int nb_vehicule) {
     Ptr<Ipv4> ipv4check = nodei->GetObject<Ipv4>();
     for (uint32_t j = 0; j < ipv4check->GetNInterfaces(); ++j)
     {
-      NS_LOG_INFO("Node " << i << " Interface " << j  << " IP: " << ipv4check->GetAddress(j, 0).GetLocal());
+      NS_LOG_INFO("Interface " << j  << " IP: " << ipv4check->GetAddress(j, 0).GetLocal());
     }
 
     for (uint32_t j = 0; j < nodei->GetNDevices(); ++j)
@@ -317,7 +316,7 @@ main (int argc, char *argv[])
 
   // NetAnim does not support creating nodes at run-time
   // We have to create nodes and then update them according to ROS
-  const uint8_t maxNodes = 2;
+  const uint8_t maxNodes = 5;
 
   NS_LOG_INFO("Initialisation des noeuds vehicules");
   initVehicules(maxNodes, ip_ROS);
