@@ -68,6 +68,12 @@ def init_carla():
             errlog(f"{cst.nb_nodes} noeuds mais {number_of_spawn_points} spawns")
             cst.nb_nodes = number_of_spawn_points
 
+        inflog("Initializing traffic manager")
+        traffic_manager = client.get_trafficmanager(cst.TM_PORT)
+        traffic_manager.set_synchronous_mode(False)  # Désactiver le mode synchrone
+        traffic_manager.set_global_distance_to_leading_vehicle(2.0)  # Distance minimale
+        traffic_manager.set_random_device_seed(cst.RANDOM_SEED)  # Simulation déterministe
+
         # Créer les véhicules
         inflog(f"Creating {cst.nb_nodes} vehicules")
         for _ in range(cst.nb_nodes):
@@ -75,13 +81,6 @@ def init_carla():
             while vehicle is None:
                 vehicle = spawn_vehicle(world, blueprints, spawn_points)
             cst.vehicles.append(vehicle)
-
-        inflog("Initializing traffic manager")
-        traffic_manager = client.get_trafficmanager(cst.TM_PORT)
-        traffic_manager.set_synchronous_mode(False)
-        # Désactiver le mode synchrone du Traffic Manager
-        traffic_manager.set_global_distance_to_leading_vehicle(2.0)
-        # Distance minimale
 
     except Exception as e:
         errlog("Exception initializing carla")

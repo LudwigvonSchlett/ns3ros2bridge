@@ -87,7 +87,7 @@ class ConstantVelocityVehicule(Vehicule):
         if status:
             self.stop = False
             self.autopilot_thread = threading.Thread(
-                target=self.autopilot, args=(cst.interval,))
+                target=self.autopilot, args=(cst.INTERVAL,))
             self.autopilot_thread.start()
         else:
             self.stop = True
@@ -95,7 +95,7 @@ class ConstantVelocityVehicule(Vehicule):
 
     def autopilot(self, interval):
         """Thread for autopilot."""
-        while self.stop is False:
+        while not self.stop:
             self.move(interval)
             time.sleep(interval)
         sys.exit()

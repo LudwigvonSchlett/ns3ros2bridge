@@ -47,6 +47,7 @@ def main():
     """Initialise le noeud principal et lance le programme."""
     rclpy.init(args=sys.argv)
     try:
+        random.seed(cst.RANDOM_SEED)  # Permet de rendre la simulation déterministe
         node_name = "carla_ros2_ns3"
         create_node(node_name)
         socket_tap0 = connect_tap_device("tap0")
@@ -150,12 +151,12 @@ def launch_simulation(sockets, control_socket):
     """Lance la simulation."""
     inflog("Launching  periodic_position_sender")
     cst.position_listener_thread = threading.Thread(
-        target=periodic_position_sender, args=(cst.interval,))
+        target=periodic_position_sender, args=(cst.INTERVAL,))
     cst.position_listener_thread.start()
 
     inflog("Launching comunication_node")
     cst.comunication_nodes_thread = threading.Thread(
-        target=comunication_node, args=(cst.interval,))
+        target=comunication_node, args=(cst.INTERVAL,))
     cst.comunication_nodes_thread.start()
 
     inflog("Launching listen_tap_devices")
@@ -331,6 +332,7 @@ def comunication_node(interval):
         try:
 
             for node in range(1, cst.nb_nodes+1):
+                # dest_node = (node % cst.nb_nodes) + 1  # destination = node + 1
                 dest_node = node
                 while dest_node == node:
                     dest_node = random.randint(1, cst.nb_nodes)

@@ -7,6 +7,7 @@ import rclpy
 
 from std_msgs.msg import String
 
+import carla_ros2_ns3.const as cst
 from carla_ros2_ns3.lib.ros import (
     inflog,
     errlog,
@@ -92,8 +93,8 @@ def tap_sender(packet, num_node):
 
     try:
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        udp_ip = f"10.0.{num_node}.1"
-        udp_port = 12000+num_node
+        udp_ip = f"{cst.VEH_NODE_PREFIX}{num_node}{cst.VEH_NODE_SUFFIX}"
+        udp_port = cst.NS3_PORT+num_node
         udp_socket.sendto(packet, (udp_ip, udp_port))
         udp_socket.close()
         inflog(f"Message envoyé à {udp_ip}:{udp_port} : {packet.hex()}")
@@ -114,8 +115,8 @@ def tap_sender_control(packet):
 
     try:
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        udp_ip = "10.0.0.1"
-        udp_port = 12000
+        udp_ip = cst.CONTROL_NODE_IP
+        udp_port = cst.NS3_PORT
         udp_socket.sendto(packet, (udp_ip, udp_port))
         udp_socket.close()
         inflog(f"Message envoyé à {udp_ip}:{udp_port} : {packet.hex()}")
