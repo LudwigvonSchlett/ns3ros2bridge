@@ -72,8 +72,6 @@ namespace ns3 {
 
       /* BELOW : COPIED FROM SINK */
 
-      static std::vector<std::string> SplitCharPointerController(const char* input);
-
       void HandleRead (Ptr<Socket> socket);
 
       void HandleAccept (Ptr<Socket> socket, const Address& from);

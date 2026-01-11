@@ -23,9 +23,7 @@ else:  # gpu
     HOST = "localhost"
     RENDERING = False
 
-CARLA_PORT = 2000
-TM_PORT = 8000
-client = carla.Client(HOST, CARLA_PORT)  # connexion a Carla
+client = carla.Client(HOST, cst.CARLA_PORT)  # connexion a Carla
 
 
 def init_carla():
@@ -70,6 +68,12 @@ def init_carla():
             errlog(f"{cst.nb_nodes} noeuds mais {number_of_spawn_points} spawns")
             cst.nb_nodes = number_of_spawn_points
 
+        inflog("Initializing traffic manager")
+        traffic_manager = client.get_trafficmanager(cst.TM_PORT)
+        traffic_manager.set_synchronous_mode(False)  # Désactiver le mode synchrone
+        traffic_manager.set_global_distance_to_leading_vehicle(2.0)  # Distance minimale
+        traffic_manager.set_random_device_seed(cst.RANDOM_SEED)  # Simulation déterministe
+
         # Créer les véhicules
         inflog(f"Creating {cst.nb_nodes} vehicules")
         for _ in range(cst.nb_nodes):
@@ -77,16 +81,6 @@ def init_carla():
             while vehicle is None:
                 vehicle = spawn_vehicle(world, blueprints, spawn_points)
             cst.vehicles.append(vehicle)
-
-        inflog("Initializing traffic manager")
-        traffic_manager = client.get_trafficmanager(TM_PORT)
-        traffic_manager.set_synchronous_mode(False)
-        # Désactiver le mode synchrone du Traffic Manager
-        traffic_manager.set_global_distance_to_leading_vehicle(2.0)
-        # Distance minimale
-
-        for vehicle in cst.vehicles:
-            vehicle.set_autopilot(True, TM_PORT)
 
     except Exception as e:
         errlog("Exception initializing carla")
@@ -115,3 +109,16 @@ def spawn_vehicle(world, blueprints, spawn_points):
     vehicle = world.try_spawn_actor(blueprint, spawn_point)
 
     return vehicle
+
+
+def get_position(vehicle):
+    """Get vehicule position."""
+    transform = vehicle.get_transform()
+    location = transform.location
+    return location.x, location.y, location.z
+
+
+def get_speed(vehicle):
+    """Get vehicule speed."""
+    velocity = vehicle.get_velocity()
+    return velocity.x, velocity.y, velocity.z

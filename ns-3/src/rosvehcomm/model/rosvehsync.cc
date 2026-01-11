@@ -139,20 +139,6 @@ namespace ns3
     }
   }
 
-  std::vector<std::string> ROSVehSync::SplitCharPointerController(const char* input)
-  {
-    std::vector<std::string> result;
-    std::istringstream stream(input);
-    std::string word;
-
-    while (stream >> word)
-    {
-      result.push_back(word);
-    }
-
-    return result;
-  }
-
   void ROSVehSync::HandleRead (Ptr<Socket> socket)
   {
     //NS_LOG_INFO("CONTROLLER SOCKET HAS RECEIVED A MESSAGE");

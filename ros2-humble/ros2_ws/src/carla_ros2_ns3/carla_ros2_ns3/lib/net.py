@@ -7,10 +7,15 @@ import rclpy
 
 from std_msgs.msg import String
 
+import carla_ros2_ns3.const as cst
 from carla_ros2_ns3.lib.ros import (
     inflog,
     errlog,
     create_pub
+)
+from carla_ros2_ns3.lib.carla_sim import (
+    get_position,
+    get_speed
 )
 
 # Partie Réseau
@@ -88,8 +93,8 @@ def tap_sender(packet, num_node):
 
     try:
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        udp_ip = f"10.0.{num_node}.1"
-        udp_port = 12000+num_node
+        udp_ip = f"{cst.VEH_NODE_PREFIX}{num_node}{cst.VEH_NODE_SUFFIX}"
+        udp_port = cst.NS3_PORT+num_node
         udp_socket.sendto(packet, (udp_ip, udp_port))
         udp_socket.close()
         inflog(f"Message envoyé à {udp_ip}:{udp_port} : {packet.hex()}")
@@ -110,8 +115,8 @@ def tap_sender_control(packet):
 
     try:
         udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        udp_ip = "10.0.0.2"
-        udp_port = 12000
+        udp_ip = cst.CONTROL_NODE_IP
+        udp_port = cst.NS3_PORT
         udp_socket.sendto(packet, (udp_ip, udp_port))
         udp_socket.close()
         inflog(f"Message envoyé à {udp_ip}:{udp_port} : {packet.hex()}")
@@ -144,8 +149,8 @@ def connect_tap_device(tap_device):
                 "Erreur lors de la connexion au périphérique"
                 + f"{tap_device}: {e}")
 
-            inflog("Nouvelle tentative dans 5 secondes...")
-            time.sleep(5)  # Attendre 5 secondes avant de réessayer
+            inflog("Nouvelle tentative dans 1 secondes...")
+            time.sleep(1)  # Attendre 1 seconde avant de réessayer
     return None
 
 
@@ -175,29 +180,16 @@ def get_destination_tlv(node):
 
 def get_position_tlv(node, vehicle):
     """Recupère la position d'un vehicule carla et génère le tlv."""
-    try:
-        transform = vehicle.get_transform()
-        location = transform.location
-        value = struct.pack('=Bxxxfff', node, location.x, location.y, location.z)
-        return struct.pack('=BB', 3, len(value)) + value
-    except Exception as e:
-        print(e)
-        errlog("Location will be wrong")
-        value = struct.pack('=Bxxxfff', node, 0.0, 0.0, 0.0)
-        return struct.pack('=BB', 3, len(value)) + value
+    x, y, z = get_position(vehicle)
+    value = struct.pack('=Bxxxfff', node, x, y, z)
+    return struct.pack('=BB', 3, len(value)) + value
 
 
 def get_speed_tlv(node, vehicle):
     """Recupère la vitesse d'un vehicule carla et génère le tlv."""
-    try:
-        velocity = vehicle.get_velocity()
-        value = struct.pack('=Bxxxfff', node, velocity.x, velocity.y, velocity.z)
-        return struct.pack('=BB', 4, len(value)) + value
-    except Exception as e:
-        print(e)
-        errlog("Velocity will be wrong")
-        value = struct.pack('=Bxxxfff', node, 0.0, 0.0, 0.0)
-        return struct.pack('=BB', 4, len(value)) + value
+    vx, vy, vz = get_speed(vehicle)
+    value = struct.pack('=Bxxxfff', node, vx, vy, vz)
+    return struct.pack('=BB', 4, len(value)) + value
 
 
 # TLV Requetes (type 101+)
@@ -271,9 +263,9 @@ def get_stop_vehicule_tlv(node):
 def get_mobility_tlv(vehicles):
     """Génère un ensemble de tlv avec toutes les positions et vitesses."""
     packet = b''
-    for i in range(len(vehicles)):
-        pos = get_position_tlv(i+1, vehicles[i])
-        vel = get_speed_tlv(i+1, vehicles[i])
+    for i, vehicle in enumerate(vehicles):
+        pos = get_position_tlv(i+1, vehicle)
+        vel = get_speed_tlv(i+1, vehicle)
         packet = b''.join([pos, vel, packet])
     return packet
 
@@ -281,8 +273,8 @@ def get_mobility_tlv(vehicles):
 def get_stop_vehicles_tlv(vehicles):
     """Génère un ensemble de tlv avec toutes les positions et la vitesse nulle."""
     packet = b''
-    for i in range(len(vehicles)):
-        pos = get_position_tlv(i+1, vehicles[i])
+    for i, vehicle in enumerate(vehicles):
+        pos = get_position_tlv(i+1, vehicle)
         vel = get_stop_vehicule_tlv(i+1)
         packet = b''.join([pos, vel, packet])
     return packet

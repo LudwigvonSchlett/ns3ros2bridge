@@ -47,6 +47,7 @@ def main():
     """Initialise le noeud principal et lance le programme."""
     rclpy.init(args=sys.argv)
     try:
+        random.seed(cst.RANDOM_SEED)  # Permet de rendre la simulation déterministe
         node_name = "carla_ros2_ns3"
         create_node(node_name)
         socket_tap0 = connect_tap_device("tap0")
@@ -77,7 +78,7 @@ def control_node_listener(socket_tap0):
             # Vérifiez si le paquet est destiné
             # à votre propre adresse TAP pour l'ignorer
 
-            if check_message(packet) and dest_ip_str != '10.0.0.2':
+            if check_message(packet) and dest_ip_str != cst.CONTROL_NODE_IP:
                 inflog("tap0 received a packet from control node")
                 print_udp(packet)
                 message = packet[42:]
@@ -130,6 +131,10 @@ def control_node_listener(socket_tap0):
                             tap_socket = connect_tap_device(f"tap{num_node}")
                             sockets.append(tap_socket)
                         inflog("Launching simulation")
+
+                        for vehicle in cst.vehicles:
+                            vehicle.set_autopilot(True, cst.TM_PORT)
+
                         launch_simulation(sockets, socket_tap0)
 
                     else:
@@ -146,12 +151,12 @@ def launch_simulation(sockets, control_socket):
     """Lance la simulation."""
     inflog("Launching  periodic_position_sender")
     cst.position_listener_thread = threading.Thread(
-        target=periodic_position_sender, args=(cst.interval,))
+        target=periodic_position_sender, args=(cst.INTERVAL,))
     cst.position_listener_thread.start()
 
     inflog("Launching comunication_node")
     cst.comunication_nodes_thread = threading.Thread(
-        target=comunication_node, args=(cst.interval,))
+        target=comunication_node, args=(cst.INTERVAL,))
     cst.comunication_nodes_thread.start()
 
     inflog("Launching listen_tap_devices")
@@ -173,11 +178,11 @@ def stop_simulation():
 
     if cst.comunication_nodes_thread is not None:
         cst.comunication_nodes_thread.join()
-        inflog("cst.comunication_nodes_thread is stopped")
+        inflog("comunication_nodes_thread is stopped")
 
     if cst.listen_tap_devices_thread is not None:
         cst.listen_tap_devices_thread.join()
-        inflog("cst.listen_tap_devices_thread is stopped")
+        inflog("listen_tap_devices_thread is stopped")
 
     # Arrete les vehicules dans ns3
     if len(cst.vehicles) > 0:
@@ -186,13 +191,12 @@ def stop_simulation():
         tap_sender_control(packet)
 
     # Détruire les véhicules pour nettoyer la simulation
-    if cst.carla_sim == "carla":
-        for vehicle in cst.vehicles:
-            if vehicle.is_alive:
-                vid = vehicle.id
-                vehicle.set_autopilot(False, 8001)
-                vehicle.destroy()
-                inflog(f"Véhicule {vid} détruit.")
+    for vehicle in cst.vehicles:
+        if vehicle.is_alive:
+            vid = vehicle.id
+            vehicle.set_autopilot(False, cst.TM_PORT)
+            vehicle.destroy()
+            inflog(f"Véhicule {vid} détruit.")
 
     inflog("Simulation terminée.")
     if cst.number_message_sent != 0:
@@ -229,7 +233,7 @@ def listen_control_tap(control_socket):
             # Vérifiez si le paquet est destiné
             # à votre propre adresse TAP pour l'ignorer
 
-            if check_message(packet) and dest_ip_str != '10.0.0.2':
+            if check_message(packet) and dest_ip_str != cst.CONTROL_NODE_IP:
                 inflog("tap0 received a packet from control node")
                 message = packet[42:]
                 inflog(f"Received packet (hex): {message.hex()}")
@@ -247,7 +251,7 @@ def listen_control_tap(control_socket):
 
                         simulation_time, = struct.unpack("=H", message[parse:parse+length])
                         inflog(f"ns3 Simulation time is {simulation_time} seconds")
-                        if cst.simulation_duration - simulation_time < 5:
+                        if cst.simulation_duration - simulation_time <= 2:
                             inflog("Fin de la simulation")
                             stop_simulation()
 
@@ -328,6 +332,7 @@ def comunication_node(interval):
         try:
 
             for node in range(1, cst.nb_nodes+1):
+                # dest_node = (node % cst.nb_nodes) + 1  # destination = node + 1
                 dest_node = node
                 while dest_node == node:
                     dest_node = random.randint(1, cst.nb_nodes)
